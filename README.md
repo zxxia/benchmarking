@@ -6,23 +6,19 @@ Two parts of the code:
 
 To build a dataset from a youtube video:
 1. use **youtube-dl** to download the video.
-   
+  
    1. Install youtube-dl
    
    2. Use ``` youtube-dl -F <youtube URL> ``` to list all formats, and choose a format id (e.g. 96).
    
-      
-   
    3.  If it is a live video, use the following command
       ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy -t 00:20:00 output.ts```
    
-      if not live video, run 
+   4. if not live video, run 
    
-      ```
-      ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy {VIDEONAME}.mp4
-      ```
+      ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy {VIDEONAME}.mp4```
    
-   
+      
    
 2. use ffmpeg to extract the frames
    ffmpeg -i <Video Filename> %06d.jpg -hide_banner
