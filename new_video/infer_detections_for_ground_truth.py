@@ -89,7 +89,7 @@ def main(_):
     FLAGS.gt_csv = data_path + 'gt_FasterRCNN_COCO_'+ \
                       FLAGS.resize_resol + '.csv'
   else:
-    FLAGS.input_tfrecord_paths = data_path.replace('profile','result') + 'input.record'
+    FLAGS.input_tfrecord_paths = data_path + 'input.record'
     FLAGS.output_tfrecord_path = data_path + 'gt_FasterRCNN_COCO.record'
     FLAGS.output_time_path = data_path + 'full_model_time_FasterRCNN_COCO.csv'
     FLAGS.gt_csv = data_path + 'gt_FasterRCNN_COCO.csv' 
