@@ -171,7 +171,8 @@ def main():
 					dt_boxes_final = [box for box in current_full_model_dt]
 					save_dt = [box for box in dt_boxes_final]
 
-
+				# for each frame, compute tp, fp, fn
+				# you don't need to read eval_single_image, just use it
 				tp[img_index], fp[img_index], fn[img_index] = \
 					eval_single_image(current_full_model_dt, dt_boxes_final)
 			
