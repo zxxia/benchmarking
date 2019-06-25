@@ -26,8 +26,8 @@ def load_full_model_detection(fullmodel_detection_path, height):
 					w = tmp[2]
 					h = tmp[3]
 					t = tmp[4]
-					if t == 3 or t == 8:
-						# if h > height/float(20):# object is car, this depends on the task
+					if t == 3 or t == 8: # choose car and truch objects
+						# if h > height/float(20): # ignore objects that are too small
 						gt_boxes_final.append([x, y, x+w, y+h, t])
 			full_model_dt[img_index] = gt_boxes_final
 			
@@ -97,7 +97,7 @@ def eval_single_image(gt_boxes, dt_boxes, iou_thresh=0.5):
 
 def main():
 	iou_thresh = 0.5
-	# dataset_list = ['crossroad3','highway','crossroad2','driving2']
+	dataset_list = ['crossroad3']
 	frame_rate_dict = {'walking': 30,
 					   'driving_downtown': 30, 
 					   'highway': 25, 
@@ -120,48 +120,45 @@ def main():
 							 'driving2': [1280,720]
 							 }
 
-	dataset_list = frame_rate_dict.keys()
-	fileID = open('VideoStorm_youtube_result_COCO.csv', 'w')
-	# data_path = '/Users/zhujunxiao/Desktop/benchmarking/New_Dataset/'
+	# VideoStorm result file
+	fileID = open('VideoStorm_result_tmp.csv', 'w')
+	# path where video and ground truth file is saved 
 	data_path = '/home/zhujun/video_analytics_pipelines/dataset/Youtube/'
+	# assume we have a target f1 score, then we compute what is the cost (GPU 
+	# processing time)
 	target_f1 = 0.9
-	# different videos have different frame rate, to fairly compare across 
-	# videos, we first change the frame rate to 10fps
 	chunk_length = 30 # chunk a long video into 30-second short videos
+	# Change sampling rate to change video frame rate
 	temporal_sampling_list = [20,15,10,5,4,3,2.5,2,1.8,1.5,1.2,1]
-
-	# fig, ax = plt.subplots(1,1)
-	# color=cm.rainbow(np.linspace(0,1,len(dataset_list)))
-	# detail_f = open('detection_result.csv','w')
 
 
 	for video_index in dataset_list:
-		# run the full model on each frame first, and save in input_w_gt.csv 
+		# run the full model on each frame first, and use it as ground truth
 		frame_rate = frame_rate_dict[video_index] 
-		# standard_frame_rate = 10.0
-		standard_frame_rate = 10
 		height = image_resolution_dict[video_index][1]
-		# fullmodel_detection_path = data_path + video_index + '/profile/updated_input_w_gt.csv'
-		fullmodel_detection_path = data_path + video_index + '/profile/updated_gt_FasterRCNN_COCO.csv'
-		full_model_dt, num_of_frames = load_full_model_detection(fullmodel_detection_path, height)
+		# load ground truth
+		fullmodel_detection_path = data_path + video_index + \
+									'/profile/updated_gt_FasterRCNN_COCO.csv'
+		full_model_dt, num_of_frames = load_full_model_detection(
+												fullmodel_detection_path, height)
 		F1_score_list = defaultdict(list)
+
+
 		for sample_rate in temporal_sampling_list:
-			img_cn = 0
+			# tp = true positive 
+			# fp = false positive
+			# fn = false negative
+			# first for each frame, compute tp, fp, fn
 			tp = defaultdict(int)
 			fp = defaultdict(int)
 			fn = defaultdict(int)
+			# if current frame is not sampled, use the detection results of 
+			# previous sampled frame 
 			save_dt = []
 
 			for img_index in range(0, num_of_frames):
 				dt_boxes_final = []
 				current_full_model_dt = full_model_dt[img_index]
-				resize_rate = frame_rate/standard_frame_rate
-				if img_index%resize_rate >= 1:
-					continue
-				else:
-					img_index = img_cn
-					img_cn += 1
-
 
 				# based on sample rate, decide whether this frame is sampled
 				if img_index%sample_rate >= 1:
@@ -175,33 +172,16 @@ def main():
 					save_dt = [box for box in dt_boxes_final]
 
 
-				# compute fn, tn, tp
-				# for boxA in current_full_model_dt:
-				# 	flag = 0
-				# 	iou_list = []
-				# 	for boxB in dt_boxes_final:
-				# 		iou = IoU(boxA, boxB)
-				# 		iou_list.append(iou)
-				# 	if iou_list:
-				# 		if max(iou_list) >= iou_thresh:
-				# 			tp[img_index] += 1
-				# 			dt_boxes_final.remove(dt_boxes_final[
-				# 							iou_list.index(max(iou_list))])
-				# 			flag = 1
-				# 		#break
-				# 	if not flag:
-				# 		fn[img_index] += 1
-
-
-				# fp[img_index] += len(dt_boxes_final)
 				tp[img_index], fp[img_index], fn[img_index] = \
 					eval_single_image(current_full_model_dt, dt_boxes_final)
-					
+			
+
 			tp_total = defaultdict(int)
 			fp_total = defaultdict(int)
 			fn_total = defaultdict(int)
-			for index in range(img_cn):
-				key = index // int(chunk_length*standard_frame_rate)
+			# compute total tp, fp, fn for each short video (chunk)
+			for index in range(num_of_frames):
+				key = index // int(chunk_length*frame_rate)
 
 				tp_total[key] += tp[index]
 				fn_total[key] += fn[index]
@@ -223,17 +203,18 @@ def main():
 				F1_score_list[key].append(f1)
 
 
-
-		frame_rate_list = [standard_frame_rate/x 
-						for x in temporal_sampling_list]
+		# cost depends on frame rate. The higher the frame rate, the longer GPU
+		# time is needed.
+		frame_rate_list = [frame_rate/x for x in temporal_sampling_list]
 
 		for key in sorted(F1_score_list.keys()):
 			current_f1_list = F1_score_list[key]
 			# print(list(zip(frame_rate_list, current_f1_list)))
 
 			if current_f1_list[-1] == 0:
-				target_frame_rate = standard_frame_rate
+				target_frame_rate = frame_rate
 			else:
+				# compute target frame rate using interpolation
 				F1_score_norm = [x/current_f1_list[-1] for x in current_f1_list]
 				index = next(x[0] for x in enumerate(F1_score_norm) 
 									if x[1] > target_f1)
@@ -246,7 +227,7 @@ def main():
 
 					target_frame_rate  = interpolation(point_a, point_b, target_f1)
 			print(key, target_frame_rate)
-			fileID.write(video_index+'_'+str(key)+','+str(target_frame_rate/standard_frame_rate)+'\n')
+			fileID.write(video_index+'_'+str(key)+','+str(target_frame_rate)+'\n')
 
 			# ax.plot(frame_rate_list, F1_score_norm,'-o',
 			# 		c=color[dataset_list.index(video_index)])
