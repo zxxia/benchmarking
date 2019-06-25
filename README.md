@@ -35,7 +35,14 @@ To build a dataset from a youtube video:
 
 ### 2. Individual pipelines
 
-1. VideoStorm
+1. VideoStorm (Temporal sampling)
+   1. Use videostorm/VideoStorm_temporal.py 
+   2. VideoStorm reduces video frame rate to reduce cost. However, reducing frame rate could possiblely make the accuracy drop. Therefore, we can get a cost-accuracy curve by varing the sampling rate (=frame rate after sampling/original frame rate). 
+   3. **How to use code:** 
+      1. Change *dataset_list*, *data_path* to your video name and path.
+      2. If plot F1_score_list and frame_rate_list, you can see the cost-accuracy curve.
+      3. We assume there is a requirement for accuracy (F1 score). The target f1 score is 0.9, then we compute the **minimum frame rate** needed to achieve f1=0.9.
+      4. An example result file should be in same format as VideoStorm_result_tmp.csv.
 2. Glimpse
 3. NoScope
 4. Fast cascading
