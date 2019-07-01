@@ -44,6 +44,13 @@ To build a dataset from a youtube video:
       3. We assume there is a requirement for accuracy (F1 score). The target f1 score is 0.9, then we compute the **minimum frame rate** needed to achieve f1=0.9.
       4. An example result file should be in same format as VideoStorm_result_tmp.csv.
 2. Glimpse
+   1. Use glimpse_youtube.py.
+   2. Key idea of Glimpse is to send selected frames to server for detection, and run tracking on unselected frames. Therefore, there are two important parts of glimpse, **compute frame difference** and **tracking**. We could get the cost-accuracy curve by varing two parameters.
+      1. frame difference threshold.
+      2. Tracking error threshold.
+   3. **How to use code:**
+      1. Change  *video_type*, *path* to your video name and path.
+      2. If plot f1_list and frame_rate_list, you can see the cost-accuracy curve.
 3. NoScope
 4. Fast cascading
 5. AWStream
