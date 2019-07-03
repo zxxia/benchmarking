@@ -48,6 +48,7 @@ DATA_PATH='/home/zhujun/video_analytics_pipelines/dataset/Youtube/'
 DATASET_LIST="crossroad2"
 # Choose an idle GPU
 GPU="1"
+RESIZE_RESOL=540p
 
 
 
@@ -56,12 +57,20 @@ do
 echo ${DATASET_NAME} 
 
 
+python3 resize.py \
+		--dataset=${DATASET_NAME} \
+		--frame_count=${NUM_OF_FRAMES[${DATASET_NAME}]} \
+		--resize_resol=$RESIZE_RESOL \
+		--path=$DATA_PATH
+
+
 python3 ${CODE_PATH}/dataset_tools/create_youtube_video_input.py \
 		--dataset=${DATASET_NAME} \
 		--resol=${RESOL[${DATASET_NAME}]} \
 		--frame_count=${NUM_OF_FRAMES[${DATASET_NAME}]} \
-		--resize=False \
+		--resize=True \
 		--path=$DATA_PATH \
+		--resize_resol=$RESIZE_RESOL
 
 echo "Done creating input!"
 python3  ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
@@ -69,19 +78,21 @@ python3  ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
 		--discard_image_pixels \
 		--dataset=${DATASET_NAME} \
 		--gpu=$GPU \
-		--resize=False \
+		--resize=True \
 		--path=$DATA_PATH \
+		--resize_resol=$RESIZE_RESOL
 
 python3 infer_object_id_youtube.py \
 		--dataset=${DATASET_NAME} \
 		--path=$DATA_PATH \
-		--resize=False \
+		--resize=True \
 		--resol=${RESOL[${DATASET_NAME}]} \
+		--resize_resol=$RESIZE_RESOL
 
-python3 video_feature_youtube.py \
-		--dataset=${DATASET_NAME} \
-		--path=$DATA_PATH \
-		--resol=${RESOL[${DATASET_NAME}]} 
+# python3 video_feature_youtube.py \
+# 		--dataset=${DATASET_NAME} \
+# 		--path=$DATA_PATH \
+# 		--resol=${RESOL[${DATASET_NAME}]} 
 
 done
 

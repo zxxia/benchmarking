@@ -54,4 +54,9 @@ To build a dataset from a youtube video:
 3. NoScope
 4. Fast cascading
 5. AWStream
+   1. Key idea: reduces video frame rate and frame resolution to reduce bandwidth. However, reducing frame rate and frame resolution could possiblely make the accuracy drop. Therefore, we can get a cost (bandwidth)-accuracy curve by varing the sampling rate and sampling rate.
+   2. Before use AWStream code, we need to run full model on different resolution videos. **Run generate_ground_truth.sh** again. I changed the code. Set —resize to True and add RESIZE_RESOL to specify the resulting resolution. 
+   3. (Important!!) I used **resize.py** to resize the original video.  However, the image size becomes larger after resizing. The reason is that cv2.imwrite will write the resized image at quality level 95 (possibly higher than original image). So please check how to use **ffmpeg** to resize images. Check */home/zhujun/video_analytics_pipelines/dataset/Youtube/highway/540p* for example format.
+   4. **Run awstream.py**. Update image_resolution_dict and dataset_list to add your own video. Also, update *path*.
+   5. This code is not finalized. Try this code with a small video. 
 6. HotCloud
