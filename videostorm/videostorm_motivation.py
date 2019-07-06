@@ -22,18 +22,7 @@ image_resolution_dict = {'walking': [3840,2160],
 						 'cropped_crossroad3':[600,400],
 						 'cropped_driving2':[600,400]
 						 }
-# frame_rate_dict = {'walking': 30,
-# 				   'driving_downtown': 30, 
-# 				   'highway': 25, 
-# 				   'crossroad2': 30,
-# 				   'crossroad': 30,
-# 			   	   'crossroad3': 30,
-# 				   'crossroad4': 30,
-# 				   'crossroad5': 30,
-# 				   'driving1': 30,
-# 				   'driving2': 30,
-# 				   'crossroad6':30,
-# 				   'crossroad7':30}
+
 
 target_f1=0.9
 
