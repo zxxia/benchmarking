@@ -71,7 +71,7 @@ def main(argv):
 	para_file = '../dataset_profile/paras_COCO_car/Video_features_' + video_name + '.csv'
 	with open(para_file, 'w') as f:
 		f.write('frame_id, num_of_object, object_area, arrival_rate,'\
-			'velocity, total_object_area, num_of_object_type\n')
+			'velocity, total_object_area, num_of_object_type, dominate_object_type\n')
 		for frame_id in range(current_start, current_end + 1 - frame_rate):
 			f.write(str(frame_id) + ',')
 			f.write(str(paras.num_of_objects[frame_id]) + ',')
