@@ -204,7 +204,7 @@ def main():
 	dataset_list = ['driving_downtown','highway','crossroad',
 					'crossroad2','crossroad3', 'crossroad4','crossroad5',
 					'driving1','driving2','crossroad6','crossroad7','cropped_crossroad3','cropped_driving2']
-	chunk_length=30
+
 	# dataset_list = ['cropped_crossroad3']
 	short_video_length = 5*60 # divide each video into 5-min
 	f = open('VideoStorm_motivation_final.csv','w')
@@ -218,23 +218,22 @@ def main():
 		standard_frame_rate = frame_rate
 		gt_file = path + dataset + '/profile/updated_gt_FasterRCNN_COCO.csv' 	
 		gt, num_of_frames = load_full_model_detection(gt_file, height)	
-
+		chunk_length = 30
 		num_of_chunk = num_of_frames//(chunk_length*frame_rate)
 		start_frame = 0
+
 		# use 30 seconds video for profiling
 		best_model, best_frame_rate = profile(dataset, 
 											  frame_rate, 
 											  gt, 
-											  start_frame)
+											  start_frame,
+											  chunk_length)
+		# test on the whole video
 		best_sample_rate = standard_frame_rate / best_frame_rate
 
-		# test on the whole video
-		for i in range(num_of_chunk):
+		for i in range(num_of_chunk): 
 			start_frame = i * (chunk_length*frame_rate)
 			end_frame = (i+1) * (chunk_length*frame_rate)
-
-
-
 
 			f1 = profile_eval(dataset, 
 							  frame_rate,
@@ -244,9 +243,10 @@ def main():
 							  start_frame,
 							  end_frame)
 
-			print(dataset + str(i), best_frame_rate, f1)
-
-			f.write(dataset + '_' + str(i) + ',' + str(best_model) + ',' + str(f1) + ',' + str(best_frame_rate/standard_frame_rate) + '\n')
+			print(dataset+str(i), best_frame_rate, f1)
+			f.write(dataset + '_' + str(i) + ',' + str(best_model) + ',' + 
+				    str(f1) + ',' + str(best_frame_rate/standard_frame_rate) 
+				    + '\n')
 
 			
 
