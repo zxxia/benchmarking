@@ -11,7 +11,7 @@ def load_full_model_detection(fullmodel_detection_path, height):
         for line in f:
             line_list = line.strip().split(',')
             # real image index starts from 1
-            img_index = int(line_list[0].split('.')[0]) - 1
+            img_index = int(line_list[0].split('.')[0]) #- 1
             if not line_list[1]: # no detected object
                 gt_boxes_final = []
             else:

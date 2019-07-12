@@ -12,7 +12,7 @@ DATASET_LIST = ['tw_road']
 IOU_THRESH = 0.5
 TARGET_F1 = 0.9
 OFFSET = 0 # The time offset from the start of the video. Unit: seconds
-CHUNK_LENGTH = 5*60 # A long video is chopped into chunks. Unit: second
+CHUNK_LENGTH = 2*60 # A long video is chopped into chunks. Unit: second
 PROFILE_LENGTH = 30 # Profiling length within a chunk. Unit: second
 
 def profile(dataset, frame_rate, gt, start_frame, chunk_length=30):
@@ -179,27 +179,26 @@ def main():
         # Floor division drops the last sequence of frames which is not as long as CHUNK_LENGTH
         num_of_chunks = num_of_frames // (CHUNK_LENGTH * frame_rate)
         
-        start_frame = 0 #+ OFFSET * frame_rate
 
-                # test on the whole video
-        best_sample_rate = standard_frame_rate / best_frame_rate
-
+        
         test_f1_list = list()
         test_fps_list = list()
 
         for i in range(num_of_chunks): 
             # the 1st frame in the chunk
-            start_frame = i * (CHUNK_LENGTH * frame_rate) #+ OFFSET * frame_rate
+            start_frame = i * (CHUNK_LENGTH * frame_rate) + 1 #+ OFFSET * frame_rate
             # the last frame in teh chunk
-            end_frame = (i+1) * (CHUNK_LEGNTH * frame_rate) #+ OFFSET * frame_rate
-            
+            end_frame = (i+1) * (CHUNK_LENGTH * frame_rate) #+ OFFSET * frame_rate
+            print('short video start={}, end={}'.format(start_frame, end_frame)) 
             # profile the first PROFILE_LENGTH seconds of the chunk
             assert(CHUNK_LENGTH > PROFILE_LENGTH)
             best_model, best_frame_rate = profile(dataset, frame_rate, gt, 
                                                   start_frame, PROFILE_LENGTH)
+            # test on the whole video
+            best_sample_rate = standard_frame_rate / best_frame_rate
 
             f1 = profile_eval(dataset, frame_rate, gt, best_model, 
-                              best_sample_rate, start_frame+PROFIE_LENGTH * frame_rate, end_frame)
+                              best_sample_rate, start_frame+PROFILE_LENGTH * frame_rate, end_frame)
 
             test_f1_list.append(f1)
             test_fps_list.append(best_frame_rate)

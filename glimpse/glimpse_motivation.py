@@ -13,16 +13,19 @@ kitti = False
 DATASET_LIST =  ['tw_road']#'jp','russia1', 'park']#['traffic', 'highway_normal_traffic', 'highway_no_traffic', 
                 #'reckless_driving', 'motor', 'russia', 'jp_hw', 'tw_road', 
                 #'tw_under_bridge']
-CHUNK_LENGTH = 30 # 30 seconds
+PROFILE_LENGTH = 30 # 30 seconds
 OFFSET = 0 # offset from the start of the video in unit of second
 # standard_frame_rate = 10.0 # for comparison with KITTI
 PATH = '/mnt/data/zhujun/new_video/'
-# SHORT_VIDEO_LENGTH = 2*60
+SHORT_VIDEO_LENGTH = 2*60
 INFERENCE_TIME = 100 # avg. GPU processing  time
 TARGET_F1 = 0.9
+
+# Two parameters: frame difference threshold, tracking error thresh
 para1_list = [5,7,8]#[1.5,2,3,4,5] #[1,2,5,10]#
 para2_list = [2.5,3,5]#[2.2,2.3,2.45,2.5,2.6] # [0.5,0.7,1,3,10]
  
+
 def get_gt_dt(annot_path, height):
     # read ground truth and full model (server side) detection results
     gt_annot = defaultdict(list)
@@ -56,7 +59,6 @@ def main():
     # final_result_f = open('youtube_glimpse_motivation.csv','w')
     final_result_f = open('glimpse_motivation_result.csv','w')
     final_result_f.write('video chunk,para1,para2,f1,frame rate\n')
-    short_video_length = 5*60 # divide each video into 5-min
     # choose the first 3 mins to get the best frame diff thresh
     for video_type in DATASET_LIST:
         metadata = load_metadata(PATH + video_type + '/metadata.json')
@@ -65,9 +67,8 @@ def main():
         frame_rate = metadata['frame rate']
         frame_count = metadata['frame count']
         standard_frame_rate = frame_rate
-        # para1_list = [2,2.1,2.15,2.2,2.3,2.4,2.5,2.6,3] #[1,2,5,10]#
-        # para2_list = [20]
-       # resize the current video frames to 10Hz
+       
+        # resize the current video frames to 10Hz
         resize_rate = 1 
         # read ground truth and full model detection result
         # image name, detection result, ground truth
@@ -75,20 +76,19 @@ def main():
         img_path = PATH + video_type +'/'
         gt_annot, dt_annot, frame_end = get_gt_dt(annot_path, height)
 
-        num_of_short_videos = frame_end//(short_video_length*frame_rate)
-
-
+        num_of_short_videos = frame_end//(SHORT_VIDEO_LENGTH*frame_rate)
 
         for i in range(num_of_short_videos):
-            start = i * (short_video_length*frame_rate)
+            start = i * (SHORT_VIDEO_LENGTH*frame_rate) +1
 
-            end = (i+1) * (short_video_length*frame_rate)
+            end = (i+1) * (SHORT_VIDEO_LENGTH*frame_rate)
             profile_start = start
-            profile_end = start + CHUNK_LENGTH*frame_rate
+            profile_end = start + PROFILE_LENGTH*frame_rate
+            print("short video start={}, end={}".format(start, end))
+            print("profile start={}, end={}".format(profile_start, profile_end))
             print('profiling short video {}'.format(i))
             # print(video_type, seg_index)
             # Run inference on the first 30s video
-            # Two parameters: frame difference threshold, tracking error thresh
             frame_rate_list = []
             f1_list = []
             min_f1_gt_target = 1.0 # the minimum f1 score which is greater than
@@ -111,7 +111,7 @@ def main():
                                                    frame_difference_thresh, 
                                                    tracking_error_thresh, False)
 
-                    current_frame_rate = triggered_frame / float(CHUNK_LENGTH)
+                    current_frame_rate = triggered_frame / float(PROFILE_LENGTH)
                     frame_rate_list.append(current_frame_rate)
                     f1_list.append(f1)
 
@@ -149,12 +149,14 @@ def main():
                                            end, csvf, image_resolution,
                                            frame_rate, frame_difference_thresh, 
                                            tracking_error_thresh, False)
-            print("triggered {} frames over {} seconds".format(triggered_frame, short_video_length))
-            fps = float(triggered_frame)/float(short_video_length)
+            print("triggered {} frames over {} seconds".format(triggered_frame, SHORT_VIDEO_LENGTH))
+            fps = float(triggered_frame)/float(SHORT_VIDEO_LENGTH)
             test_f1_list.append(f1)
             test_fps_list.append(fps)
             print('F1, current_frame_rate:', f1, fps)
-            final_result_f.write(video_type + '_' + str(i) + ',' + str(best_para1) + ',' + str(best_para2) + ',' + str(f1) + ',' + str(fps) + '\n')
+            final_result_f.write(video_type + '_' + str(i) + ',' + 
+                  str(best_para1) + ',' + str(best_para2) + ',' +
+                  str(f1) + ',' + str(fps) + '\n')
             print("Finished testing...")
 
         test_relative_fps_list = [x/frame_rate for x in test_fps_list]
