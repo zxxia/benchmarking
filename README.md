@@ -21,9 +21,12 @@ To build a dataset from a youtube video:
       
    
 2. use ffmpeg to extract the frames
-   ffmpeg -i <Video Filename> %06d.jpg -hide_banner
+   ```ffmpeg -i <Video Filename> %06d.jpg -hide_banner```
 
-3. Config new_video/generate_ground_truth.sh to run Faster-RCNN model on extracted frames. 
+3. Use metadata_generator.py in new_video folder to generate metadta for the video. Metadata should be generated in the same folder of the input video.
+   ```python3 metadata_generator.py [Path to input video] [Output path of output json metadata file]```
+
+4. Config new_video/generate_ground_truth.sh to run Faster-RCNN model on extracted frames. 
 
    1. Get this repo https://github.com/tensorflow/models/tree/master/research/object_detection 
    2. Download this trained model http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_coco_2018_01_28.tar.gz, and put it under *models/research/object_detection*, then uncompress the model file.
