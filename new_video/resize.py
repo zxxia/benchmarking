@@ -2,6 +2,7 @@
 import cv2
 import os
 from absl import app, flags 
+from my_utils import load_metadata
 # target_size = (640,480)
 
 
@@ -10,33 +11,13 @@ FLAGS = flags.FLAGS
 
 flags.DEFINE_string('dataset', '', 'Dataset name.')
 flags.DEFINE_string('resize_resol','360p','Image resolution after resizing.')
-flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
+#flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
 flags.DEFINE_string('path', None, 'Data path.')
 
 resol_dict = {'360p': (480,360),
               '480p': (640,480),
               '540p': (960,540),
              }
-
-
-
-image_resolution_dict = {'walking': [3840,2160],
-                         'driving_downtown': [3840, 2160], 
-                         'highway': [1280,720],
-                         'crossroad2': [1920,1080],
-                         'crossroad': [1920,1080],
-                         'crossroad3': [1280,720],
-                         'crossroad4': [1920,1080],
-                         'crossroad5': [1920,1080],
-                         'driving1': [1920,1080],
-                         'driving2': [1280,720],
-                         'traffic': [1280,720],
-                         'highway_no_traffic': [1280,720],
-                         'highway_normal_traffic': [1280,720],
-                         'street_racing': [1280,720],
-                         'motor': [1280,720],
-                         'reckless_driving': [1280,720],
-                        }
 
 def resize_video(video_in, video_out, target_size):
     cmd = "ffmpeg -i {} -vf scale={} {}".format(video_in, 
@@ -46,7 +27,7 @@ def resize_video(video_in, video_out, target_size):
     os.system(cmd)
 
 def extract_frames(video, output_path):
-    cmd = "ffmpeg -i {} {}%06d.jpg".format(video, output_path)
+    cmd = "ffmpeg -i {} {}%06d.jpg -hide_banner".format(video, output_path)
     print(cmd)
     os.system(cmd)
 
@@ -60,12 +41,14 @@ def create_dir(path):
 
 def main(argv):
     dataset = FLAGS.dataset
-    num_of_frames = FLAGS.frame_count 
+    #num_of_frames = FLAGS.frame_count 
     path = FLAGS.path
     resol_name = FLAGS.resize_resol
     target_size = resol_dict[resol_name]
     resized_path = path + dataset + '/' + resol_name + '/'
-    resol = image_resolution_dict[dataset]
+    metadata = load_metadata(path + dataset + '/metadata.json')
+    resol = metadata['resolution']
+    num_of_frames = metadata['frame count']
     create_dir(resized_path)
     create_dir(resized_path + 'profile/')
 

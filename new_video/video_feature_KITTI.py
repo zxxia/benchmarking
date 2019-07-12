@@ -57,7 +57,7 @@ def compute_velocity(
 					# consecutive frames to reflect how fast the object is moving
 					# the faster the object is moving, the smaller the IoU will be
 					iou = IoU([x,y,x+w,y+h],[p_x, p_y, p_w+p_x,p_h+p_y])
-					if iou == 0.0:
+					if iou < 0.001:
 						print('object too fast',object_id, frame)
 						iou = 0.01
 					# remove the influence of frame rate

@@ -5,11 +5,12 @@ from collections import defaultdict
 from PIL import Image
 import PIL
 import io
+from my_utils import load_metadata
 
 flags = tf.app.flags
 flags.DEFINE_string('dataset', '', 'Dataset name.')
-flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
-flags.DEFINE_string('resol','','Image resolution.')
+# flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
+# flags.DEFINE_string('resol','','Image resolution.')
 flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
 flags.DEFINE_string('resize_resol',None,'Image resolution after resizing.')
 flags.DEFINE_string('path', None, 'Data path.')
@@ -59,6 +60,8 @@ def main(_):
   path =  FLAGS.path
   output_path = path + FLAGS.dataset + '/profile/'
 
+  metadata = load_metadata(path + FLAGS.dataset + '/metadata.json')
+
   if FLAGS.resize:
     data_path = path + FLAGS.dataset  + '/' + FLAGS.resize_resol + '/'
     output_file = data_path + '/profile/input_' + FLAGS.resize_resol + '.record'
@@ -70,12 +73,12 @@ def main(_):
     os.mkdir(output_path)
 
   writer = tf.python_io.TFRecordWriter(output_file)
-  resol_str = FLAGS.resol
+  #resol_str = FLAGS.resol
 
-  img_resolution = [int(x) for x in resol_str.split(',')]
+  img_resolution = metadata['resolution'] #[int(x) for x in resol_str.split(',')]
 
 
-  for index in range(1, FLAGS.frame_count):#38371):
+  for index in range(1, metadata['frame count']):#FLAGS.frame_count):#38371):
     image = {}
     image['height'] = img_resolution[1]
     image['width'] = img_resolution[0]
