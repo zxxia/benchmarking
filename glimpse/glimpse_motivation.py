@@ -56,7 +56,7 @@ def main():
     # final_result_f = open('youtube_glimpse_motivation.csv','w')
     final_result_f = open('glimpse_motivation_result.csv','w')
     final_result_f.write('video chunk,para1,para2,f1,frame rate\n')
-
+    short_video_length = 5*60 # divide each video into 5-min
     # choose the first 3 mins to get the best frame diff thresh
     for video_type in DATASET_LIST:
         metadata = load_metadata(PATH + video_type + '/metadata.json')
@@ -74,71 +74,71 @@ def main():
         annot_path = PATH + video_type + '/profile/updated_gt_FasterRCNN_COCO.csv'
         img_path = PATH + video_type +'/'
         gt_annot, dt_annot, frame_end = get_gt_dt(annot_path, height)
-                
-        print("Start profiling on the 1st 30s segment...")
-        #for seg_index in range(0, 1):
-        # print(video_type, seg_index)
-        # Run inference on the first 30s video
-        # Two parameters: frame difference threshold, tracking error thresh
-        frame_rate_list = []
-        f1_list = []
-        start = 1 + OFFSET * frame_rate #seg_index * (frame_rate * CHUNK_LENGTH) + 1 
-        end = frame_rate * CHUNK_LENGTH + OFFSET * frame_rate # (seg_index + 1) * (frame_rate * CHUNK_LENGTH)
-        min_f1_gt_target = 1.0 # the minimum f1 score which is greater than
-                               # or equal to target f1(e.g. 0.9)
-        best_para1 = -1
-        best_para2 = -1
-        for para1 in para1_list:
-            for para2 in para2_list:
-                csvf = open('no_meaning.csv','w')
-                # larger para1, smaller thresh, easier to be triggered
-                frame_difference_thresh = image_resolution[0]*image_resolution[1]/para1
-                tracking_error_thresh = para2
-                # images start from index 1
-                print(img_path, start, end) 
-                triggered_frame, f1 = pipeline(img_path, dt_annot, gt_annot,
-                                               start, end, csvf, 
-                                               image_resolution, frame_rate, 
-                                               frame_difference_thresh, 
-                                               tracking_error_thresh, False)
 
-                current_frame_rate = triggered_frame / float(CHUNK_LENGTH)
-                frame_rate_list.append(current_frame_rate)
-                f1_list.append(f1)
-
-                if f1 >= TARGET_F1 and f1 < min_f1_gt_target:
-                    # record min f1 which is greater than target f1
-                    min_f1_gt_target = f1
-                    # record the best config
-                    best_para1 = para1
-                    best_para2 = para2
-
-                print('Profiled f1 = {}, Profiled frame rate = {}'.format(f1, current_frame_rate))
-        # if max(f1_list) < TARGET_F1:
-        #     para1 = 20
-        # else:
-        #     index = next(x[0] for x in enumerate(f1_list) if x[1] >= TARGET_F1)
-        #     para1 = para1_list[index]
+        num_of_short_videos = frame_end//(short_video_length*frame_rate)
 
 
-        print("Finish profiling on the 1st 30s segment...")
-        num_seg = frame_end // (frame_rate * CHUNK_LENGTH) 
-        # Chop the video into 2-min segments
-        # Here we truncate the last segment which is less than 30s.
-        print("{} contains {} 2min-segments.".format(video_type, num_seg))
 
-        print("Start testing...")
-        # use the selected parameters for the next 5 mins
-        frame_difference_thresh = image_resolution[0]*image_resolution[1]/best_para1   
-        tracking_error_thresh = best_para2
+        for i in range(num_of_short_videos):
+            start = i * (short_video_length*frame_rate)
 
-        test_f1_list = [] # A list of f1 scores computed using the best config over the entire video
-        test_fps_list = [] # A list of fps computed over the entire video using the best config
-        for seg_index in range(1, num_seg-1):
-            print("segment index =", seg_index)
-            # images start from index 1
-            start = seg_index * (frame_rate * CHUNK_LENGTH) + 1 + OFFSET * frame_rate
-            end = (seg_index + 1) * (frame_rate * CHUNK_LENGTH) + OFFSET * frame_rate
+            end = (i+1) * (short_video_length*frame_rate)
+            profile_start = start
+            profile_end = start + CHUNK_LENGTH*frame_rate
+            print('profiling short video {}'.format(i))
+            # print(video_type, seg_index)
+            # Run inference on the first 30s video
+            # Two parameters: frame difference threshold, tracking error thresh
+            frame_rate_list = []
+            f1_list = []
+            min_f1_gt_target = 1.0 # the minimum f1 score which is greater than
+                                   # or equal to target f1(e.g. 0.9)
+            best_para1 = -1
+            best_para2 = -1
+            test_f1_list = [] # A list of f1 scores computed using the best config over the entire video
+            test_fps_list = [] # A list of fps computed over the entire video using the best config
+            for para1 in para1_list:
+                for para2 in para2_list:
+                    csvf = open('no_meaning.csv','w')
+                    # larger para1, smaller thresh, easier to be triggered
+                    frame_difference_thresh = image_resolution[0]*image_resolution[1]/para1
+                    tracking_error_thresh = para2
+                    # images start from index 1
+                    print(img_path, profile_start, profile_end) 
+                    triggered_frame, f1 = pipeline(img_path, dt_annot, gt_annot,
+                                                   profile_start, profile_end, csvf, 
+                                                   image_resolution, frame_rate, 
+                                                   frame_difference_thresh, 
+                                                   tracking_error_thresh, False)
+
+                    current_frame_rate = triggered_frame / float(CHUNK_LENGTH)
+                    frame_rate_list.append(current_frame_rate)
+                    f1_list.append(f1)
+
+                    if f1 >= TARGET_F1 and f1 < min_f1_gt_target:
+                        # record min f1 which is greater than target f1
+                        min_f1_gt_target = f1
+                        # record the best config
+                        best_para1 = para1
+                        best_para2 = para2
+
+                    print('Profiled f1 = {}, Profiled frame rate = {}'.format(f1, current_frame_rate))
+            # if max(f1_list) < TARGET_F1:
+            #     para1 = 20
+            # else:
+            #     index = next(x[0] for x in enumerate(f1_list) if x[1] >= TARGET_F1)
+            #     para1 = para1_list[index]
+
+
+            print("Finish profiling on the {} 30s segment...".format(i))
+
+            print("Start testing...")
+            # use the selected parameters for the next 5 mins
+            frame_difference_thresh = image_resolution[0]*image_resolution[1]/best_para1   
+            tracking_error_thresh = best_para2
+
+
+
             if end > frame_count:
                 end = frame_count
 
@@ -149,14 +149,15 @@ def main():
                                            end, csvf, image_resolution,
                                            frame_rate, frame_difference_thresh, 
                                            tracking_error_thresh, False)
-            print("triggered {} frames over {} seconds".format(triggered_frame, CHUNK_LENGTH))
-            fps = float(triggered_frame)/float(CHUNK_LENGTH)
+            print("triggered {} frames over {} seconds".format(triggered_frame, short_video_length))
+            fps = float(triggered_frame)/float(short_video_length)
             test_f1_list.append(f1)
             test_fps_list.append(fps)
             print('F1, current_frame_rate:', f1, fps)
-            final_result_f.write(video_type + '_' + str(seg_index) + ',' + str(best_para1) + ',' + str(best_para2) + ',' + str(f1) + ',' + str(fps) + '\n')
+            final_result_f.write(video_type + '_' + str(i) + ',' + str(best_para1) + ',' + str(best_para2) + ',' + str(f1) + ',' + str(fps) + '\n')
+            print("Finished testing...")
+
         test_relative_fps_list = [x/frame_rate for x in test_fps_list]
-        print("Finished testing...")
         if test_relative_fps_list and test_f1_list:
             plt.scatter(test_relative_fps_list, test_f1_list, label=video_type)
     plt.xlabel("GPU Processing time")
