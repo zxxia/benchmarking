@@ -32,6 +32,20 @@ To build a dataset from a youtube video:
    2. Download this trained model http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_coco_2018_01_28.tar.gz, and put it under *models/research/object_detection*, then uncompress the model file.
    3. Change CODE_PATH, FULL_MODEL_PATH, DATA_PATH, DATASET_LIST to your own path.
 
+5. Objects in a typical traffic video (and corresponding label index in COCO)
+
+   1 person
+
+   2 bicycle
+
+   3 car
+
+   4 motorcycle
+
+   6 bus
+
+   8 truck
+
 
 
 
