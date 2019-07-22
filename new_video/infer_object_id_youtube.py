@@ -104,9 +104,11 @@ def smooth_annot(all_filename, frame_to_object):
     # with open(update_gt_file, 'w') as f:
 
     for filename in all_filename:
-        if not frame_to_object[filename - 1] or not frame_to_object[filename + 1]:
+        if not frame_to_object[filename - 1] and \
+            not frame_to_object[filename + 1]:
             # current_boxes = frame_to_object[filename]
             current_boxes = []
+            frame_to_object[filename] = current_boxes
             # f.write(str(filename) + ',' + ';'.join([' '.join([str(x) for x in box]) 
             #                               for box in current_boxes])+ '\n') 
         else:
