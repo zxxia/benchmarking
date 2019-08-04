@@ -10,20 +10,29 @@ matplotlib.use('Agg')
 from matplotlib import pyplot as plt
 from my_utils import load_metadata
 kitti = False
-DATASET_LIST =  ['highway_no_traffic']#'jp','russia1', 'park']#['traffic', 'highway_normal_traffic', 'highway_no_traffic', 
+DATASET_LIST = ['motorway']
+# sorted(['traffic', 'jp_hw', 'russia', 'tw_road', 
+#            'tw_under_bridge', 'highway_normal_traffic', 'nyc', 'lane_split',
+#            'tw', 'tw1', 'jp', 'russia1','drift', 'park', 'highway', 'crossroad2', 
+#                  'crossroad', 'crossroad3', 'crossroad4', 'driving1', 'driving2',])
+
+# ['highway_no_traffic']#'jp','russia1', 'park']#['traffic', 'highway_normal_traffic', 'highway_no_traffic', 
                 #'reckless_driving', 'motor', 'russia', 'jp_hw', 'tw_road', 
                 #'tw_under_bridge']
 PROFILE_LENGTH = 30 # 30 seconds
-OFFSET = 1 # offset from the start of the video in unit of second
+OFFSET = 0 # offset from the start of the video in unit of second
 # standard_frame_rate = 10.0 # for comparison with KITTI
-PATH = '/mnt/data/zhujun/new_video/'
-SHORT_VIDEO_LENGTH = int(1*60)
+PATH = '/mnt/data/zhujun/dataset/Youtube/'
+SHORT_VIDEO_LENGTH = int(2*60)
 INFERENCE_TIME = 100 # avg. GPU processing  time
 TARGET_F1 = 0.9
+para1_list = [2,3,4,5,6,8,10,15] #[1,2,5,10]#
+para2_list = [10,7,5,3,2,1,0.7] #[0.1, 1, 2 ,5, 10]
+
 
 # Two parameters: frame difference threshold, tracking error thresh
-para1_list = [2,2.5,3,3.5,4,4.5,5,] # [2,3,4,5] #[1,2,5,10]#
-para2_list = [15,11,10,8,5,4,3.5,3.1,3,1,0.6,0.5,0.3,0.1,0.05]
+#para1_list = [2,2.5,3,3.5,4,4.5,5,] # [2,3,4,5] #[1,2,5,10]#
+#para2_list = [15,11,10,8,5,4,3.5,3.1,3,1,0.6,0.5,0.3,0.1,0.05]
 # [2.2,2.3,2.5,2.6] # [0.5,0.7,1,3,10]
 #[2,3,5,10,] for russia1
 #[0.5,0.55,0.6,0.7,]
@@ -59,31 +68,30 @@ def get_gt_dt(annot_path, height):
 
 
 def main():
-    # final_result_f = open('youtube_glimpse_motivation.csv','w')
     # choose the first 3 mins to get the best frame diff thresh
-    for video_type in DATASET_LIST:
-        metadata = load_metadata(PATH + video_type + '/metadata.json')
-        image_resolution = metadata['resolution'] 
-        height = image_resolution[1]
-        frame_rate = metadata['frame rate']
-        frame_count = metadata['frame count']
-        standard_frame_rate = frame_rate
-       
-        # resize the current video frames to 10Hz
-        resize_rate = 1 
-        # read ground truth and full model detection result
-        # image name, detection result, ground truth
-        annot_path = PATH + video_type + '/profile/updated_gt_FasterRCNN_COCO.csv'
-        img_path = PATH + video_type +'/'
-        gt_annot, dt_annot, frame_end = get_gt_dt(annot_path, height)
+    with open('glimpse_motivation_result_motorway.csv', 'w') as final_result_f:
+        final_result_f.write('video chunk,para1,para2,f1,frame rate\n')
+        for video_type in DATASET_LIST:
+            metadata = load_metadata(PATH + video_type + '/metadata.json')
+            image_resolution = metadata['resolution'] 
+            height = image_resolution[1]
+            frame_rate = metadata['frame rate']
+            frame_count = metadata['frame count']
+            standard_frame_rate = frame_rate
+           
+            # resize the current video frames to 10Hz
+            resize_rate = 1 
+            # read ground truth and full model detection result
+            # image name, detection result, ground truth
+            annot_path = PATH + video_type + '/profile/updated_gt_FasterRCNN_COCO.csv'
+            img_path = PATH + video_type +'/'
+            gt_annot, dt_annot, frame_end = get_gt_dt(annot_path, height)
 
-        num_of_short_videos = (frame_end - OFFSET * frame_rate)//(SHORT_VIDEO_LENGTH*frame_rate)
-        
-        test_f1_list = [] # A list of f1 scores computed using the best config over the entire video
-        test_fps_list = [] # A list of fps computed over the entire video using the best config
+            num_of_short_videos = (frame_end - OFFSET * frame_rate)//(SHORT_VIDEO_LENGTH*frame_rate)
+            
+            test_f1_list = [] # A list of f1 scores computed using the best config over the entire video
+            test_fps_list = [] # A list of fps computed over the entire video using the best config
 
-        with open('glimpse_motivation_result_{}.csv'.format(video_type), 'w') as final_result_f:
-            final_result_f.write('video chunk,para1,para2,f1,frame rate\n')
             for i in range(num_of_short_videos):
                 start = i * (SHORT_VIDEO_LENGTH*frame_rate) + 1 + OFFSET * frame_rate
 
@@ -103,13 +111,8 @@ def main():
 
                 best_para1 = -1
                 best_para2 = -1
-                is_tuning = True
                 for para1 in para1_list:
-                    if not is_tuning:
-                        break
                     for para2 in para2_list:
-                        if not is_tuning:
-                            break
                         csvf = open('no_meaning.csv','w')
                         # larger para1, smaller thresh, easier to be triggered
                         frame_difference_thresh = image_resolution[0]*image_resolution[1]/para1
@@ -125,17 +128,18 @@ def main():
                         current_frame_rate = triggered_frame / float(PROFILE_LENGTH)
                         frame_rate_list.append(current_frame_rate)
                         f1_list.append(f1)
-
-                        if f1 >= TARGET_F1 and f1 <=min_f1_gt_target  and current_frame_rate < min_fps:
-                            # record min f1 which is greater than target f1
-                            min_f1_gt_target = f1
-                            min_fps = current_frame_rate
-                            # record the best config
-                            best_para1 = para1
-                            best_para2 = para2
-                            is_tuning = False 
-
                         print('para1 = {}, para2 = {}, Profiled f1 = {}, Profiled frame rate = {}'.format(para1, para2, f1, current_frame_rate))
+                        if f1 >= TARGET_F1:
+                            break
+
+                    if f1 >= TARGET_F1 and f1 <=min_f1_gt_target  and current_frame_rate < min_fps:
+                        # record min f1 which is greater than target f1
+                        min_f1_gt_target = f1
+                        min_fps = current_frame_rate
+                        # record the best config
+                        best_para1 = para1
+                        best_para2 = para2
+
 
                 print("Finish profiling on the {} {}s segment...".format(i, PROFILE_LENGTH))
                 print("best_para1 = {}, best_para2={}".format(best_para1, best_para2))
@@ -146,7 +150,7 @@ def main():
 
                 assert(end>=1 and end <= frame_count)
                 csvf = open('no_meaning.csv','w')
-                triggered_frame, f1 = pipeline(img_path, dt_annot, gt_annot, start,
+                triggered_frame, f1 = pipeline(img_path, dt_annot, gt_annot, profile_end + 1,
                                                end, csvf, image_resolution,
                                                frame_rate, frame_difference_thresh, 
                                                tracking_error_thresh, False)
@@ -160,16 +164,16 @@ def main():
                       str(f1) + ',' + str(fps/frame_rate) + '\n')
                 print("Finished testing...")
 
-        test_relative_fps_list = [x/frame_rate for x in test_fps_list]
-        if test_relative_fps_list and test_f1_list:
-            plt.scatter(test_relative_fps_list, test_f1_list, label=video_type)
-    plt.xlabel("GPU Processing time")
-    plt.ylabel("Accuracy")
-    plt.xlim(0, 1)
-    plt.ylim(0, 1)
-    plt.title("Glimpse Motivation")
-    plt.legend()
-    plt.savefig("/home/zxxia/figs/glimpse/glimpse_motivation.png")
+            # test_relative_fps_list = [x/frame_rate for x in test_fps_list]
+            # if test_relative_fps_list and test_f1_list:
+            #     plt.scatter(test_relative_fps_list, test_f1_list, label=video_type)
+    # plt.xlabel("GPU Processing time")
+    # plt.ylabel("Accuracy")
+    # plt.xlim(0, 1)
+    # plt.ylim(0, 1)
+    # plt.title("Glimpse Motivation")
+    # plt.legend()
+    # plt.savefig("/home/zxxia/figs/glimpse/glimpse_motivation.png")
     #plt.clf()
     #plt.show()
 

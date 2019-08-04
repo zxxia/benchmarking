@@ -11,16 +11,19 @@ flags = tf.app.flags
 flags.DEFINE_string('dataset', '', 'Dataset name.')
 # flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
 # flags.DEFINE_string('resol','','Image resolution.')
-flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
-flags.DEFINE_string('resize_resol',None,'Image resolution after resizing.')
+#flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
+flags.DEFINE_string('resize_resol','original','Image resolution after resizing.')
 flags.DEFINE_string('path', None, 'Data path.')
+flags.DEFINE_string('quality_parameter', 'original', 'Quality Parameter')
 
 FLAGS = flags.FLAGS
 
 
-resol_dict = {'360p': [480,360],
-        '480p': [640, 480],
-        '540p': [960, 540]}
+resol_dict = {'360p': [640,360],
+              '480p': [854, 480],
+              '540p': [960, 540],
+              '576p': [1024, 576],
+              '720p': [1280, 720],}
 
 
 def create_tf_example(image, image_dir, include_masks=False):
@@ -29,7 +32,7 @@ def create_tf_example(image, image_dir, include_masks=False):
   filename = image['filename'] # Filename of the image. Empty if image is not from file
   full_path = os.path.join(image_dir, filename)
 
-  if FLAGS.resize:
+  if FLAGS.resize_resol != 'original':
     resize_resol = resol_dict[FLAGS.resize_resol]
     height = resize_resol[1]
     width = resize_resol[0]
@@ -58,27 +61,34 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 def main(_):
   path =  FLAGS.path
+  assert FLAGS.dataset is not None
   output_path = path + FLAGS.dataset + '/profile/'
 
   metadata = load_metadata(path + FLAGS.dataset + '/metadata.json')
 
-  if FLAGS.resize:
-    data_path = path + FLAGS.dataset  + '/' + FLAGS.resize_resol + '/'
+  if FLAGS.resize_resol != 'original':
+    if FLAGS.quality_parameter != 'original':
+      data_path = path + FLAGS.dataset  + '/' + FLAGS.resize_resol + '/' + \
+                  'qp' + FLAGS.quality_parameter + '/'
+    else:
+      data_path = path + FLAGS.dataset  + '/' + FLAGS.resize_resol + '/'
     output_file = data_path + '/profile/input_' + FLAGS.resize_resol + '.record'
   else:
-    data_path = path + FLAGS.dataset 
-    output_file = output_path + '/input.record'
+    if FLAGS.quality_parameter != 'original':
+      data_path = path + FLAGS.dataset + '/qp' + FLAGS.quality_parameter + '/' 
+    else:
+      data_path = path + FLAGS.dataset 
+    output_file = data_path + '/profile/input.record'
 
   if not os.path.exists(output_path):
     os.mkdir(output_path)
 
   writer = tf.python_io.TFRecordWriter(output_file)
-  #resol_str = FLAGS.resol
 
-  img_resolution = metadata['resolution'] #[int(x) for x in resol_str.split(',')]
+  img_resolution = metadata['resolution']
 
 
-  for index in range(1, metadata['frame count']):#FLAGS.frame_count):#38371):
+  for index in range(1, 9000):#metadata['frame count'] + 1):
     image = {}
     image['height'] = img_resolution[1]
     image['width'] = img_resolution[0]

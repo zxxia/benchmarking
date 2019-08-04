@@ -2,48 +2,39 @@
 import cv2
 import os
 from absl import app, flags 
-from my_utils import load_metadata
-# target_size = (640,480)
-
+from my_utils import load_metadata, create_dir
 
 
 FLAGS = flags.FLAGS
-
 flags.DEFINE_string('dataset', '', 'Dataset name.')
 flags.DEFINE_string('resize_resol','360p','Image resolution after resizing.')
-#flags.DEFINE_integer('frame_count', 0, 'Total number of frames.')
 flags.DEFINE_string('path', None, 'Data path.')
 
-resol_dict = {'360p': (480,360),
-              '480p': (640,480),
+resol_dict = {'360p': (640,360),
+              '480p': (854,480),
               '540p': (960,540),
+              '576p': (1024,576),
+              '720p': (1280, 720)
              }
 
 def resize_video(video_in, video_out, target_size):
-    cmd = "ffmpeg -i {} -vf scale={} {}".format(video_in, 
-                                                target_size, 
-                                                video_out)
+    cmd = "ffmpeg -y -i {} -hide_banner -vf scale={} {}".format(video_in, 
+                                                                target_size, 
+                                                                video_out)
     print(cmd)
     os.system(cmd)
 
 def extract_frames(video, output_path):
-    cmd = "ffmpeg -i {} {}%06d.jpg -hide_banner".format(video, output_path)
+    cmd = "ffmpeg -y -i {} {}%06d.jpg -hide_banner".format(video, output_path)
     print(cmd)
     os.system(cmd)
 
-def create_dir(path):
-    if not os.path.exists(path):
-        print('create path ', path)
-        os.mkdir(path)
-    else:
-        print(path, 'already exists!')
-
-
 def main(argv):
     dataset = FLAGS.dataset
-    #num_of_frames = FLAGS.frame_count 
     path = FLAGS.path
     resol_name = FLAGS.resize_resol
+    if resol_name == 'original':
+        return
     target_size = resol_dict[resol_name]
     resized_path = path + dataset + '/' + resol_name + '/'
     metadata = load_metadata(path + dataset + '/metadata.json')
@@ -52,18 +43,6 @@ def main(argv):
     create_dir(resized_path)
     create_dir(resized_path + 'profile/')
 
-    # Old method to resize videos and frames 
-    # img_path = path + dataset + '/images/'
-    # Directly resize frames - Deprecated
-    # for i in range(1, num_of_frames + 1):
-    # in_img = img_path + format(i, '06d') + '.jpg'
-    # out_img = resized_path + format(i, '06d') + '.jpg'
-    # resize_img(in_img, out_img, 
-    # str(target_size[0]) + ':'+str(target_size[1]))
-    # img = cv2.imread(img_path + format(i, '06d') + '.jpg')
-    # new_img = cv2.resize(img, target_size)
-    # cv2.imwrite(resized_path + format(i, '06d') + '.jpg', new_img)
-    
     # resize the video
     orig_video = path + dataset + '/' + dataset + '.mp4'
     resized_video = resized_path + dataset + '_' + resol_name + '.mp4'
@@ -97,10 +76,6 @@ def main(argv):
                     box[3] *= y_scale
                     new_boxes.append(' '.join([str(int(x)) for x in box]))
                 f.write(line_list[0] + ',' + ';'.join(new_boxes) + '\n')
-
-
-
-
 
 if __name__ == '__main__':
     app.run(main)

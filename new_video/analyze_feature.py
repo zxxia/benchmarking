@@ -9,15 +9,22 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 import my_utils
 import pdb
-from statistics import median
+from scipy import stats
+from sklearn import preprocessing 
+import re
+from awstream.awstream import compress_images_to_video
 
-PATH = '/data/zxxia/videos/'
+PATH = '/mnt/data/zhujun/dataset/Youtube/' 
 #para_list = ['num_of_object', 'object_area', 'arrival_rate', 'velocity',
 #             'total_object_area'] 
 
-VIDEOS = sorted(['traffic', 'reckless_driving','motor', 'jp_hw', 'russia', 'tw_road', 
-          'tw_under_bridge', 'highway_normal_traffic', 'highway_no_traffic',
-          'tw', 'tw1', 'jp', 'russia', 'russia1','drift', 'park'])
+VIDEOS = sorted(['walking',  'highway', 'crossroad2', 
+                'crossroad', 'crossroad3', 'crossroad4',  
+                'driving1','reckless_driving', 'driving2','traffic',  'jp_hw', 'russia', 
+                'tw_road', 'tw_under_bridge', 'highway_normal_traffic', 
+                 'tw', 'tw1', 'jp', 'russia1', 'drift', 'motorway',
+                'park', 'nyc', 'lane_split',  'driving_downtown', 'block', 'block1'])
+CHUNK_LENGTH = 2*60 # seconds
 
 def sample(v, sample_rate):
     return v[::sample_rate]
@@ -77,74 +84,166 @@ def read_para(para_file):
                     frame_with_obj_cnt += 1
     except:
         print("File does not exist")
-    return num_of_object, object_area, arrival_rate, velocity, total_object_area, frame_with_obj_cnt
+    return num_of_object, object_area, arrival_rate, velocity, \
+           total_object_area, frame_with_obj_cnt
 
 def parse_feature_line(line):
     features = dict()
-    frame_id, obj_cnt, obj_areas, arrival_rate, velocities, tot_obj_area, \
-    obj_types, dominant_type = line.strip().split(',')
+    frame_id, obj_cnt, obj_area, arrival_rate, velocity, tot_obj_area, \
+    obj_type,_ = line.strip().split(',')
+    # , dominant_type
     if frame_id == '':
-        features['frame id'] = 0
+        frame_id = 0
     else: 
-        features['frame id'] = int(frame_id)
-
+        frame_id = int(frame_id)
     if obj_cnt == '':
-        features['object count'] = 0
+        obj_cnt = 0
     else:
-        features['object count'] = int(obj_cnt)
-    if obj_areas == '':
-        features['object area'] = []
+        obj_cnt = int(obj_cnt)
+    if obj_area == '':
+        obj_area = []
     else:
-        features['object area'] = [float(x) for x in obj_areas.split(' ')]
+        obj_area = [float(x) for x in obj_area.split(' ')]
 
     if arrival_rate == '':
-        features['arrival rate'] = 0
+        arrival_rate = 0
     else:
-        features['arrival rate'] = int(arrival_rate)
-    if velocities == '':
-        features['velocity'] = []
+        arrival_rate = int(arrival_rate)
+    if velocity == '':
+        velocity = []
     else:
-        features['velocity'] =  [float(x) for x in velocities.split(' ')]
-
+        velocity =  nonzero([float(x) for x in velocity.split(' ')])
     if tot_obj_area == '':
-        features['total object area'] = 0
+        tot_obj_area = 0
     else:
-        features['total object area'] = float(tot_obj_area)
-                
-    features['object types'] = obj_types.split(' ')
-    features['dominant type'] = dominant_type
+        tot_obj_area = float(tot_obj_area)
+    if obj_type == '[]':
+        obj_type = []
+    else:
+        obj_type = obj_type.split(' ')
+    # if '3' not in features['object types'] or '8' not in features['object types']:
+    #    print(features['object types'])
+    #features['dominant type'] = dominant_type
 
-    return features
+    return frame_id, obj_cnt, obj_area, arrival_rate, \
+           velocity, tot_obj_area, obj_type
 
-
-def parse_feature_file(filename, frame_rate, interval):
-    interval_frame_cnt = int(frame_rate * interval)
-    video_features = list() 
-
+def parse_feature_file(filename, frame_rate, video_frame_count, chunk_length):
+    print(filename)
+    chunk_frame_cnt = int(frame_rate * chunk_length)
+    chunk_cnt = video_frame_count // chunk_frame_cnt 
+    chunk_idx = 0 
+    obj_cnt_profile, arrival_rate_profile, obj_area_profile, \
+    obj_velocity_profile = [], [], [], []
+    obj_cnt_test, arrival_rate_test, obj_area_test, \
+    obj_velocity_test = [], [], [], []
+   
+    video_features = list()
     chunk_features = defaultdict(list)
     frame_w_obj = 0
     with open(filename, 'r') as f:
+    
+        find = re.compile(r"(?:(?!profile).)*")
+        dataset_path = re.search(find, filename).group(0)
+        metadata = my_utils.load_metadata(dataset_path + 'metadata.json')
         f.readline() # drop header 
-        for line in f:
-            #pdb.set_trace()
-            features = parse_feature_line(line)
-            if features['frame id'] % (interval_frame_cnt + 1) == 0:
-                chunk_features['frame w/ obj percent'] = frame_w_obj / interval_frame_cnt
-                video_features.append(chunk_features) 
-                chunk_features = defaultdict(list)
-                frame_w_obj = 0
+        for i, line in enumerate(f):
+            frame_id, obj_cnt, obj_area, arrival_rate, \
+            velocity, tot_obj_area, obj_type = parse_feature_line(line)
+           
+            if frame_id > (chunk_idx + 1) * chunk_frame_cnt:
+                
+                #compress_images_to_video(dataset_path, 
+                #                         chunk_idx * chunk_frame_cnt + 30 * frame_rate + 1, 
+                #                         chunk_frame_cnt - 30 * frame_rate,
+                #                         metadata['frame rate'],
+                #                         str(metadata['resolution'][0]) + 'x' + str(metadata['resolution'][1]),
+                #                         25,
+                #                         'tmp.mp4')
+                #video_size1 = os.path.getsize('tmp.mp4')
+                #os.remove("tmp.mp4")
+                #compress_images_to_video(dataset_path+'540p', 
+                #                         chunk_idx * chunk_frame_cnt + 30 * frame_rate + 1, 
+                #                         chunk_frame_cnt - 30 * frame_rate,
+                #                         metadata['frame rate'],
+                #                         '960x540',
+                #                         25,
+                #                         'tmp.mp4')
 
-            chunk_features['object count'].append(features['object count'])
-            chunk_features['object area'].extend(features['object area'])
-            chunk_features['arrival rate'].append(features['arrival rate'])
-            chunk_features['velocity'].extend(features['velocity'])
-            chunk_features['total object area'].append(features['total object area'])
-            chunk_features['object types'].extend(features['object types'])
-            chunk_features['dominant type'].append(features['dominant type'])
-            if '3' in features['object types'] or '8' in features['object types']:
+                #video_size2 = os.path.getsize('tmp.mp4')
+                #os.remove("tmp.mp4")
+                #chunk_features['video size ratio'] = video_size1/video_size2
+
+
+                chunk_features['object count similarity'] = stats.ks_2samp(obj_cnt_profile, obj_cnt_test)[0] 
+                chunk_features['object area similarity'] = stats.ks_2samp(obj_area_profile, obj_area_test)[0] 
+                if not obj_velocity_profile or not obj_velocity_test:
+                    chunk_features['object velocity similarity'] = 1
+                else:
+                    chunk_features['object velocity similarity'] = stats.ks_2samp(obj_velocity_profile, obj_velocity_test)[0] 
+                chunk_features['arrival rate similarity'] = stats.ks_2samp(arrival_rate_profile, arrival_rate_test)[0] 
+                chunk_features['frame w/ obj percent'] = frame_w_obj / chunk_frame_cnt
+                assert chunk_features['frame w/ obj percent']<=1
+                video_features.append(chunk_features) 
+                chunk_idx += 1
+                frame_w_obj = 0
+                chunk_features = defaultdict(list)
+                #print(frame_id, chunk_idx, chunk_cnt)
+                obj_cnt_profile, arrival_rate_profile, obj_area_profile, \
+                obj_velocity_profile = [], [], [], []
+                obj_cnt_test, arrival_rate_test, obj_area_test, \
+                obj_velocity_test = [], [], [], []
+
+
+            chunk_features['object count'].append(obj_cnt)
+            chunk_features['object area'].extend(obj_area)
+            chunk_features['arrival rate'].append(arrival_rate)
+            chunk_features['velocity'].extend(velocity)
+            chunk_features['total object area'].append(tot_obj_area)
+            chunk_features['object types'].extend(obj_type)
+            if '3' in obj_type or '8' in obj_type:
                 frame_w_obj += 1
-        chunk_features['frame w/ obj percent'] = frame_w_obj / features['frame id'] % (interval_frame_cnt + 1)
-        video_features.append(chunk_features)
+
+            if frame_id <= (chunk_idx)* chunk_frame_cnt + 30 * frame_rate:
+                obj_cnt_profile.append(obj_cnt)
+                arrival_rate_profile.append(arrival_rate)
+                obj_area_profile.extend(obj_area)
+                obj_velocity_profile.extend(velocity)
+            else:
+                obj_cnt_test.append(obj_cnt)
+                arrival_rate_test.append(arrival_rate)
+                obj_area_test.extend(obj_area)
+                obj_velocity_test.extend(velocity)
+
+            
+        if chunk_idx < chunk_cnt:
+            # compress_images_to_video(dataset_path, 
+            #                          chunk_idx * chunk_frame_cnt + 30 * frame_rate + 1, 
+            #                          chunk_frame_cnt - 30 * frame_rate,
+            #                          metadata['frame rate'],
+            #                          str(metadata['resolution'][0]) + 'x' + str(metadata['resolution'][1]),
+            #                          25,
+            #                          'tmp.mp4')
+            # video_size1 = os.path.getsize('tmp.mp4')
+            # os.remove("tmp.mp4")
+            # compress_images_to_video(dataset_path+'540p', 
+            #                          chunk_idx * chunk_frame_cnt + 30 * frame_rate + 1, 
+            #                          chunk_frame_cnt - 30 * frame_rate,
+            #                          metadata['frame rate'],
+            #                          '960x540',
+            #                          25,
+            #                          'tmp.mp4')
+
+            # video_size2 = os.path.getsize('tmp.mp4')
+            #os.remove("tmp.mp4")
+            #chunk_features['video size ratio'] = video_size1/video_size2
+            chunk_features['object count similarity'] = stats.ks_2samp(obj_cnt_profile, obj_cnt_test)[0] 
+            chunk_features['object area similarity'] = stats.ks_2samp(obj_area_profile, obj_area_test)[0] 
+            chunk_features['object velocity similarity'] = stats.ks_2samp(obj_velocity_profile, obj_velocity_test)[0] 
+            chunk_features['arrival rate similarity'] = stats.ks_2samp(arrival_rate_profile, arrival_rate_test)[0] 
+            chunk_features['frame w/ obj percent'] = frame_w_obj / chunk_frame_cnt
+            assert chunk_features['frame w/ obj percent'] <= 1
+            video_features.append(chunk_features)
                      
     return video_features
 
@@ -185,46 +284,79 @@ def main():
     percent_frame_w_obj = []
     velocities = []
     obj_areas = []
-    with open('stats.csv', 'w') as f:
-        f.write('video name,num of objects,std,object area,std, '\
-                'arrival rate,std,velocity,std,total area,std,frame w/ obj percent\n')
+    with open('features.csv', 'w') as f:
+        f.write('video name,object count,object count std,object area,'\
+                 'object area std,arrival rate,arrival rate std,object velocity,'\
+                 'object velocity std,total area,total area std,'\
+                 'frame with object percent,object count similarity,'\
+                 'object area similarity,arrival rate similarity,'\
+                 'object velocity similarity,video size ratio\n')
         
         for video_name in VIDEOS:
             metadata = my_utils.load_metadata(PATH + video_name + '/metadata.json')
             frame_cnt = metadata['frame count']
             frame_rate = metadata['frame rate']
             #     dataset_name = os.path.basename(para_file).replace('Video_features_', '').replace('.csv','')
-            para_file = PATH + video_name + "/profile/Video_features_" + video_name+'.csv'
-            features = parse_feature_file(para_file, frame_rate, 30)
+            para_file = PATH + video_name + "/profile/Video_features_" + video_name +".csv"
+            #pdb.set_trace()
+            features = parse_feature_file(para_file, frame_rate, frame_cnt-1, 
+                                          CHUNK_LENGTH)
             for i, ft in enumerate(features):
-                f.write(video_name + '_' + str(i) +',' + 
-                        str(median(ft['object count'])) + ',' + 
-                        str(np.std(ft['object count'])) + ',' +
-                        str(median(ft['object area'])) + ',' + 
-                        str(np.std(ft['object area'])) + ',' +
-                        str(median(ft['arrival rate'])) + ',' + 
-                        str(np.std(ft['arrival rate'])) + ',' + 
-                        str(median(ft['velocity'])) + ',' + 
-                        str(np.std(ft['velocity'])) + ',' + 
-                        str(median(ft['total object area'])) + ','+
-                        str(np.std(ft['total object area'])) + ','+
-                        str(ft['frame w/ obj percent']) + '\n')
+                if ft['object count'] and ft['object area'] and \
+                   ft['arrival rate'] and ft['velocity'] and \
+                   ft['total object area'] and ft['frame w/ obj percent'] >= 0:
+
+                    #x, y = my_utils.CDF(nonzero(ft['object area']))
+                    #plt.plot(x, y, label=video_name)
+                                    
+                    #x, bins, p = plt.hist(nonzero(ft['object area']), bins=500, alpha=0.6, density=True)
+                    #for item in p:
+                    #    item.set_height(item.get_height()/sum(x))
+                    #plt.ylim([0,1])
+                    #plt.xlim([0,0.05])
+                    #plt.show()
+                    f.write(','.join([video_name +'_'+ str(i), 
+                            str(np.median(nonzero(ft['object count']))), 
+                            str(np.std(nonzero(ft['object count']))), 
+                            str(np.mean(nonzero(ft['object area']))), 
+                            str(np.std(nonzero(ft['object area']))),
+                            str(np.median(nonzero(ft['arrival rate']))), 
+                            str(np.std(nonzero(ft['arrival rate']))), 
+                            str(np.median(ft['velocity'])), 
+                            str(np.std(ft['velocity'])), 
+                            str(np.median(nonzero(ft['total object area']))),
+                            str(np.std(nonzero(ft['total object area']))),
+                            str(ft['frame w/ obj percent']),
+                            str(ft['object count similarity']), 
+                            str(ft['object area similarity']),
+                            str(ft['arrival rate similarity']),
+                            str(ft['object velocity similarity']), 
+                            str(ft['video size ratio']) + '\n']))
+        #axes = plt.gca()
+        #axes.set_xlim([0, 0.2])
+        #axes.set_ylim([0, 1.1])
+
+        #plt.legend(loc='lower right')
+        #plt.title("Object Area CDF")
+        #plt.xlabel("Object Area")
+        #plt.ylabel("CDF")
+        #plt.show()
 
    
-            print(para_file)
-            num_of_object, object_area, arrival_rate, velocity, total_object_area, frame_with_obj_cnt = read_para(para_file)
-            velocities.append(nonzero(velocity))
-            obj_areas.append(object_area)
+            #print(para_file)
+            #num_of_object, object_area, arrival_rate, velocity, total_object_area, frame_with_obj_cnt = read_para(para_file)
+            #velocities.append(nonzero(velocity))
+            #obj_areas.append(object_area)
             #plot_cdf(velocity) 
             #print(type(velocity))
             #print(frame_with_obj_cnt)
-            percent_frame_w_obj.append(float(frame_with_obj_cnt)/float(frame_cnt))
+            #percent_frame_w_obj.append(float(frame_with_obj_cnt)/float(frame_cnt))
 
-            quants.num_of_object_quantile[video_name] = compute_quantile(num_of_object)
-            quants.object_area_quantile[video_name] = compute_quantile(object_area)
-            quants.arrival_rate_quantile[video_name] = compute_quantile(arrival_rate)
-            quants.velocity_quantile[video_name] = compute_quantile(velocity)                      
-            quants.total_object_area_quantile[video_name] = compute_quantile(total_object_area)
+            #quants.num_of_object_quantile[video_name] = compute_quantile(num_of_object)
+            #quants.object_area_quantile[video_name] = compute_quantile(object_area)
+            #quants.arrival_rate_quantile[video_name] = compute_quantile(arrival_rate)
+            #quants.velocity_quantile[video_name] = compute_quantile(velocity)                      
+            #quants.total_object_area_quantile[video_name] = compute_quantile(total_object_area)
 
             # f.write(video_name + ',' + 
             #         str(quants.num_of_object_quantile[video_name][2]) + ',' + 
@@ -245,7 +377,7 @@ def main():
 #        axes.set_ylim([0, 1.1])
 #    plt.legend(loc='lower right')
 #    plt.title("Object Velocity CDF")
-#    plt.xlabel("Object Velocity")
+#    plt.xlabel("Object Velocity")#
 #    plt.ylabel("CDF")
 #    plt.show()
 #
@@ -262,5 +394,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
-

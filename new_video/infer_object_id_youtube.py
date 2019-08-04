@@ -14,15 +14,9 @@ FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', None, 'The name of youtube video.')
 flags.DEFINE_string('path', None, 'Data path.')
 # flags.DEFINE_string('resol', None, 'Video resolution.')
-flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
-flags.DEFINE_string('resize_resol',None,'Image resolution after resizing.')
-
-# path = "/Users/zhujunxiao/Desktop/benchmarking/New_Dataset/"
-# path = "/Users/zhujunxiao/Desktop/test_gt/"
-
-# path = "/local/zhujun/dataset/Youtube/"
-
-
+# flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
+flags.DEFINE_string('resize_resol', 'original', 'Image resolution after resizing.')
+flags.DEFINE_string('quality_parameter','original','Quality parameter')
 
 def tag_object(all_filename, frame_to_object, output_folder):
     output_file = output_folder + 'Parsed_gt_FasterRCNN_COCO.csv'
@@ -230,9 +224,11 @@ def read_annot(annot_path, height_thresh):
     return all_filename, frame_to_object
 
 def main(argv):
-    resol_dict = {'360p': [480,360],
-                  '480p': [640, 480],
-                  '540p': [960, 540]}
+    resol_dict = {'360p': [640,360],
+                  '480p': [854, 480],
+                  '540p': [960, 540],
+                  '576p': [1024, 576],
+                  '720p': [1280, 720],}
 
     path = FLAGS.path
 
@@ -241,34 +237,32 @@ def main(argv):
     metadata = load_metadata(path + video_index + '/metadata.json')
 
     frame_rate = metadata['frame rate']
-    # if 'highway' in video_index:
-    #     frame_rate = 25
-    # else:
-    #     frame_rate = 30
 
-
-    if FLAGS.resize:
+    if FLAGS.resize_resol != 'original':
         image_resolution = resol_dict[FLAGS.resize_resol]
-        annot_path = path + video_index + '/' + FLAGS.resize_resol + '/profile/gt_FasterRCNN_COCO_'+ \
-                                  FLAGS.resize_resol + '.csv'
-        print(annot_path)
-        output_folder = path + video_index + '/' + FLAGS.resize_resol  + '/profile/'
+        if FLAGS.quality_parameter != 'original':
+            annot_path = path + video_index + '/' + FLAGS.resize_resol + '/qp' \
+                         + FLAGS.quality_parameter + '/profile/'
+        else:
+            annot_path = path + video_index + '/' + FLAGS.resize_resol + '/profile/'
+        annot_file = annot_path + 'gt_FasterRCNN_COCO_'+ FLAGS.resize_resol + '.csv'
     else:
         image_resolution = metadata['resolution'] #[int(x) for x in FLAGS.resol.split(',')]#image_resolution_dict[video_index]
-        annot_path =  path + video_index + '/profile/gt_FasterRCNN_COCO.csv'
-        print(annot_path)
-        output_folder = path + video_index + '/profile/'
-
-
-
+        if FLAGS.quality_parameter != 'original':
+            annot_path =  path + video_index + '/qp' + FLAGS.quality_parameter \
+                          + '/profile/' 
+        else:
+            annot_path =  path + video_index + '/profile/'
+        annot_file = annot_path + 'gt_FasterRCNN_COCO.csv'
+    print(annot_path)
 
     height_thresh = image_resolution[1]//20 # remove objects that are too small
-    all_filename, frame_to_object = read_annot(annot_path, height_thresh)
+    all_filename, frame_to_object = read_annot(annot_file, height_thresh)
     print('Done loading annot.')
     new_frame_to_object = smooth_annot(all_filename, frame_to_object)
 
     print('Done smoothing annot.') 
-    tag_object(all_filename, new_frame_to_object, output_folder)
+    tag_object(all_filename, new_frame_to_object, annot_path)
 
 
 

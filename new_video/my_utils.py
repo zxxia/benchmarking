@@ -10,6 +10,14 @@ from collections import defaultdict, Counter
 
 from keras.applications.resnet50 import preprocess_input
 
+def create_dir(path):
+    if not os.path.exists(path):
+        print('create path ', path)
+        os.mkdir(path)
+    else:
+        print(path, 'already exists!')
+
+
 def load_metadata(filename):
     with open(filename) as f:
         metadata = json.load(f)

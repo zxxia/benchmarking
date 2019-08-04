@@ -61,10 +61,10 @@ tf.flags.DEFINE_boolean('discard_image_pixels', True,
                         ' images (e.g. when computing evaluation measures).')
 tf.flags.DEFINE_string('dataset',None,
                         'Dataset name')
-tf.flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
+#tf.flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
 tf.flags.DEFINE_string('path', None, 'Data path.')
-tf.flags.DEFINE_string('resize_resol',None,'Image resolution after resizing.')
-
+tf.flags.DEFINE_string('resize_resol','original','Image resolution after resizing.')
+tf.flags.DEFINE_string('quality_parameter', 'original', 'Quality Parameter.')
 
 FLAGS = tf.flags.FLAGS
 
@@ -75,20 +75,24 @@ def main(_):
   os.environ["CUDA_VISIBLE_DEVICES"]=FLAGS.gpu
   all_time = []
   tf.logging.set_verbosity(tf.logging.INFO)
-  # data_path = '/home/zhujun/video_analytics_pipelines/dataset/Youtube/' + \
-  #              FLAGS.dataset + '/profile/'
-  data_path = FLAGS.path + FLAGS.dataset + '/profile/'
-  print(data_path)
-  if FLAGS.resize:
-    data_path = FLAGS.path + FLAGS.dataset + '/' + FLAGS.resize_resol + '/profile/'
+
+  if FLAGS.resize_resol != 'original':
+    if FLAGS.quality_parameter != 'original':
+      data_path = FLAGS.path + FLAGS.dataset + '/' + FLAGS.resize_resol + \
+                  '/qp' + FLAGS.quality_parameter + '/profile/'
+    else:
+      data_path = FLAGS.path + FLAGS.dataset + '/' + FLAGS.resize_resol + '/profile/'
     FLAGS.input_tfrecord_paths = data_path + 'input_' + FLAGS.resize_resol + '.record'
     FLAGS.output_tfrecord_path = data_path + 'gt_FasterRCNN_COCO_' + \
                       FLAGS.resize_resol + '.record'
     FLAGS.output_time_path = data_path + 'full_model_time_FasterRCNN_COCO' + \
                       FLAGS.resize_resol + '.csv'
-    FLAGS.gt_csv = data_path + 'gt_FasterRCNN_COCO_'+ \
-                      FLAGS.resize_resol + '.csv'
+    FLAGS.gt_csv = data_path + 'gt_FasterRCNN_COCO_' + FLAGS.resize_resol + '.csv'
   else:
+    if FLAGS.quality_parameter != 'original':
+      data_path = FLAGS.path + FLAGS.dataset + '/qp' + FLAGS.quality_parameter + '/profile/'
+    else:
+      data_path = FLAGS.path + FLAGS.dataset + '/profile/'
     FLAGS.input_tfrecord_paths = data_path + 'input.record'
     FLAGS.output_tfrecord_path = data_path + 'gt_FasterRCNN_COCO.record'
     FLAGS.output_time_path = data_path + 'full_model_time_FasterRCNN_COCO.csv'
