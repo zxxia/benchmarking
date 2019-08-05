@@ -3,7 +3,8 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-from my_utils import IoU, interpolation, load_metadata, compute_f1
+from utils.model_utils import load_full_model_detection, eval_single_image
+from utils.utils import IoU, interpolation, load_metadata, compute_f1
 
 # path where video and ground truth file is saved 
 data_path = '/mnt/data/zhujun/new_video/'
@@ -14,16 +15,12 @@ chunk_length = 30 # chunk a long video into 30-second short videos
 # Change sampling rate to change video frame rate
 temporal_sampling_list = [20,15,10,5,4,3,2.5,2,1.8,1.5,1.2,1]
 iou_thresh = 0.5
-# dataset_list = ['highway_no_traffic', 'jp', 'drift']
 dataset_list = sorted(['traffic', 'reckless_driving','motor', 'jp_hw', 'russia', 
                  'tw_road', 'tw_under_bridge', 'highway_normal_traffic', 
                  'highway_no_traffic', 'tw', 'tw1', 'jp', 'russia1', 'drift', 
                  'park', 'nyc', 'lane_split', 'walking',  'highway', 'crossroad2', 
                  'crossroad', 'crossroad3', 'crossroad4', 'driving1', 'driving2',])
 
-# sorted(['traffic', 'reckless_driving','motor', 'jp_hw', 'russia', 'tw_road', 
-#           'tw_under_bridge', 'highway_normal_traffic', 'highway_no_traffic',
-#           'tw', 'tw1', 'jp', 'russia1','drift', 'park'])
 
 # color_dict =  {
 # 'traffic' : 'r', ]
@@ -32,96 +29,6 @@ dataset_list = sorted(['traffic', 'reckless_driving','motor', 'jp_hw', 'russia',
 # 'reckless_driving' : 'black', 
 # 'motor' : 'yellow',
 # }
-
-def load_full_model_detection(fullmodel_detection_path):#, height):
-    full_model_dt = {}
-    with open(fullmodel_detection_path, 'r') as f:
-        for line in f:
-            line_list = line.strip().split(',')
-            # real image index starts from 1
-            img_index = int(line_list[0].split('.')[0]) #- 1
-            if not line_list[1]: # no detected object
-                gt_boxes_final = []
-            else:
-                gt_boxes_final = []
-                gt_boxes = line_list[1].split(';')
-                for gt_box in gt_boxes:
-                    # t is object type
-                    tmp = [int(i) for i in gt_box.split(' ')]
-                    assert len(tmp) == 6, print(tmp, line)
-                    x = tmp[0]
-                    y = tmp[1]
-                    w = tmp[2]
-                    h = tmp[3]
-                    t = tmp[4]
-                    if t == 3 or t == 8: # choose car and truch objects
-                        # if h > height/float(20): # ignore objects that are too small
-                        gt_boxes_final.append([x, y, x+w, y+h, 3])
-            full_model_dt[img_index] = gt_boxes_final
-            
-    return full_model_dt, img_index
-
-def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
-    gt_idx_thr = []
-    pred_idx_thr = []
-    ious = []
-    for ipb, pred_box in enumerate(pred_boxes):
-        for igb, gt_box in enumerate(gt_boxes):
-            iou = IoU(pred_box, gt_box)
-            if iou > iou_thresh:
-                gt_idx_thr.append(igb)
-                pred_idx_thr.append(ipb)
-                ious.append(iou)
-
-    args_desc = np.argsort(ious)[::-1]
-    if len(args_desc) == 0:
-        # No matches
-        tp = 0
-        fp = len(pred_boxes)
-        fn = len(gt_boxes)
-    else:
-        gt_match_idx = []
-        pred_match_idx = []
-        for idx in args_desc:
-            gt_idx = gt_idx_thr[idx]
-            pr_idx = pred_idx_thr[idx]
-            # If the boxes are unmatched, add them to matches
-            if (gt_idx not in gt_match_idx) and (pr_idx not in pred_match_idx):
-                gt_match_idx.append(gt_idx)
-                pred_match_idx.append(pr_idx)
-        tp = len(gt_match_idx)
-        fp = len(pred_boxes) - len(pred_match_idx)
-        fn = len(gt_boxes) - len(gt_match_idx)
-    return tp, fp, fn
-
-def eval_single_image(gt_boxes, dt_boxes, iou_thresh=0.5):
-    tp_dict = {}
-    fp_dict = {}
-    fn_dict = {}
-    gt = defaultdict(list)  
-    dt = defaultdict(list)
-    for box in gt_boxes:
-        gt[box[4]].append(box[0:4])
-    for box in dt_boxes:
-        dt[box[4]].append(box[0:4])
-
-    for t in gt.keys():
-        current_gt = gt[t]
-        current_dt = dt[t]
-        tp_dict[t], fp_dict[t], fn_dict[t] = eval_single_image_single_type(
-                                             current_gt, current_dt, iou_thresh)
-
-    tp = sum(tp_dict.values())
-    fp = sum(fp_dict.values())
-    fn = sum(fn_dict.values())
-    extra_t = [t for t in dt.keys() if t not in gt]
-    for t in extra_t:
-        print('extra type', t)
-        fp += len(dt[t])
-    #print(tp, fp, fn)
-    return tp, fp, fn
-
-
 
 
 def main():
