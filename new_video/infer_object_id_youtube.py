@@ -8,7 +8,7 @@ import numpy as np
 from PIL import Image
 from absl import app, flags 
 from collections import defaultdict, Counter
-from my_utils import nms, Most_Common, load_metadata
+from utils.utils import nms, Most_Common, load_metadata
 # from show_annot import show
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', None, 'The name of youtube video.')

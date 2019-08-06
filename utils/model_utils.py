@@ -2,6 +2,71 @@ from collections import defaultdict
 import numpy as np
 from utils.utils import IoU
 
+def nonnegative(num):
+    if num < 0:
+        return 0.0
+    return num
+
+def load_jackson_detection(fullmodel_detection_path):
+    full_model_dt = defaultdict(list)
+    with open(fullmodel_detection_path, 'r') as f:
+        f.readline()
+        for line in f:
+            img_idx, t, score, xmin, ymin, xmax, ymax = line.strip().split(',')
+            # real image index starts from 1
+            img_idx = int(img_idx) #- 1
+            xmin = nonnegative(float(xmin)) * 600
+            ymin = nonnegative(float(ymin)) * 400
+            xmax = nonnegative(float(xmax)) * 600
+            ymax = nonnegative(float(ymax)) * 400
+            # if not line_list[1]: # no detected object
+            #     gt_boxes_final = []
+            # else:
+            #     gt_boxes_final = []
+            #     for gt_box in gt_boxes:
+            #         # t is object type
+            #         tmp = [int(i) for i in gt_box.split(' ')]
+            #         assert len(tmp) == 6, print(tmp, line)
+            #         x = tmp[0]
+            #         y = tmp[1]
+            #         w = tmp[2]
+            #         h = tmp[3]
+            #         t = tmp[4]
+            #         #if t == 3 or t == 8: # choose car and truch objects
+            if (ymax-ymin) > 400/float(20) and (xmax - xmin)> 600/60: # ignore objects that are too small
+            #         gt_boxes_final.append([x, y, x+w, y+h, t])
+                full_model_dt[img_idx].append([xmin, ymin, xmax, ymax, t])
+            
+    return full_model_dt, img_idx
+
+def load_fastrcnn_detection(fullmodel_detection_path):#, height):
+    full_model_dt = {}
+    with open(fullmodel_detection_path, 'r') as f:
+        for line in f:
+            line_list = line.strip().split(',')
+            # real image index starts from 1
+            img_index = int(line_list[0].split('.')[0]) #- 1
+            if not line_list[1]: # no detected object
+                gt_boxes_final = []
+            else:
+                gt_boxes_final = []
+                gt_boxes = line_list[1].split(';')
+                for gt_box in gt_boxes:
+                    # t is object type
+                    tmp = [int(i) for i in gt_box.split(' ')]
+                    assert len(tmp) == 6, print(tmp, line)
+                    x = tmp[0]
+                    y = tmp[1]
+                    w = tmp[2]
+                    h = tmp[3]
+                    t = tmp[4]
+                    #if t == 3 or t == 8: # choose car and truch objects
+                        # if h > height/float(20): # ignore objects that are too small
+                    gt_boxes_final.append([x, y, x+w, y+h, t])
+            full_model_dt[img_index] = gt_boxes_final
+            
+    return full_model_dt, img_index
+
 def load_ssd_detection(fullmodel_detection_path):
     full_model_dt = {}
     gt = {}
@@ -22,7 +87,7 @@ def load_ssd_detection(fullmodel_detection_path):
                     # t is object type
                     [x, y, w, h, t] = [int(i) for i in dt_box.split(' ')]
                     if t == 1: # object is car, this depends on the task
-                        dt_boxes_final.append([x, y, x+w, y+h])
+                        dt_boxes_final.append([x, y, x+w, y+h, t])
 
             # load the ground truth
             if not line_list[2]:
@@ -34,7 +99,7 @@ def load_ssd_detection(fullmodel_detection_path):
                     # t is object type
                     [x, y, w, h, t] = [int(i) for i in gt_box.split(' ')]
                     if t == 1: # object is car, this depends on the task
-                        gt_boxes_final.append([x, y, x+w, y+h])                 
+                        gt_boxes_final.append([x, y, x+w, y+h, t])                 
             
             img_list.append(img_index)
             full_model_dt[img_index] = dt_boxes_final
@@ -126,7 +191,7 @@ def eval_single_image(gt_boxes, dt_boxes, iou_thresh=0.5):
     fn = sum(fn_dict.values())
     extra_t = [t for t in dt.keys() if t not in gt]
     for t in extra_t:
-        print('extra type', t)
+        # print('extra type', t)
         fp += len(dt[t])
     #print(tp, fp, fn)
     return tp, fp, fn

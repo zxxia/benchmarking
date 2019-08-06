@@ -2,48 +2,42 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import numpy as np
-from utils.model_utils import load_full_model_detection
+from utils.model_utils import load_jackson_detection
 from utils.utils import load_metadata
 from videostorm.profiler import profile, profile_eval
-PATH  = '/mnt/data/zhujun/dataset/Youtube/'
+import pdb
+
+
+PATH  = '/mnt/data/zhujun/benchmarking/noscope_data/'
 TEMPORAL_SAMPLING_LIST = [20,15,10,5,4,3,2.5,2,1.8,1.5,1.2,1]
 MODEL_LIST = ['FasterRCNN'] # MODEL_LIST = ['FasterRCNN','SSD']
-DATASET_LIST = ['motorway'] 
-# sorted(['traffic', 'jp_hw', 'russia', 'tw_road', 
-#            'tw_under_bridge', 'highway_normal_traffic', 'nyc', 'lane_split',
-#            'tw', 'tw1', 'jp', 'russia1','drift', 'park', 'walking',  'highway', 'crossroad2', 
-#                  'crossroad', 'crossroad3', 'crossroad4', 'driving1', 'driving2',
-#                  'motorway'])
+DATASET_LIST = ['jackson-town-square'] 
 
-# 'reckless_driving','motor','highway_no_traffic'
 TARGET_F1 = 0.9
 OFFSET = 0 # The time offset from the start of the video. Unit: seconds
 CHUNK_LENGTH = int(2*60) # A long video is chopped into chunks. Unit: second
 PROFILE_LENGTH = 30 # Profiling length within a chunk. Unit: second
 
 def main():
-    with open('videostorm_motivation_result_test.csv', 'w') as f:
+    with open('videostorm_jackson_coverage.csv', 'w') as f:
         f.write("video_name,frame_rate,f1\n")
         for dataset in DATASET_LIST:
             print("processing", dataset)
-            metadata = load_metadata(PATH + dataset + '/metadata.json')
-            # height = metadata['resolution'][1]
+            metadata = load_metadata('/home/zxxia/benchmarking/jackson_metadata.json')
             frame_rate = metadata['frame rate']
+            frame_cnt = metadata['frame count']
             
             # load fasterRCNN + full resolution + highest frame rate as ground truth
-            gt_file = PATH + dataset + '/profile/updated_gt_FasterRCNN_COCO.csv'    
-            gt, num_of_frames = load_full_model_detection(gt_file)
-            
-            # dt_file = path + dataset + '/profile/updated_gt_FasterRCNN_COCO.csv' 
-            # full_model_dt, num_of_frames = load_full_model_detection(dt_file)
-
-           
+            gt_file = PATH + 'jackson-town-square.csv'    
+            gt, num_of_frames = load_jackson_detection(gt_file)
+            # pdb.set_trace() 
             # Chop long videos into small chunks
             # Floor division drops the last sequence of frames which is not as
             # long as CHUNK_LENGTH
             profile_frame_cnt = PROFILE_LENGTH * frame_rate
             chunk_frame_cnt = CHUNK_LENGTH * frame_rate
-            num_of_chunks = (num_of_frames - OFFSET * frame_rate)//chunk_frame_cnt
+            num_of_chunks = (frame_cnt - OFFSET * frame_rate)//chunk_frame_cnt
+
             
             test_f1_list = list()
             test_fps_list = list()
@@ -60,8 +54,10 @@ def main():
                 profile_start_frame = start_frame
                 profile_end_frame = profile_start_frame + profile_frame_cnt
 
-                best_frame_rate = profile(gt, gt, profile_start_frame, 
-                                          profile_end_frame, frame_rate, 
+                best_frame_rate = profile(gt, gt, 
+                                          profile_start_frame, 
+                                          profile_end_frame, 
+                                          frame_rate,
                                           TEMPORAL_SAMPLING_LIST)
                 # test on the rest of the short video
                 best_sample_rate = frame_rate / best_frame_rate

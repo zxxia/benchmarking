@@ -5,38 +5,30 @@ import numpy as np
 from utils.model_utils import load_full_model_detection
 from utils.utils import load_metadata
 from videostorm.profiler import profile, profile_eval
-PATH  = '/mnt/data/zhujun/dataset/Youtube/'
+PATH  = '/mnt/data/zhujun/dataset/Youtube/canada_crossroad/'
 TEMPORAL_SAMPLING_LIST = [20,15,10,5,4,3,2.5,2,1.8,1.5,1.2,1]
 MODEL_LIST = ['FasterRCNN'] # MODEL_LIST = ['FasterRCNN','SSD']
-DATASET_LIST = ['motorway'] 
-# sorted(['traffic', 'jp_hw', 'russia', 'tw_road', 
-#            'tw_under_bridge', 'highway_normal_traffic', 'nyc', 'lane_split',
-#            'tw', 'tw1', 'jp', 'russia1','drift', 'park', 'walking',  'highway', 'crossroad2', 
-#                  'crossroad', 'crossroad3', 'crossroad4', 'driving1', 'driving2',
-#                  'motorway'])
-
-# 'reckless_driving','motor','highway_no_traffic'
+DATASET_LIST = ['08041754', '08041847', '08041951', '08042133', '08050938',
+                '08051137',] 
 TARGET_F1 = 0.9
 OFFSET = 0 # The time offset from the start of the video. Unit: seconds
 CHUNK_LENGTH = int(2*60) # A long video is chopped into chunks. Unit: second
 PROFILE_LENGTH = 30 # Profiling length within a chunk. Unit: second
 
 def main():
-    with open('videostorm_motivation_result_test.csv', 'w') as f:
+    with open('videostorm_canada_coverage.csv', 'w') as f:
         f.write("video_name,frame_rate,f1\n")
         for dataset in DATASET_LIST:
             print("processing", dataset)
             metadata = load_metadata(PATH + dataset + '/metadata.json')
             # height = metadata['resolution'][1]
             frame_rate = metadata['frame rate']
+            frame_count = metadata['frame count']
             
             # load fasterRCNN + full resolution + highest frame rate as ground truth
             gt_file = PATH + dataset + '/profile/updated_gt_FasterRCNN_COCO.csv'    
             gt, num_of_frames = load_full_model_detection(gt_file)
             
-            # dt_file = path + dataset + '/profile/updated_gt_FasterRCNN_COCO.csv' 
-            # full_model_dt, num_of_frames = load_full_model_detection(dt_file)
-
            
             # Chop long videos into small chunks
             # Floor division drops the last sequence of frames which is not as

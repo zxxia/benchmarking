@@ -2,7 +2,7 @@ import cv2
 import os
 import subprocess
 from absl import app, flags
-from my_utils import load_metadata, create_dir
+from utils.utils import load_metadata, create_dir
 
 FLAGS = flags.FLAGS
 flags.DEFINE_string('dataset', '', 'Dataset name')

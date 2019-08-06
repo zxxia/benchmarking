@@ -5,7 +5,7 @@ from collections import defaultdict
 from PIL import Image
 import PIL
 import io
-from my_utils import load_metadata
+from utils.utils import load_metadata
 
 flags = tf.app.flags
 flags.DEFINE_string('dataset', '', 'Dataset name.')
@@ -88,7 +88,7 @@ def main(_):
   img_resolution = metadata['resolution']
 
 
-  for index in range(1, 9000):#metadata['frame count'] + 1):
+  for index in range(1, metadata['frame count'] + 1):
     image = {}
     image['height'] = img_resolution[1]
     image['width'] = img_resolution[0]

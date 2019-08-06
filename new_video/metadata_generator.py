@@ -4,18 +4,37 @@ import argparse
 import subprocess
 
 def get_resolution(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=width', video]
+        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=height', video]
+    else:
+        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=width', video]
-    width = subprocess.run(cmd, stdout=subprocess.PIPE) \
-                      .stdout.decode('utf-8').rstrip()
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=height', video]
-    height = subprocess.run(cmd, stdout=subprocess.PIPE) \
+    height = subprocess.run(height_cmd, stdout=subprocess.PIPE) \
                        .stdout.decode('utf-8').rstrip()
-    return int(width), int(height)
+    width = subprocess.run(width_cmd, stdout=subprocess.PIPE) \
+                      .stdout.decode('utf-8').rstrip()
+
+    try:
+        width = int(width)
+        height = int(height)
+    except ValueError:
+        width = 'N/A' 
+        height = 'N/A'
+    return width, height
 
 def get_frame_rate(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=r_frame_rate', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=r_frame_rate', video]
     a, b = subprocess.run(cmd, stdout=subprocess.PIPE) \
                        .stdout.decode('utf-8').rstrip().split('/')
@@ -27,38 +46,69 @@ def get_frame_count(video):
            '-show_entries', 'stream=nb_frames', video]
     frame_cnt = subprocess.run(cmd, stdout=subprocess.PIPE) \
                           .stdout.decode('utf-8').rstrip()
-    return int(frame_cnt)
+    try:
+        frame_cnt = int(frame_cnt)
+    except ValueError:
+        frame_cnt = "N/A"
+    
+    return frame_cnt
 
 def get_duration(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=duration', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=duration', video]
     duration = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
     return float(duration)
 
 def get_bit_rate(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.mp4':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=bit_rate', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+               '-show_entries', 'format=bit_rate', video]
     bit_rate = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
+
     return float(bit_rate)
 
 def get_pixel_format(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=pix_fmt', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=pix_fmt', video]
     pix_fmt = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
     return pix_fmt
 
 def get_level(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=level', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=level', video]
     level = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
     return level
 
 def get_codec_name(video):
-    cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+    file_extension = os.path.splitext(video)[-1]
+    if file_extension == '.ts':
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
+           '-show_entries', 'program_stream=codec_name', video]
+    else:
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0', 
            '-show_entries', 'stream=codec_name', video]
     codec_name = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
@@ -68,9 +118,6 @@ def get_codec_name(video):
 
 def main():
     parser = argparse.ArgumentParser(description="Generate the metadata of a video in json format")
-    # group = parser.add_mutually_exclusive_group()
-    # group.add_argument("-v", "--verbose", action="store_true")
-    # group.add_argument("-q", "--quiet", action="store_true")
     parser.add_argument("video", type=str, help="the absolute path of the input video")
     parser.add_argument("output", type=str, help="the absolute path where json file will be generated")
     args = parser.parse_args()

@@ -2,7 +2,7 @@
 import cv2
 import os
 from absl import app, flags 
-from my_utils import load_metadata, create_dir
+from utils.utils import load_metadata, create_dir
 
 
 FLAGS = flags.FLAGS

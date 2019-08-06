@@ -5,7 +5,7 @@ import imp
 # gen_util = imp.load_source('utils', '/Users/zhujunxiao/Desktop/benchmarking/code/my_utils.py')
 # from utils import IoU
 
-from my_utils import IoU, load_metadata
+from utils.utils import IoU, load_metadata
 import glob
 import csv
 import os
