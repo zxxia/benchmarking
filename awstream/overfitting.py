@@ -1,4 +1,5 @@
-from awstream.profiler import profile, profile_eval, select_best_config
+from awstream.profiler import VideoConfig, profile, profile_eval, \
+    select_best_config
 from collections import defaultdict
 from utils.model_utils import load_full_model_detection
 # load_full_model_detection_new
@@ -7,7 +8,7 @@ from utils.utils import load_metadata
 # import matplotlib.pyplot as plt
 # import numpy as np
 # import os
-# import pdb
+import pdb
 # import subprocess
 # import sys
 
@@ -16,8 +17,8 @@ TEMPORAL_SAMPLING_LIST = [1]  # [20,15,10,5,4,3,2.5,2,1.8,1.5,1.2,1]
 DATASET_LIST = sorted(['traffic', 'jp_hw', 'russia', 'tw_road', 'highway',
                        'tw_under_bridge', 'highway_normal_traffic', 'nyc',
                        'lane_split', 'tw', 'tw1', 'jp', 'russia1', 'park',
-                       'driving_downtown', 'crossroad2', 'crossroad', 'drift',
-                       'crossroad3', 'crossroad4', 'driving1',  # 'driving2',
+                       'driving_downtown', 'drift',
+                        'crossroad4', 'driving1',  # 'crossroad3','crossroad2', 'crossroad', 'driving2',
                        'motorway'])
 # , walking
 IMAGE_RESOLUTION_DICT = {'360p': [640, 360],
@@ -48,6 +49,7 @@ def main():
             f_profile = open('overfitting/awstream_profile_spatial_30s_{}.csv'
                              .format(dataset), 'w')
             metadata = load_metadata(PATH + dataset + '/metadata.json')
+            resolution = metadata['resolution']
             height = metadata['resolution'][1]
             original_resol = '720p'  # str(height) + 'p'
             # load detection results of fasterRCNN + full resolution +
@@ -81,56 +83,58 @@ def main():
                       .format(start_frame, end_frame))
                 # use 30 seconds video for profiling
                 # pdb.set_trace()
-                profile_start_frame = start_frame
-                profile_end_frame = start_frame + \
-                    frame_rate * PROFILE_LENGTH - 1
-                configs = profile(gt_dict, dt_dict, frame_rate,
-                                  profile_start_frame, profile_end_frame,
-                                  f_profile, RESOLUTION_LIST,
-                                  TEMPORAL_SAMPLING_LIST)
+                profile_start = start_frame
+                profile_end = start_frame + frame_rate * PROFILE_LENGTH - 1
+
+                original_config = VideoConfig(IMAGE_RESOLUTION_DICT[original_resol], frame_rate)
+
+                configs = profile(gt_dict, dt_dict, original_config,
+                                  profile_start, profile_end, f_profile,
+                                  RESOLUTION_LIST, TEMPORAL_SAMPLING_LIST)
+
+                for c in configs:
+                    c.debug_print()
                 img_path_dict = defaultdict(None)
-                for resol in configs.keys():
-                    if resol_str_to_int(resol) > height:
+                for c in configs:
+                    if c.resolution[1] > height:
                         continue
+                    resol = str(c.resolution[1]) + 'p'
                     img_path_dict[resol] = PATH + dataset + '/' + resol + '/'
 
-                best_config = select_best_config(img_path_dict, frame_rate,
-                                                 profile_start_frame,
-                                                 profile_end_frame,
-                                                 configs, original_resol)
+                best_config, best_bw = select_best_config(img_path_dict,
+                                                          original_config,
+                                                          configs,
+                                                          profile_start,
+                                                          profile_end)
 
                 print("Finished profiling on frame [{},{}]."
-                      .format(profile_start_frame, profile_end_frame))
-                print("best resol = {}, best frame rate = {}, best bw = {}"
-                      .format(best_config['resolution'],
-                              best_config['frame rate'],
-                              best_config['relative bandwidth']))
+                      .format(profile_start, profile_end))
+                print("best resol={}, best fps={}, best bw={}"
+                      .format(best_config.resolution, best_config.fps,
+                              best_bw))
 
                 # test on the whole video
-                test_start_frame = profile_end_frame + 1
-                test_end_frame = end_frame
-                best_resol = best_config['resolution']
-                best_fps = best_config['frame rate']
-                gt = gt_dict[best_resol]
-                dt = dt_dict[best_resol]
+                test_start = profile_end + 1
+                test_end = end_frame
 
-                original_config = {'resolution': original_resol,
-                                   'frame rate': frame_rate}
+                gt = gt_dict[str(original_config.resolution[1]) + 'p']
+                dt = dt_dict[str(best_config.resolution[1]) + 'p']
+
                 f1, relative_bw = profile_eval(img_path_dict, gt, dt,
                                                original_config, best_config,
-                                               profile_start_frame,
-                                               profile_end_frame)
+                                               profile_start, profile_end)
 
                 print("Finished testing on frame [{},{}]."
-                      .format(test_start_frame, test_end_frame))
+                      .format(test_start, test_end))
                 test_bw_list.append(relative_bw)
                 test_f1_list.append(f1)
 
                 print('{} best fps={}, best resolution={} ==> tested f1={}'
-                      .format(dataset+str(i), best_fps/frame_rate,
-                              best_resol, f1))
-                f.write(dataset + '_' + str(i) + ',' + str(best_resol) +
-                        ',' + str(f1) + ',' + str(best_fps) + ',' +
+                      .format(dataset+str(i), best_config.fps/frame_rate,
+                              best_config.resolution, f1))
+                f.write(dataset + '_' + str(i) + ',' +
+                        str(best_config.resolution[1]) + 'p' + ',' + str(f1) +
+                        ',' + str(best_config.fps) + ',' +
                         str(relative_bw) + '\n')
             # if test_bw_list and test_f1_list:
             #     plt.scatter(test_bw_list, test_f1_list, label=dataset)
