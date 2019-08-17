@@ -1,4 +1,6 @@
 *.csv
-__pycache__
+*.jpg
 *.json
+*.mp4
 *.txt
+__pycache__
