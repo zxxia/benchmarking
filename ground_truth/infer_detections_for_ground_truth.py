@@ -108,7 +108,7 @@ def main(_):
 
   f = open(FLAGS.output_time_path,'w')
   gt_f = open(FLAGS.gt_csv, 'w')
-  gt_f.write('image name, bounding boxes (x, y, w, h, type)\n')
+  gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
 
   config = tf.ConfigProto()
   config.gpu_options.per_process_gpu_memory_fraction = 0.4

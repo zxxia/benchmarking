@@ -23,7 +23,9 @@ resol_dict = {'360p': [640,360],
               '480p': [854, 480],
               '540p': [960, 540],
               '576p': [1024, 576],
-              '720p': [1280, 720],}
+              '720p': [1280, 720],
+              '1080p': [1920, 1080],
+              '2160p': [3840, 2160]}
 
 
 def create_tf_example(image, image_dir, include_masks=False):
@@ -75,9 +77,9 @@ def main(_):
     output_file = data_path + '/profile/input_' + FLAGS.resize_resol + '.record'
   else:
     if FLAGS.quality_parameter != 'original':
-      data_path = path + FLAGS.dataset + '/qp' + FLAGS.quality_parameter + '/' 
+      data_path = path + FLAGS.dataset + '/qp' + FLAGS.quality_parameter + '/'
     else:
-      data_path = path + FLAGS.dataset 
+      data_path = path + FLAGS.dataset
     output_file = data_path + '/profile/input.record'
 
   if not os.path.exists(output_path):
@@ -96,7 +98,7 @@ def main(_):
     tf_example = create_tf_example(image, data_path)
     writer.write(tf_example.SerializeToString())
   writer.close()
- 
+
 
 
 if __name__ == '__main__':

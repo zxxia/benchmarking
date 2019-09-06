@@ -166,7 +166,7 @@ def infer_detections_and_add_to_example(gt_f,
     w = int((detected_boxes[3][i] - detected_boxes[1][i]) * width)
     h = int((detected_boxes[2][i] - detected_boxes[0][i]) * height)
     gt_str.append(' '.join([str(j) for j in 
-                  [x, y, w, h, detected_classes[i]]]))
+                  [x, y, w, h, detected_classes[i], detected_score[i]]]))
 
   gt_f.write(';'.join(gt_str) + '\n')
 
