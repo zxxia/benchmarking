@@ -13,7 +13,7 @@ from keras.applications.resnet50 import preprocess_input
 def create_dir(path):
     if not os.path.exists(path):
         print('create path ', path)
-        os.mkdir(path)
+        os.makedirs(path)
     else:
         print(path, 'already exists!')
 
@@ -32,7 +32,7 @@ def compute_f1(tp, fp, fn):
         if fn:
             f1 = 0
         else:
-            f1 = 1 
+            f1 = 1
     return f1
 
 
@@ -120,13 +120,14 @@ def nms(dets, thresh):
 
 def interpolation(point_a, point_b, target_x):
         k = float(point_b[1] - point_a[1])/(point_b[0] - point_a[0])
-        b = point_a[1] - point_a[0]*k 
+        b = point_a[1] - point_a[0]*k
         target_y = k*target_x + b
         return target_y
 
 def Most_Common(lst):
     data = Counter(lst)
     return data.most_common(1)[0][0]
+
 
 def IoU(boxA, boxB):
         # determine the (x, y)-coordinates of the intersection rectangle
@@ -171,7 +172,7 @@ def CDF(data, num_bins=20, normed=True):
 
 class DataGenerator(keras.utils.Sequence):
         'Generates data for Keras'
-        def __init__(self, image_list, labels, batch_size=128, dim=(224, 224), 
+        def __init__(self, image_list, labels, batch_size=128, dim=(224, 224),
                 n_channels=3, n_classes=10, shuffle=True):
                 'Initialization'
                 self.dim = dim
