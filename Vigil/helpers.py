@@ -23,11 +23,11 @@ def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
     subprocess.run(cmd)
 
 
-def compute_video_size(img_path, start, end, target_frame_rate, frame_rate,
-                       image_resolution):
+def compute_video_size(video, img_path, start, end, target_frame_rate,
+                       frame_rate, image_resolution):
     sample_rate = frame_rate/target_frame_rate
     # Create a tmp list file contains all the selected iamges
-    tmp_list_file = 'list.txt'
+    tmp_list_file = video+'_list.txt'
     with open(tmp_list_file, 'w') as f:
         for img_index in range(start, end + 1):
             # based on sample rate, decide whether this frame is sampled
@@ -38,11 +38,12 @@ def compute_video_size(img_path, start, end, target_frame_rate, frame_rate,
                 f.write(line)
 
     frame_size = str(image_resolution[0]) + 'x' + str(image_resolution[1])
+    tmp_video = video + '_tmp.mp4'
     compress_images_to_video(tmp_list_file, target_frame_rate, frame_size,
-                             25, 'tmp.mp4')
-    video_size = os.path.getsize("tmp.mp4")
-    os.remove('tmp.mp4')
-    # os.remove(tmp_list_file)
+                             25, tmp_video)
+    video_size = os.path.getsize(tmp_video)
+    os.remove(tmp_video)
+    os.remove(tmp_list_file)
     print('target frame rate={}, target image resolution={}. video size={}'
           .format(target_frame_rate, image_resolution, video_size))
     return video_size

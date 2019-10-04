@@ -7,7 +7,7 @@ import pdb
 
 PATH = '/mnt/data/zhujun/dataset/Youtube/'
 
-DATASET_LIST = ['highway']#, 'jp', 'motorway']
+DATASET_LIST = ['driving_downtown']  # , 'jp', 'motorway']
 #  sorted(['traffic', 'jp_hw', 'russia', 'tw_road',
 #          'tw_under_bridge',  'nyc',
 #          'lane_split', 'tw', 'tw1',  'russia1', 'park',
@@ -110,7 +110,7 @@ def main():
     car_cascade_3 = cv2.CascadeClassifier(cascade_src_3)
     car_cascade_4 = cv2.CascadeClassifier(cascade_src_4)
 
-    with open('haar_test.csv', 'w') as f:
+    with open('haar_driving_downtown.csv', 'w') as f:
         f.write('video, f1, bw, scale factor, min neighbors, avg upload area, avg total obj area\n')
         for dataset in DATASET_LIST:
             resol = '720p/'
@@ -126,8 +126,8 @@ def main():
 
             num_of_short_videos = nb_frames//(SHORT_VIDEO_LENGTH*fps)
             for i in range(num_of_short_videos):
-                if dataset + '_' + str(i) not in TARGET_DATASET:
-                    continue
+                #  if dataset + '_' + str(i) not in TARGET_DATASET:
+                #      continue
                 start_frame = i * SHORT_VIDEO_LENGTH * fps + 1
                 end_frame = (i+1) * SHORT_VIDEO_LENGTH * fps
                 tp = {}
@@ -206,29 +206,29 @@ def main():
                     tp[img_idx], fp[img_idx], fn[img_idx] = \
                         eval_single_image(gt_boxes, dt_boxes)
 
-                    for box in cars_0:
-                        x, y, xmax, ymax = box[:4]
-                        cv2.rectangle(img, (x, y), (xmax, ymax),
-                                      (0, 255, 255), 2)
+                    #  for box in cars_0:
+                    #      x, y, xmax, ymax = box[:4]
+                    #      cv2.rectangle(img, (x, y), (xmax, ymax),
+                    #                    (0, 255, 255), 2)
 
                     #  for box in cars_1:
                         #  x, y, xmax, ymax = box[:4]
                         #  cv2.rectangle(img, (x, y), (xmax, ymax),
                                       #  (255, 255, 255), 2)
-                    for box in gt_boxes:
-                        x, y, xmax, ymax = box[:4]
-                        cv2.rectangle(img, (x, y), (xmax, ymax),
-                                      (0, 255, 0), 2)
+                #      for box in gt_boxes:
+                #          x, y, xmax, ymax = box[:4]
+                #          cv2.rectangle(img, (x, y), (xmax, ymax),
+                #                        (0, 255, 0), 2)
 
-                    for box in dt_boxes:
-                        x, y, xmax, ymax = box[:4]
-                        cv2.rectangle(img, (x, y), (xmax, ymax),
-                                      (255, 0, 0), 2)
-                    cv2.imshow('video', img)
-                    if cv2.waitKey(0) == 27:
-                        break
+                #      for box in dt_boxes:
+                #          x, y, xmax, ymax = box[:4]
+                #          cv2.rectangle(img, (x, y), (xmax, ymax),
+                #                        (255, 0, 0), 2)
+                #      cv2.imshow('video', img)
+                #      if cv2.waitKey(0) == 27:
+                #          break
 
-                cv2.destroyAllWindows()
+                #  cv2.destroyAllWindows()
                 tp_total = sum(tp.values())
                 fp_total = sum(fp.values())
                 fn_total = sum(fn.values())
