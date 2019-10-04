@@ -14,20 +14,18 @@ from collections import defaultdict
 path = '/home/zhujun/video_analytics_pipelines/dataset/KITTI/'
 
 
-
-def compute_velocity(
-    current_start, current_end, frame_to_object, object_to_frame,
-    object_location, image_resolution, frame_rate):
+def compute_velocity(current_start, current_end, frame_to_object,
+                     object_to_frame, object_location, image_resolution,
+                     frame_rate):
     # no distance info from image, so define a metric to capture the velocity.
     # velocity = 1/IoU(current_box, next_box)
     velocity = {}
-    last_frame = {}
-    width = image_resolution[0]
-    height = image_resolution[1]
-
+    #  last_frame = {}
+    #  width = image_resolution[0]
+    #  height = image_resolution[1]
 
     last_filename = "start"
-    for frame in range(current_start,current_end + 1):
+    for frame in range(current_start, current_end + 1):
         if last_filename == "start" or frame not in frame_to_object:
             velo = 0
             velocity[frame] = velo
@@ -35,7 +33,14 @@ def compute_velocity(
         else:
             current_boxes = frame_to_object[frame]
             # objects = [int(x[0]) for x in current_boxes]
-            objects = [x[0] for x in current_boxes]
+            # For feature computation using Waymo provided groundtruth
+            # objects = [x[0] for x in current_boxes]
+            objects = list()
+            for x in current_boxes:
+                try:
+                    objects.append(int(x[0]))
+                except ValueError:
+                    objects.append(x[0])
             all_velo = []
             for object_id in objects:
                 key = (frame, object_id)
@@ -50,11 +55,13 @@ def compute_velocity(
                     [x, y, w, h] = loc
                     [p_x, p_y, p_w, p_h] = previous_loc
                     # use IoU of the bounding boxes of this object in two
-                    # consecutive frames to reflect how fast the object is moving
-                    # the faster the object is moving, the smaller the IoU will be
-                    iou = IoU([x,y,x+w,y+h],[p_x, p_y, p_w+p_x,p_h+p_y])
+                    # consecutive frames to reflect how fast the object is
+                    # moving. the faster the object is moving, the smaller the
+                    # IoU will be
+                    iou = IoU([x, y, x+w, y+h], [p_x, p_y, p_w+p_x, p_h+p_y])
                     if iou < 0.001:
-                        print('object too fast',object_id, frame)
+                        print('object {} iou={} too fast from frame {} to frame {}'
+                              .format(object_id, iou, last_filename, frame))
                         iou = 0.01
                     # remove the influence of frame rate
                     all_velo.append(1/iou)
@@ -66,9 +73,7 @@ def compute_velocity(
                 velo = ' '.join(str(x) for x in all_velo)
             velocity[frame] = velo
 
-
     return velocity
-
 
 
 def compute_arrival_rate(current_start, current_end, frame_to_object,
@@ -84,7 +89,7 @@ def compute_arrival_rate(current_start, current_end, frame_to_object,
         frame_to_event[frame_id] += 1
 
     arrival_rate = {}
-    for current_frame in range(current_start,current_end + 1 - frame_rate):
+    for current_frame in range(current_start, current_end + 1 - frame_rate):
         one_second_frames = range(current_frame, current_frame + frame_rate)
         one_second_events = 0
         for frame in one_second_frames:
@@ -97,10 +102,9 @@ def compute_arrival_rate(current_start, current_end, frame_to_object,
     return arrival_rate
 
 
-
-def  compute_num_of_object_per_frame(current_start, current_end, frame_to_object):
+def compute_num_of_object_per_frame(current_start, current_end, frame_to_object):
     num_of_objects = {}
-    for frame in range(current_start,current_end + 1):
+    for frame in range(current_start, current_end + 1):
         if frame not in frame_to_object:
             num_of_objects[frame] = 0
         else:
@@ -108,15 +112,15 @@ def  compute_num_of_object_per_frame(current_start, current_end, frame_to_object
     return num_of_objects
 
 
-
-def compute_object_area(current_start, current_end, frame_to_object, image_resolution):
+def compute_object_area(current_start, current_end, frame_to_object,
+                        image_resolution):
     # for each frame, compute the avg object_area/image_size
     image_size = image_resolution[0]*image_resolution[1]
     object_area = {}
     total_object_area = {}
     object_type = {}
     dominate_object_type = {}
-    for frame in range(current_start,current_end+1):
+    for frame in range(current_start, current_end+1):
         if frame not in frame_to_object:
             object_area[frame] = 0
             total_object_area[frame] = 0
@@ -161,20 +165,39 @@ class Parameters:
         self.dominate_object_type = {}
 
 
+def compute_para(frame_to_detections, image_resolution, frame_rate):
+    '''
+    Compute features
+        frame_to_detections: a dict mapping frame id to a list of obejct
+                             detections. detection format is
+                             [xmin, ymin, xmax, ymax, type, score, object id]
+        image_resolution: [w, h]
+        frame_rate: int fps
+        return: a paras object
+    '''
+    frame_to_object = defaultdict(list)
+    object_to_frame = defaultdict(list)
+    object_location = {}
+    # Convert frame_to_obj to object to frame and object location
+    for frame_idx in sorted(frame_to_detections.keys()):
+        detections = frame_to_detections[frame_idx]
+        for detection in detections:
+            xmin, ymin, xmax, ymax, t, score, obj_id = detection
+            object_to_frame[obj_id].append(frame_idx)
+            obj_loc_key = (frame_idx, obj_id)
+            object_location[obj_loc_key] = [xmin, ymin, xmax-xmin, ymax-ymin]
+            frame_to_object[frame_idx].append([obj_id, xmin, ymin, xmax-xmin,
+                                               ymax-ymin, t, score])
 
-
-def compute_para(data, image_resolution, frame_rate):
-    all_filename = data[0]
-    frame_to_object = data[1]
-    object_to_frame = data[2]
-    object_location = data[3]
-
-    current_start = min(all_filename)
-    current_end = max(all_filename)
+    current_start = min(frame_to_detections.keys())
+    current_end = max(frame_to_detections.keys())
 
     paras = Parameters()
-    paras.object_area, paras.total_object_area, paras.object_type, paras.dominate_object_type = \
-        compute_object_area(current_start, current_end, frame_to_object, image_resolution)
+    paras.object_area, paras.total_object_area, paras.object_type, \
+        paras.dominate_object_type = compute_object_area(current_start,
+                                                         current_end,
+                                                         frame_to_object,
+                                                         image_resolution)
     paras.num_of_objects = compute_num_of_object_per_frame(current_start,
                                                            current_end,
                                                            frame_to_object)
@@ -185,8 +208,6 @@ def compute_para(data, image_resolution, frame_rate):
                                       frame_to_object, object_to_frame,
                                       object_location, image_resolution,
                                       frame_rate)
-
-
     return paras
 
 
@@ -213,6 +234,7 @@ def read_annot(annot_path):
             object_location[key] = [x, y, w, h]
     return all_filename, frame_to_object, object_to_frame, object_location
 
+
 def main():
     start_time = time.time()
 
@@ -225,9 +247,8 @@ def main():
     for video_name in video_index_dict.keys():
         for video_index in video_index_dict[video_name]:
             current_path = path + video_name + \
-            '/2011_09_26_drive_' + format(video_index,'04d') \
-            + '_sync/'
-            annot_path =  current_path + 'Parsed_ground_truth.csv'
+                '/2011_09_26_drive_' + format(video_index, '04d') + '_sync/'
+            annot_path = current_path + 'Parsed_ground_truth.csv'
             output_folder = './paras'
             print(annot_path)
             if not os.path.exists(output_folder):
@@ -240,8 +261,7 @@ def main():
             all_filename = data[0]
             current_start = min(all_filename)
             current_end = max(all_filename)
-            para_file = output_folder + '/Video_features_KITTI_' + video_name +\
-                                '_' + str(video_index) + '.csv'
+            para_file = output_folder + '/Video_features_KITTI_' + video_name + '_' + str(video_index) + '.csv'
             with open(para_file, 'w') as f:
                 f.write('frame_id, num_of_object, object_area, arrival_rate,'\
                         'velocity, total_object_area, num_of_object_type\n')
@@ -255,9 +275,6 @@ def main():
                     f.write(str(paras.object_type[frame_id]) + '\n')
             print(time.time()-start_time)
 
+
 if __name__ == '__main__':
     main()
-
-
-
-

@@ -114,10 +114,10 @@ def get_codec_name(video):
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
         cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=codec_name', video]
+               '-show_entries', 'program_stream=codec_name', video]
     else:
         cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=codec_name', video]
+               '-show_entries', 'stream=codec_name', video]
     codec_name = subprocess.run(cmd, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
     return codec_name

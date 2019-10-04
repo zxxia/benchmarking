@@ -71,7 +71,6 @@ def main(argv):
             annot_path = current_path + 'Parsed_gt_{}.csv'.format(segment_name)
             print(annot_path)
 
-            # pdb.set_trace()
             # read annotations from ground truth file
             data = read_annot(annot_path)
             paras = compute_para(data, image_resolution, frame_rate)

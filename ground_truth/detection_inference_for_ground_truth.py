@@ -55,7 +55,7 @@ def build_input(tfrecord_paths):
   image_tensor = tf.expand_dims(image_tensor, 0)
   height = tf.cast(features['image/height'], tf.int32)
   width = tf.cast(features['image/width'], tf.int32)
-  #ground truth 
+  #ground truth
   # gt_label = tf.cast(features['image/object/class/label'], tf.int32)
   # gt_text = features['image/object/class/text']
   # gt_ymin = features['image/object/bbox/ymin']
@@ -131,10 +131,10 @@ def infer_detections_and_add_to_example(gt_f,
   tf_example = tf.train.Example()
   (serialized_example, detected_boxes, detected_scores,
    detected_classes, image_filename, height, width) = tf.get_default_session().run([
-       serialized_example_tensor, detected_boxes_tensor, detected_scores_tensor, 
+       serialized_example_tensor, detected_boxes_tensor, detected_scores_tensor,
        detected_labels_tensor, image_filename_tensor, height, width])
   detected_boxes = detected_boxes.T
-  
+
   tf_example.ParseFromString(serialized_example)
   feature = tf_example.features.feature
   # feature[standard_fields.TfExampleFields.
@@ -165,8 +165,8 @@ def infer_detections_and_add_to_example(gt_f,
     y = int(detected_boxes[0][i] * height)
     w = int((detected_boxes[3][i] - detected_boxes[1][i]) * width)
     h = int((detected_boxes[2][i] - detected_boxes[0][i]) * height)
-    gt_str.append(' '.join([str(j) for j in 
-                  [x, y, w, h, detected_classes[i], detected_score[i]]]))
+    gt_str.append(' '.join([str(j) for j in
+                  [x, y, w, h, detected_classes[i], detected_scores[i]]]))
 
   gt_f.write(';'.join(gt_str) + '\n')
 
