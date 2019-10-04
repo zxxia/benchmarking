@@ -66,7 +66,6 @@ def main():
                 gt_dict[resol] = load_full_model_detection_new(gt_file)[0]
                 dt_dict[resol] = load_full_model_detection_new(dt_file)[0]
 
-
             print('Processing', dataset)
             test_bw_list = list()
             test_f1_list = list()
@@ -94,9 +93,9 @@ def main():
                 print("best resol = {}, best frame rate = {}, best bw = {}".format(best_config['resolution'], best_config['frame rate'], best_config['relative bandwidth']))
 
                 # test on the whole video
-                #pdb.set_trace()
+                # pdb.set_trace()
                 test_start_frame = profile_end_frame + 1
-                #test_end_frame = end_frame
+                # test_end_frame = end_frame
                 test_end_frame = test_start_frame + 240 - 1
                 best_resol = best_config['resolution']
                 best_resol = '540p' # TODO: need to be removed
