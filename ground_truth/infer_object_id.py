@@ -1,16 +1,17 @@
-import sys
-import imp
-import glob
-import csv
-import os
-import time
-import numpy as np
-from PIL import Image
-from absl import app, flags
-from collections import defaultdict, Counter
-from utils.utils import nms, Most_Common, load_metadata, IoU
+""" To smooth bounding boxes and assign object ID """
+# import sys
+# import imp
+# import glob
+# import csv
+# import os
+# import time
 import pdb
 import copy
+import numpy as np
+# from PIL import Image
+from absl import app, flags
+from collections import defaultdict  # , Counter
+from utils.utils import nms, Most_Common, load_metadata, IoU
 # from show_annot import show
 FLAGS = flags.FLAGS
 flags.DEFINE_string('resol', 'None', 'Image resolution.')
@@ -18,7 +19,7 @@ flags.DEFINE_string('resol', 'None', 'Image resolution.')
 # flags.DEFINE_string('metadata_file', '', 'metadata file')
 flags.DEFINE_string('input_file', None, 'input file')
 flags.DEFINE_string('output_file', None, 'output file')
-flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
+# flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
 flags.DEFINE_string('model_name', 'FasterRCNN', '')
 # flags.DEFINE_string('overlap_percent', '', 'updated gt file')
 # flags.DEFINE_string('vote_percent', '', 'updated gt file')
@@ -27,7 +28,7 @@ flags.DEFINE_string('model_name', 'FasterRCNN', '')
 
 def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
                dist_coef=0.45):
-    '''
+    """
     This function assign object id to bounding boxes
     frame_to_object: a dict in which frame id maps to object detections
     output_file and update_gt_file stores the detections with object id
@@ -35,7 +36,7 @@ def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
     dist_coef: adjust the threshold of distance which is used to determine
     whether two bounding boxes belong to the same object, if use FasterRCNN
     dist_coef should be set to 0.45. Otherwise, mobilenet needs to be 0.8
-    '''
+    """
     last_frame = []
     object_to_type = defaultdict(list)
     object_cn = 0
@@ -103,13 +104,14 @@ def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
             # show(filename, path + 'crossroad2/images/', frame_to_object)
             gt_f.write(str(filename) + ',' + ';'
                        .join([' '.join([str(x) for x in box])
-                             for box in frame_to_object[filename]]) + '\n')
+                              for box in frame_to_object[filename]]) + '\n')
 
 
 def smooth_annot(all_filename, frame_to_object):
-    # for each frame, if a box exists in last frame and next frame
-    # but not in current frame, add it to current frame
-    # update_gt_file = output_folder + 'updated_gt_FasterRCNN_COCO.csv'
+    """for each frame, if a box exists in last frame and next frame
+    but not in current frame, add it to current frame
+    update_gt_file = output_folder + 'updated_gt_FasterRCNN_COCO.csv'
+    """
 
     # with open(update_gt_file, 'w') as f:
 
@@ -200,13 +202,12 @@ def smooth_annot(all_filename, frame_to_object):
 
 def smooth(input_frame_to_obj, overlap_percent=0.2,
            vote_percent=0.2, win_size=10):
-    '''
-    Smooth the bounding boxes.
+    """ Smooth the bounding boxes.
     input_frame_to_obj: a dict which maps frame id to a list of bounding boxes
     overlap_percent: the percentage threshold of iou. when above this number,
     two boxes are considered to belong to the same object
     win_size: the window size which smoothing will be applied to
-    '''
+    """
     frame_indices = sorted(input_frame_to_obj.keys())
     min_frame_idx = min(frame_indices)
     max_frame_idx = max(frame_indices)
@@ -219,11 +220,11 @@ def smooth(input_frame_to_obj, overlap_percent=0.2,
         frame_start = frame_idx
         frame_end = frame_idx + win_size
         # within window
-        print('win = [{}, {}]'.format(frame_start, frame_end))
+        # print('win = [{}, {}]'.format(frame_start, frame_end))
         for i in range(frame_start, frame_end):
             boxes_i = frame_to_obj[i]
-            if i == 1:
-                print(boxes_i)
+            # if i == 1:
+            #     print(boxes_i)
             votes = np.zeros((len(boxes_i), win_size))
             ious = np.zeros((len(boxes_i), win_size))
             for obj_idx_i, box_i in enumerate(boxes_i):
@@ -315,8 +316,8 @@ def smooth(input_frame_to_obj, overlap_percent=0.2,
                                 pdb.set_trace()
 
                             # print('after', len(frame_to_obj[j]))
-                            print('add {} from frame {} to frame {}'
-                                  .format(box_i, i, j))
+                            # print('add {} from frame {} to frame {}'
+                            #       .format(box_i, i, j))
     return frame_to_obj
 
 
@@ -394,13 +395,6 @@ def read_annot(annot_path):
 
 
 def main(argv):
-    # resol_dict = {'360p': [640, 360],
-    #               '480p': [854, 480],
-    #               '540p': [960, 540],
-    #               '576p': [1024, 576],
-    #               '720p': [1280, 720],
-    #               '1080p': [1920, 1080],
-    #               '2160p': [3840, 2160]}
 
     # required_flags = ['input_file', 'output_file', 'updated_gt_file']
     required_flags = ['input_file', 'output_file']
@@ -411,7 +405,7 @@ def main(argv):
 
     annot_file = FLAGS.input_file
     output_file = FLAGS.output_file
-    update_gt_file = FLAGS.updated_gt_file
+    # update_gt_file = FLAGS.updated_gt_file
     # remove objects that are too small
     # height_min = image_resolution[1]//20
     # height_max = image_resolution[1]//3
@@ -429,8 +423,7 @@ def main(argv):
     else:
         new_frame_to_object = smooth(frame_to_object)
         print('Done smoothing annot.')
-        tag_object(all_filename, new_frame_to_object, output_file,
-                   update_gt_file, 0.8)
+        tag_object(all_filename, new_frame_to_object, output_file, 0.8)
     print('Done smoothing and tagging annot.')
     # output_file = annot_path + 'Parsed_gt_FasterRCNN_COCO_smooth.csv'
     # update_gt_file = annot_path + 'updated_gt_FasterRCNN_COCO_smooth.csv'

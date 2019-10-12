@@ -87,7 +87,7 @@ def main(_):
     gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
 
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    config.gpu_options.per_process_gpu_memory_fraction = 0.4
     with tf.Session(config=config) as sess:
         input_tfrecord_paths = [
             v for v in FLAGS.input_tfrecord_paths.split(',') if v]

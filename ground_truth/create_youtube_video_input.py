@@ -1,11 +1,13 @@
-import tensorflow as tf
+""" create input.record file  """
 import os
+import tensorflow as tf
 from object_detection.utils import dataset_util
 #  from collections import defaultdict
 #  from PIL import Image
 #  import PIL
 #  import io
 from utils.utils import load_metadata
+from constants import RESOL_DICT
 
 flags = tf.app.flags
 flags.DEFINE_string('resol', 'original',
@@ -13,20 +15,14 @@ flags.DEFINE_string('resol', 'original',
 flags.DEFINE_string('data_path', '', 'Data path.')
 flags.DEFINE_string('metadata_file', '', 'Metadata file.')
 flags.DEFINE_string('output_path', '', 'Dataset name.')
+flags.DEFINE_string('start_frame', None, 'Start frame')
+flags.DEFINE_string('end_frame', None, 'End fame(included).')
 
 FLAGS = flags.FLAGS
 
 
-resol_dict = {'360p': [640, 360],
-              '480p': [854, 480],
-              '540p': [960, 540],
-              '576p': [1024, 576],
-              '720p': [1280, 720],
-              '1080p': [1920, 1080],
-              '2160p': [3840, 2160]}
-
-
 def create_tf_example(image, image_dir, include_masks=False):
+    """ do the input record file generation """
     # TODO(user): Populate the following variables from your example.
 
     filename = image['filename']
@@ -54,6 +50,7 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 
 def main(_):
+    """ do the input record file generation """
     required_flags = ['metadata_file', 'data_path', 'output_path']
 
     for flag_name in required_flags:
@@ -72,12 +69,20 @@ def main(_):
     img_resolution = metadata['resolution']
 
     if FLAGS.resol:
-        img_resolution = resol_dict[FLAGS.resol]
+        img_resolution = RESOL_DICT[FLAGS.resol]
+    if FLAGS.start_frame is not None:
+        start_frame = int(FLAGS.start_frame)
+    else:
+        start_frame = 1
+    if FLAGS.end_frame is not None:
+        end_frame = int(FLAGS.end_frame) + 1
+    else:
+        end_frame = metadata['frame count']+1
 
-    for index in range(1, metadata['frame count']+1):
+    for index in range(start_frame, end_frame):
         image = {}
         if FLAGS.resol != 'original':
-            resol = resol_dict[FLAGS.resol]
+            resol = RESOL_DICT[FLAGS.resol]
             image['height'] = resol[1]
             image['width'] = resol[0]
         else:

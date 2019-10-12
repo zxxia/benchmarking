@@ -4,28 +4,60 @@ declare -A NUM_OF_FRAMES
 
 
 # Change CODE_PATH to the object detection path.
-CODE_PATH="/home/zxxia/models/research/object_detection"
+# CODE_PATH="/home/zxxia/models/research/object_detection"
+CODE_PATH="/data/zxxia/models/research/object_detection"
 # Change full model path to path where trained object detection model is saved.
-FULL_MODEL_PATH="/home/zxxia/models/research/"\
+# FULL_MODEL_PATH="/home/zxxia/models/research/"\
+# "object_detection/faster_rcnn_resnet101_coco_2018_01_28/"\
+# "frozen_inference_graph.pb"
+FULL_MODEL_PATH="/data/zxxia/models/research/"\
 "object_detection/faster_rcnn_resnet101_coco_2018_01_28/"\
 "frozen_inference_graph.pb"
 
-MOBILENET_SSD_PATH="/home/zxxia/models/research/"\
+# MOBILENET_SSD_PATH="/home/zxxia/models/research/"\
+# "object_detection/ssd_mobilenet_v2_coco_2018_03_29/"\
+# "frozen_inference_graph.pb"
+MOBILENET_SSD_PATH="/data/zxxia/models/research/"\
 "object_detection/ssd_mobilenet_v2_coco_2018_03_29/"\
 "frozen_inference_graph.pb"
 
 # Change DATA_PATH to downloaded Youtube video path
-DATA_PATH='/data/zxxia/benchmarking/results/videos/'
-DATA_PATH_tmp='/data/zxxia/videos/'
-# DATASET_LIST="crossroad crossroad2 crossroad3 crossroad4 drift"
-# DATASET_LIST="driving1 driving2 driving_downtown highway_normal_traffic"
-# DATASET_LIST="jp jp_hw motorway nyc park"
-# DATASET_LIST="russia russia1 traffic tw tw1 tw_road tw_under_bridge"
-DATASET_LIST="crossroad2 crossroad3 crossroad4 crossroad highway driving1 driving2 driving_downtown jp lane_split nyc motorway park russia1 russia t_crossroad traffic tw tw1 tw_road tw_under_bridge"
+# DATA_PATH='/data/zxxia/benchmarking/results/videos/'
+DATA_PATH='/data/zxxia/videos/'
+# DATASET_LIST="crossroad crossroad2 crossroad3 crossroad4 driving1 driving2
+              # drift driving_downtown highway highway_normal_traffic jp
+              # lane_split motorway nyc park russia russia1 tw tw1 tw_under_bridge tw_road traffic"
+
+DATASET_LIST="driving2 park"
+declare -A VIDEO_TYPE_ARRAY
+VIDEO_TYPE_ARRAY["driving1"]="moving"
+VIDEO_TYPE_ARRAY["driving2"]="moving"
+VIDEO_TYPE_ARRAY["driving_downtown"]="moving"
+VIDEO_TYPE_ARRAY["park"]="moving"
+VIDEO_TYPE_ARRAY["lane_split"]="static"
+VIDEO_TYPE_ARRAY["crossroad"]="static"
+VIDEO_TYPE_ARRAY["crossroad2"]="static"
+VIDEO_TYPE_ARRAY["crossroad3"]="static"
+VIDEO_TYPE_ARRAY["crossroad4"]="static"
+VIDEO_TYPE_ARRAY["drift"]="static"
+VIDEO_TYPE_ARRAY["highway"]="static"
+VIDEO_TYPE_ARRAY["highway_normal_traffic"]="static"
+VIDEO_TYPE_ARRAY["jp"]="static"
+VIDEO_TYPE_ARRAY["jp_hw"]="static"
+VIDEO_TYPE_ARRAY["motorway"]="static"
+VIDEO_TYPE_ARRAY["nyc"]="static"
+VIDEO_TYPE_ARRAY["russia"]="static"
+VIDEO_TYPE_ARRAY["russia1"]="static"
+VIDEO_TYPE_ARRAY["traffic"]="static"
+VIDEO_TYPE_ARRAY["tw"]="static"
+VIDEO_TYPE_ARRAY["tw1"]="static"
+VIDEO_TYPE_ARRAY["tw_road"]="static"
+VIDEO_TYPE_ARRAY["tw_under_bridge"]="static"
+
 
 # Choose an idle GPU
 GPU="1"
-RESOL_LIST='720p' # 540p 480p 360p'
+RESOL_LIST='300p' # 720p 540p 480p 360p'
 QP_LIST="original" #'30 35 40'
 for DATASET in $DATASET_LIST
 do
@@ -47,14 +79,14 @@ do
             #     --quality_parameter=$QP \
             #     --resolution=$RESIZE_RESOL
 
-            # python3 ${CODE_PATH}/dataset_tools/create_youtube_video_input.py \
-            #     --metadata_file=${DATA_PATH}/${DATASET}/metadata.json \
-            #     --data_path=${DATA_PATH}${DATASET}/${RESOL} \
-            #     --output_path=${DATA_PATH}${DATASET}/${RESOL}/profile/ \
-            #     --resol=$RESOL
+            python3 ${CODE_PATH}/dataset_tools/create_youtube_video_input.py \
+                --metadata_file=${DATA_PATH}${DATASET}/metadata.json \
+                --data_path=${DATA_PATH}${DATASET}/${RESOL} \
+                --output_path=${DATA_PATH}${DATASET}/${RESOL}/profile/ \
+                --resol=$RESOL
 
-            echo "Done creating input!"
-            # Run inference on mobilenet ssd
+            # echo "Done creating input!"
+            # # Run inference on mobilenet ssd
             # python3 ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
             #     --inference_graph=$MOBILENET_SSD_PATH \
             #     --discard_image_pixels \
@@ -65,25 +97,32 @@ do
             #     --gt_csv=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_mobilenet_COCO.csv
 
             # Run inferenece on full model FasterRCNN
- #           python3 ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
- #               --inference_graph=$FULL_MODEL_PATH \
- #               --discard_image_pixels \
- #               --gpu=$GPU \
- #               --input_tfrecord_paths=${DATA_PATH}${DATASET}/${RESOL}/profile/input.record \
- #               --output_tfrecord_path=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.record \
- #               --output_time_path=${DATA_PATH}${DATASET}/${RESOL}/profile/full_model_time_FasterRCNN_COCO.csv \
- #               --gt_csv=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv
+            python3 ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
+                --inference_graph=$FULL_MODEL_PATH \
+                --discard_image_pixels \
+                --gpu=$GPU \
+                --input_tfrecord_paths=${DATA_PATH}${DATASET}/${RESOL}/profile/input.record \
+                --output_tfrecord_path=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.record \
+                --output_time_path=${DATA_PATH}${DATASET}/${RESOL}/profile/full_model_time_FasterRCNN_COCO.csv \
+                --gt_csv=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv
 
-#            python3 infer_object_id.py \
-#                --resol=$RESOL \
-#                --input_file=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv \
-#                --output_file=${DATA_PATH}/${DATASET}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv
+            python3 infer_object_id.py \
+                --resol=$RESOL \
+                --input_file=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv \
+                --output_file=${DATA_PATH}/${DATASET}/${RESOL}/profile/updated_gt_FasterRCNN_COCO_no_filter.csv
 
-            python3 video_feature_youtube.py \
-                --metadata_file=${DATA_PATH_tmp}/${DATASET}/metadata.json \
-                --input_file=${DATA_PATH}/${DATASET}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv \
-                --output_file=${DATA_PATH}/${DATASET}/720p/profile/Video_features_${DATASET}_object_type_filter.csv \
-                --resol=${RESOL}
+            # python3 infer_object_id.py \
+            #     --resol=$RESOL \
+            #     --input_file=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_mobilenet_COCO.csv \
+            #     --output_file=${DATA_PATH}/${DATASET}/${RESOL}/profile/updated_gt_mobilenet_COCO_no_filter.csv \
+            #     --model_name=MobilenetSSD
+
+            # python3 video_feature_youtube.py \
+            #     --metadata_file=${DATA_PATH_tmp}/${DATASET}/metadata.json \
+            #     --input_file=${DATA_PATH}/${DATASET}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv \
+            #     --output_file=${DATA_PATH}/${DATASET}/720p/profile/Video_features_${DATASET}_object_width_height_type_filter.csv \
+            #     --video_type=${VIDEO_TYPE_ARRAY[${DATASET}]} \
+            #     --resol=${RESOL}
         done
     done
 done
