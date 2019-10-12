@@ -5,15 +5,8 @@ import os
 import subprocess
 import copy
 import pdb
+from constants import RESOL_DICT
 
-
-IMAGE_RESOLUTION_DICT = {'360p': [640, 360],
-                         '480p': [854, 480],
-                         '540p': [960, 540],
-                         '576p': [1024, 576],
-                         '720p': [1280, 720],
-                         '1080p': [1920, 1080],
-                         '2160p': [3840, 2160]}
 
 
 class VideoConfig:
@@ -50,9 +43,7 @@ def scale(box, in_resol, out_resol):
 
 def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
                              quality: int, output_name: str):
-    '''
-    Compress a set of frames to a video.
-    '''
+    ''' Compress a set of frames to a video.  '''
     cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r', str(frame_rate), '-f',
            'concat', '-safe', '0', '-i', list_file, '-s', str(resolution),
            '-vcodec', 'libx264', '-crf', str(quality), '-pix_fmt', 'yuv420p',
@@ -131,11 +122,12 @@ def profile(video, gt, dt_dict, original_config, start, end, f_profile,
                 for idx, box in enumerate(current_gt):
                     current_gt[idx] = scale(current_gt[idx],
                                             original_config.resolution,
-                                            IMAGE_RESOLUTION_DICT[resolution])
+                                            RESOL_DICT[resolution])
                 tp[img_index], fp[img_index], fn[img_index] = \
                     eval_single_image(current_gt, dt_boxes_final)
 
-                # print(img_index, tp[img_index], fp[img_index],fn[img_index])
+                print(img_index, tp[img_index], fp[img_index],fn[img_index])
+                # pdb.set_trace()
             tp_total = sum(tp.values())
             fp_total = sum(fp.values())
             fn_total = sum(fn.values())
@@ -169,7 +161,7 @@ def profile(video, gt, dt_dict, original_config, start, end, f_profile,
         if target_fps is not None:
             tmp = copy.deepcopy(original_config)
             tmp.fps = target_fps
-            tmp.resolution = IMAGE_RESOLUTION_DICT[resolution]
+            tmp.resolution = RESOL_DICT[resolution]
             # TODO: tmp.quantizer = quant
             result.append(tmp)
     return result
