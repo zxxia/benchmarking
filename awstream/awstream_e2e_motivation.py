@@ -1,21 +1,12 @@
-'''
-This script is to used to compute paper motivation result of each video.
-Proifling and testing period are not the same.
-'''
+""" This script is to used to compute paper motivation result of each video.
+    Proifling and testing period are not the same.  """
 
 from awstream.profiler import VideoConfig, profile, profile_eval, \
     select_best_config
 from collections import defaultdict
 from utils.model_utils import load_full_model_detection
-# load_full_model_detection_new
 from utils.utils import load_metadata
-# from matplotlib import cm
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import os
 import pdb
-# import subprocess
-# import sys
 
 PATH = '/mnt/data/zhujun/dataset/Youtube/'
 TEMPORAL_SAMPLING_LIST = [20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1]
@@ -40,7 +31,7 @@ SHORT_VIDEO_LENGTH = 30  # seconds
 IOU_THRESH = 0.5
 TARGET_F1 = 0.9
 PROFILE_LENGTH = 10  # seconds
-OFFSET = 0  # 1*60+30
+OFFSET = 0
 RESOLUTION_LIST = ['720p', '540p', '480p', '360p']  # '2160p', '1080p',
 
 
@@ -140,16 +131,6 @@ def main():
                         str(best_config.resolution[1]) + ',' + str(f1) +
                         ',' + str(best_config.fps) + ',' +
                         str(relative_bw) + '\n')
-            # if test_bw_list and test_f1_list:
-            #     plt.scatter(test_bw_list, test_f1_list, label=dataset)
-    # plt.xlabel('Bandwidth(Mbps)')
-    # plt.xlim(0, 1)
-    # plt.ylabel('F1 Score')
-    # plt.ylim(0,1)
-    # plt.title("Awstream Motivation")
-    # plt.legend()
-    # plt.savefig('/home/zxxia/figs/awstream/awstream_motivation.png')
-    # plt.show()
 
 
 if __name__ == '__main__':

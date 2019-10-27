@@ -4,12 +4,14 @@
 # driving_downtown highway highway_normal_traffic nyc jp jp_hw lane_split
 # motorway park russia russia1 traffic tw tw1 tw_road tw_under_bridge'
 
-VIDEOS='park'
+VIDEOS='traffic'
 
 for VIDEO in $VIDEOS
 do
     python awstream_spatial_overfitting.py \
         --video $VIDEO \
-        --output spatial_overfitting_results_10_07/awstream_spatial_overfitting_results_${VIDEO}.csv \
-        --log spatial_overfitting_profile_10_07/awstream_spatial_overfitting_profile_${VIDEO}.csv
+        --output test_results/awstream_spatial_overfitting_results_${VIDEO}.csv \
+        --log test_profile/awstream_spatial_overfitting_profile_${VIDEO}.csv \
+        --short_video_length 30 \
+        --profile_length 30
 done

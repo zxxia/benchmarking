@@ -14,7 +14,7 @@ CAMERA_TYPES = {
                    'crossroad4', 'drift', 'highway', 'highway_normal_traffic',
                    'jp', 'jp_hw', 'motorway', 'nyc', 'russia',
                    'russia1', 'traffic', 'tw', 'tw1', 'tw_road',
-                   'tw_under_bridge'],
+                   'tw_under_bridge', 't_crossroad'],
         'moving': ['driving1', 'driving2', 'driving_downtown', 'park',
                    'lane_split']
 }
