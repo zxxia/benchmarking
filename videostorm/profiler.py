@@ -8,7 +8,7 @@ from utils.utils import interpolation, compute_f1
 def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
             temporal_sampling_list, f_profile, target_f1=0.9):
     """ profile a list of frame rate """
-    f1_score_list = []
+    f1_list = []
     for sample_rate in temporal_sampling_list:
         tpos = defaultdict(int)
         fpos = defaultdict(int)
@@ -38,25 +38,25 @@ def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
 
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         print('relative fps={}, f1={}'.format(1/sample_rate, f1_score))
-        f1_score_list.append(f1_score)
+        f1_list.append(f1_score)
         f_profile.write(','.join([video_name, str(1/sample_rate),
                                   str(f1_score)])+'\n')
 
     frame_rate_list = [frame_rate/x for x in temporal_sampling_list]
 
-    current_f1_list = f1_score_list
+    # current_f1_list = f1_score_list
 
-    if current_f1_list[-1] < target_f1:
+    if f1_list[-1] < target_f1:
         target_frame_rate = None
         target_frame_rate = frame_rate
     else:
-        index = next(x[0] for x in enumerate(current_f1_list)
+        index = next(x[0] for x in enumerate(f1_list)
                      if x[1] > target_f1)
         if index == 0:
             target_frame_rate = frame_rate_list[0]
         else:
-            point_a = (current_f1_list[index-1], frame_rate_list[index-1])
-            point_b = (current_f1_list[index], frame_rate_list[index])
+            point_a = (f1_list[index-1], frame_rate_list[index-1])
+            point_b = (f1_list[index], frame_rate_list[index])
             target_frame_rate = interpolation(point_a, point_b, target_f1)
 
     # select best profile

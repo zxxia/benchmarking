@@ -11,8 +11,6 @@ CSV_PATH = '/data/zxxia/benchmarking/results/videos/'
 TEMPORAL_SAMPLING_LIST = [20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1]
 TARGET_F1 = 0.9
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
-CHUNK_LENGTH = 30  # A long video is chopped into chunks. Unit: second
-PROFILE_LENGTH = 30  # Profiling length within a chunk. Unit: second
 
 
 def main():
@@ -22,22 +20,30 @@ def main():
                         help="input full model detection file")
     parser.add_argument("--output", type=str, required=True,
                         help="output result file")
+    parser.add_argument("--metadata_file", type=str, required=True,
+                        help="metadata file(json)")
     parser.add_argument("--log", type=str, required=True, help="log file")
     parser.add_argument("--sample_rate", type=int, required=True,
                         help="sample two frames every n frame")
+    parser.add_argument("--short_video_length", type=int, required=True,
+                        help="short video length (seconds)")
+    parser.add_argument("--profile_length", type=int, required=True,
+                        help="profile length (seconds)")
     args = parser.parse_args()
     dataset = args.video
     output_file = args.output
     input_file = args.input
     log_file = args.log
     sample_rate = args.sample_rate
+    short_video_length = args.short_video_length
+    profile_length = args.profile_length
+
     f_log = open(log_file, 'w', 1)
     f_log.write("video_name,frame_rate,f1\n")
     with open(output_file, 'w', 1) as f_out:
         f_out.write("video_name,frame_rate,f1\n")
         print("processing", dataset)
-        metadata = load_metadata(PATH + dataset + '/metadata.json')
-        # height = metadata['resolution'][1]
+        metadata = load_metadata(args.metadata_file)
         frame_rate = metadata['frame rate']
 
         gtruth, nb_frames = load_full_model_detection(input_file)
@@ -48,12 +54,21 @@ def main():
             gtruth = filter_video_detections(gtruth, width_range=(0, 1280/2),
                                              height_range=(0, 720/2))
         gtruth = filter_video_detections(gtruth, height_range=(720//20, 720))
+        # only for road_trip
+        for frame_idx in gtruth:
+            tmp_boxes = []
+            for box in gtruth[frame_idx]:
+                xmin, ymin, xmax, ymax = box[:4]
+                if ymin >= 500 and ymax >= 500 and (xmax - xmin) >= 1280/2:
+                    continue
+                tmp_boxes.append(box)
+            gtruth[frame_idx] = tmp_boxes
 
         # Chop long videos into small chunks
         # Floor division drops the last sequence of frames which is not as
-        # long as CHUNK_LENGTH
-        profile_frame_cnt = PROFILE_LENGTH * frame_rate
-        chunk_frame_cnt = CHUNK_LENGTH * frame_rate
+        # long as short_video_length
+        profile_frame_cnt = profile_length * frame_rate
+        chunk_frame_cnt = short_video_length * frame_rate
         num_of_chunks = (nb_frames-OFFSET*frame_rate)//chunk_frame_cnt
 
         nb_frames_sampled = nb_frames // sample_rate * 2
@@ -90,7 +105,7 @@ def main():
             print('short video start={}, end={}'.format(start_frame,
                                                         end_frame))
             # profile the first PROFILE_LENGTH seconds of the chunk
-            assert CHUNK_LENGTH >= PROFILE_LENGTH
+            assert short_video_length >= profile_length
 
             profile_start_frame = start_frame
             profile_end_frame = profile_start_frame+profile_frame_cnt-1
