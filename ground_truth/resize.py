@@ -25,11 +25,14 @@ def main():
     """resize videos"""
     parser = argparse.ArgumentParser(description="resize the input video to"
                                      "target resolution")
-    parser.add_argument("--input_video", type=str, help="input video")
-    parser.add_argument("--output_video", type=str, help="output video")
-    parser.add_argument("--output_image_path", type=str,
+    parser.add_argument("--input_video", type=str, required=True,
+                        help="input video")
+    parser.add_argument("--output_video", type=str, required=True,
+                        help="output video")
+    parser.add_argument("--output_image_path", type=str, required=True,
                         help="output image path")
-    parser.add_argument("--resol", type=str, help="target resolution")
+    parser.add_argument("--resol", type=str, required=True,
+                        help="target resolution")
     # parser.add_argument("--metadata", type=str, default='',
     #                     help="metadata file in Json")
     args = parser.parse_args()

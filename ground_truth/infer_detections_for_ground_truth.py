@@ -35,13 +35,13 @@ metrics).
 """
 
 import itertools
+import time
+import os
 import tensorflow as tf
 from object_detection.inference import detection_inference_for_ground_truth \
     as detection_inference
-from object_detection.metrics import tf_example_parser
+# from object_detection.metrics import tf_example_parser
 
-import time
-import os
 
 tf.flags.DEFINE_string('gpu', None,
                        'GPU number.')
@@ -59,12 +59,6 @@ tf.flags.DEFINE_boolean('discard_image_pixels', True,
                         ' significantly reduces the output size and is useful'
                         ' if the subsequent tools don\'t need access to the'
                         ' images (e.g. when computing evaluation measures).')
-#  tf.flags.DEFINE_string('dataset', None, 'Dataset name')
-# tf.flags.DEFINE_boolean('resize', None, 'Resize the image or not.')
-# tf.flags.DEFINE_string('path', None, 'Data path.')
-# tf.flags.DEFINE_string('resize_resol', 'original',
-#                        'Image resolution after resizing.')
-#  tf.flags.DEFINE_string('quality_parameter', 'original', 'Quality Parameter.')
 
 FLAGS = tf.flags.FLAGS
 
@@ -87,7 +81,7 @@ def main(_):
     gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
 
     config = tf.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.4
+    config.gpu_options.per_process_gpu_memory_fraction = 0.9
     with tf.Session(config=config) as sess:
         input_tfrecord_paths = [
             v for v in FLAGS.input_tfrecord_paths.split(',') if v]

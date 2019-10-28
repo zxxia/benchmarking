@@ -10,7 +10,7 @@ def crop_image(img_in, xmin, ymin, xmax, ymax, w_out, h_out, img_out):
            'crop={}:{}:{}:{},pad={}:{}:0:0:black'
            .format(xmax-xmin, ymax-ymin, xmin, ymin, w_out, h_out), img_out]
 
-    subprocess.run(cmd)
+    subprocess.run(cmd, check=True)
 
 
 def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
@@ -20,7 +20,7 @@ def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
            '-i', list_file, '-s', str(resolution), '-vcodec', 'libx264',
            '-crf', str(quality), '-pix_fmt', 'yuv420p', '-hide_banner',
            output_name]
-    subprocess.run(cmd)
+    subprocess.run(cmd, check=True)
 
 
 def compute_video_size(video, img_path, start, end, target_frame_rate,

@@ -3,5 +3,8 @@
 *.json
 *.mp4
 *.txt
+*.pyc
+.tags
+.pylintrc
 __pycache__
 results

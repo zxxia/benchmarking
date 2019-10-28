@@ -1,3 +1,4 @@
+""" script to generate metadata of a video """
 import json
 import os
 import argparse
@@ -5,20 +6,23 @@ import subprocess
 
 
 def get_resolution(video):
+    """ use ffprobe to get resolution """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=width', video]
-        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=height', video]
+        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+                     'v:0', '-show_entries', 'program_stream=width', video]
+        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0',
+                      '-select_streams', 'v:0', '-show_entries',
+                      'program_stream=height', video]
     else:
-        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=width', video]
-        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=height', video]
-    height = subprocess.run(height_cmd, stdout=subprocess.PIPE) \
+        width_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+                     'v:0', '-show_entries', 'stream=width', video]
+        height_cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0',
+                      '-select_streams', 'v:0', '-show_entries',
+                      'stream=height', video]
+    height = subprocess.run(height_cmd, check=True, stdout=subprocess.PIPE) \
                        .stdout.decode('utf-8').rstrip()
-    width = subprocess.run(width_cmd, stdout=subprocess.PIPE) \
+    width = subprocess.run(width_cmd, check=True, stdout=subprocess.PIPE) \
                       .stdout.decode('utf-8').rstrip()
 
     try:
@@ -31,23 +35,25 @@ def get_resolution(video):
 
 
 def get_frame_rate(video):
+    """ use ffprobe to get frame rate """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=r_frame_rate', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'program_stream=r_frame_rate', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=r_frame_rate', video]
-    a, b = subprocess.run(cmd, stdout=subprocess.PIPE) \
-                       .stdout.decode('utf-8').rstrip().split('/')
-    frame_rate = round(float(a)/float(b))
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=r_frame_rate', video]
+    top, bot = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
+                         .stdout.decode('utf-8').rstrip().split('/')
+    frame_rate = round(float(top)/float(bot))
     return int(frame_rate)
 
 
 def get_frame_count(video):
+    """ use ffprobe to get frame count """
     cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
            '-show_entries', 'stream=nb_frames', video]
-    frame_cnt = subprocess.run(cmd, stdout=subprocess.PIPE) \
+    frame_cnt = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
                           .stdout.decode('utf-8').rstrip()
     try:
         frame_cnt = int(frame_cnt)
@@ -58,75 +64,84 @@ def get_frame_count(video):
 
 
 def get_duration(video):
+    """ use ffprobe to get video duration """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=duration', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'program_stream=duration', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=duration', video]
-    duration = subprocess.run(cmd, stdout=subprocess.PIPE) \
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=duration', video]
+    duration = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
     return float(duration)
 
 
 def get_bit_rate(video):
+    """ use ffprobe to get bit rate """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.mp4':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=bit_rate', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=bit_rate', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-               '-show_entries', 'format=bit_rate', video]
-    bit_rate = subprocess.run(cmd, stdout=subprocess.PIPE) \
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'format=bit_rate', video]
+    bit_rate = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
                          .stdout.decode('utf-8').rstrip()
 
     return float(bit_rate)
 
 
 def get_pixel_format(video):
+    """ use ffprobe to get format """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=pix_fmt', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'program_stream=pix_fmt', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=pix_fmt', video]
-    pix_fmt = subprocess.run(cmd, stdout=subprocess.PIPE) \
-                         .stdout.decode('utf-8').rstrip()
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=pix_fmt', video]
+    pix_fmt = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
+                        .stdout.decode('utf-8').rstrip()
     return pix_fmt
 
 
 def get_level(video):
+    """ use ffprobe to get level """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'program_stream=level', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'program_stream=level', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-           '-show_entries', 'stream=level', video]
-    level = subprocess.run(cmd, stdout=subprocess.PIPE) \
-                         .stdout.decode('utf-8').rstrip()
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=level', video]
+    level = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
+                      .stdout.decode('utf-8').rstrip()
     return level
 
 
 def get_codec_name(video):
+    """ use ffprobe to get codec """
     file_extension = os.path.splitext(video)[-1]
     if file_extension == '.ts':
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-               '-show_entries', 'program_stream=codec_name', video]
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'program_stream=codec_name', video]
     else:
-        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams', 'v:0',
-               '-show_entries', 'stream=codec_name', video]
-    codec_name = subprocess.run(cmd, stdout=subprocess.PIPE) \
-                         .stdout.decode('utf-8').rstrip()
+        cmd = ['ffprobe', '-v', '0', '-of', 'csv=p=0', '-select_streams',
+               'v:0', '-show_entries', 'stream=codec_name', video]
+    codec_name = subprocess.run(cmd, check=True, stdout=subprocess.PIPE) \
+                           .stdout.decode('utf-8').rstrip()
     return codec_name
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate the metadata of a video in json format")
-    parser.add_argument("video", type=str, help="the absolute path of the input video")
-    parser.add_argument("output", type=str, help="the absolute path where json file will be generated")
+    """ generate metatdata """
+    parser = argparse.ArgumentParser(
+        description="Generate the metadata of a video in json format")
+    parser.add_argument("--video", type=str,
+                        help="absolute path of the input video")
+    parser.add_argument("--output", type=str,
+                        help="absolute path where json file will be generated")
     args = parser.parse_args()
 
     print(args.video)
@@ -140,8 +155,8 @@ def main():
     metadata['pixel format'] = get_pixel_format(args.video)
     metadata['level'] = get_level(args.video)
     metadata['codec name'] = get_codec_name(args.video)
-    with open(args.output + '/' + "metadata.json", 'w') as f:
-        json.dump(metadata, f, sort_keys=True, indent=4)
+    with open(args.output + '/' + "metadata.json", 'w') as f_out:
+        json.dump(metadata, f_out, sort_keys=True, indent=4)
 
 
 if __name__ == '__main__':

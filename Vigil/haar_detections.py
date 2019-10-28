@@ -5,8 +5,6 @@ import cv2
 from Vigil.helpers import convert_box_coordinate
 from utils.utils import load_metadata
 
-# PATH = '/mnt/data/zhujun/dataset/Youtube/'
-# PATH = '/data/zxxia/videos/'
 
 SCALE_FACTOR = 1.2
 MIN_NEIGHBORS = 10

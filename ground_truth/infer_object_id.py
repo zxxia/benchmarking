@@ -7,10 +7,10 @@
 # import time
 import pdb
 import copy
+from collections import defaultdict  # , Counter
 import numpy as np
 # from PIL import Image
 from absl import app, flags
-from collections import defaultdict  # , Counter
 from utils.utils import nms, Most_Common, load_metadata, IoU
 # from show_annot import show
 FLAGS = flags.FLAGS
@@ -380,23 +380,14 @@ def read_annot(annot_path):
                     h = int(box_list[3])
                     t = int(box_list[4])
                     score = 1
-                # Type filter
-                # if t not in target_types:
-                #     continue
-
-                # if h_min is not None and h_max is not None and \
-                #         h >= h_min and h < h_max:
-                #     # Object height filter
-                #     frame_to_object[frame_id].append([x, y, w, h, t, score])
-                # else:
                 # No filter applied in this stage
                 frame_to_object[frame_id].append([x, y, w, h, t, score])
     return all_filename, frame_to_object
 
 
 def main(argv):
+    """ smooth bounding boxes and assign object id to bounding boxes """
 
-    # required_flags = ['input_file', 'output_file', 'updated_gt_file']
     required_flags = ['input_file', 'output_file']
 
     for flag_name in required_flags:
@@ -405,12 +396,6 @@ def main(argv):
 
     annot_file = FLAGS.input_file
     output_file = FLAGS.output_file
-    # update_gt_file = FLAGS.updated_gt_file
-    # remove objects that are too small
-    # height_min = image_resolution[1]//20
-    # height_max = image_resolution[1]//3
-    # all_filename, frame_to_object = read_annot(annot_file,
-    #                                            height_min, height_max)
     # Do not filter boxes using height
     all_filename, frame_to_object = read_annot(annot_file)
     print('Done loading annot.')
@@ -421,12 +406,11 @@ def main(argv):
         print('Done smoothing annot.')
         tag_object(all_filename, new_frame_to_object, output_file)
     else:
-        new_frame_to_object = smooth(frame_to_object)
+        # new_frame_to_object = smooth(frame_to_object)
         print('Done smoothing annot.')
-        tag_object(all_filename, new_frame_to_object, output_file, 0.8)
+        # tag_object(all_filename, new_frame_to_object, output_file, 0.8)
+        tag_object(all_filename, frame_to_object, output_file, 0.8)
     print('Done smoothing and tagging annot.')
-    # output_file = annot_path + 'Parsed_gt_FasterRCNN_COCO_smooth.csv'
-    # update_gt_file = annot_path + 'updated_gt_FasterRCNN_COCO_smooth.csv'
 
 
 if __name__ == '__main__':

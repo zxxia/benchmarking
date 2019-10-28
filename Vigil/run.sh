@@ -9,10 +9,10 @@ TARGET_F1=0.9
 # DATA_PATH=/mnt/data/zhujun/dataset/Youtube/
 DATA_PATH=/data/zxxia/videos/
 
-VIDEOS='crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
-driving_downtown highway highway_normal_traffic jp lane_split motorway nyc
-park russia russia1 tw tw1 tw_road tw_under_bridge traffic'
-# VIDEOS='traffic'
+# VIDEOS='crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
+# driving_downtown highway highway_normal_traffic jp lane_split motorway nyc
+# park russia russia1 tw tw_road tw_under_bridge traffic'
+VIDEOS='tw1'
 for VIDEO in $VIDEOS
 do
     python vigil_overfitting.py \

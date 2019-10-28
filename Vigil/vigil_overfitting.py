@@ -2,17 +2,15 @@
 import argparse
 # import pdb
 # import os
-import cv2
-import copy
 from collections import defaultdict
+import cv2
 import numpy as np
 from Vigil.helpers import compute_video_size, convert_box_coordinate
-from utils.utils import load_metadata, compute_f1, create_dir
+from utils.utils import load_metadata, compute_f1
 from utils.model_utils import load_full_model_detection, eval_single_image, \
     filter_video_detections
 from constants import CAMERA_TYPES
 
-# PATH = '/mnt/data/zhujun/dataset/Youtube/'
 PATH = '/data/zxxia/videos/'
 
 
@@ -162,8 +160,8 @@ def remove_background(img_path, start_frame, end_frame, simple_model_dets,
     return relative_up_areas
 
 
-def main():
-    """ Vigil main logic """
+def parse_args():
+    """ parse input arguments """
     parser = argparse.ArgumentParser(description="vigil")
     parser.add_argument("--path", type=str, help="path contains all datasets")
     parser.add_argument("--video", type=str, help="video name")
@@ -178,8 +176,13 @@ def main():
     parser.add_argument("--fps", type=int, default=0, help="frame rate")
     parser.add_argument("--resolution", nargs='+', type=int,
                         default=[], action='store', help="video resolution")
-
     args = parser.parse_args()
+    return args
+
+
+def main():
+    """ Vigil main logic """
+    args = parse_args()
     # path = args.path
     dataset = args.video
     output_file = args.output
@@ -200,7 +203,6 @@ def main():
     resol = '720p/'
     img_path = PATH + dataset + '/' + resol
 
-    print(dataset)
     # Load haar detection results
     # haar_dt_file = 'haar_detections_new/haar_{}.csv'.format(dataset)
     # haar_dets = load_haar_detection(haar_dt_file)
