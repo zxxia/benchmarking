@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 import math
-from my_utils import load_metadata
+from utils.utils import load_metadata
 
 def load_video_features(filename):
     video_clips = []
