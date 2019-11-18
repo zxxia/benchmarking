@@ -43,36 +43,6 @@ def load_jackson_detection(fullmodel_detection_path):
     return full_model_dt, img_idx
 
 
-def load_fastrcnn_detection(fullmodel_detection_path):  # , height):
-    full_model_dt = {}
-    with open(fullmodel_detection_path, 'r') as f:
-        for line in f:
-            line_list = line.strip().split(',')
-            # real image index starts from 1
-            img_index = int(line_list[0].split('.')[0])  # - 1
-            if not line_list[1]:  # no detected object
-                gt_boxes_final = []
-            else:
-                gt_boxes_final = []
-                gt_boxes = line_list[1].split(';')
-                for gt_box in gt_boxes:
-                    # t is object type
-                    tmp = [int(i) for i in gt_box.split(' ')]
-                    assert len(tmp) == 6, print(tmp, line)
-                    x = tmp[0]
-                    y = tmp[1]
-                    w = tmp[2]
-                    h = tmp[3]
-                    t = tmp[4]
-                    # if t == 3 or t == 8: # choose car and truch objects
-                    # if h > height/float(20):
-                    # ignore objects that are too small
-                    gt_boxes_final.append([x, y, x+w, y+h, t])
-            full_model_dt[img_index] = gt_boxes_final
-
-    return full_model_dt, img_index
-
-
 def load_ssd_detection(fullmodel_detection_path):
     full_model_dt = {}
     gt = {}
@@ -136,39 +106,6 @@ def load_kitti_ground_truth(filename, target_types=['Car']):
     return frame_to_obj
 
 
-# def load_full_model_detection_new(fullmodel_detection_path):
-#     full_model_dt = {}
-#     with open(fullmodel_detection_path, 'r') as f:
-#         for line in f:
-#             line_list = line.strip().split(',')
-#             # real image index starts from 1
-#             img_index = int(line_list[0].split('.')[0]) #- 1
-#             if not line_list[1]: # no detected object
-#                 gt_boxes_final = []
-#             else:
-#                 gt_boxes_final = []
-#                 gt_boxes = line_list[1].split(';')
-#                 for gt_box in gt_boxes:
-#                     # t is object type
-#                     # x y w h t score obj_id
-#                     box = gt_box.split(' ')
-#                     assert len(box) == 7, print(box, line)
-#                     x = int(box[0])
-#                     y = int(box[1])
-#                     w = int(box[2])
-#                     h = int(box[3])
-#                     t = int(box[4])
-#                     score = float(box[5])
-#                     obj_id = int(box[6])
-#                     # if t == 3 or t == 8: # choose car and truch objects
-#                         # if h > height/float(20):
-# ignore objects that are too small
-#                     gt_boxes_final.append([x, y, x+w, y+h, t, score, obj_id])
-#             full_model_dt[img_index] = gt_boxes_final
-
-#     return full_model_dt, img_index
-
-
 def load_waymo_detection(fullmodel_detection_path):
     full_model_dt = {}
     with open(fullmodel_detection_path, 'r') as f:
@@ -199,56 +136,6 @@ def load_waymo_detection(fullmodel_detection_path):
 
     return full_model_dt, img_index
 
-
-# def load_full_model_detection(filename, target_types=None,
-#                               score_range=[0, 1.0], height_range=[None, None]):
-#     full_model_dt = {}
-#     with open(filename, 'r') as f:
-#         for line in f:
-#             line_list = line.strip().split(',')
-#             # real image index starts from 1
-#             img_index = int(line_list[0].split('.')[0])  # - 1
-#             if not line_list[1]:  # no detected object
-#                 gt_boxes_final = []
-#             else:
-#                 gt_boxes_final = []
-#                 gt_boxes = line_list[1].split(';')
-#                 for gt_box in gt_boxes:
-#                     # t is object type
-#                     box = gt_box.split(' ')
-#                     if len(box) == 7:
-#                         x = int(box[0])
-#                         y = int(box[1])
-#                         w = int(box[2])
-#                         h = int(box[3])
-#                         t = int(box[4])
-#                         score = float(box[5])
-#                         obj_id = int(box[6])
-#                     elif len(box) == 6:
-#                         x = int(box[0])
-#                         y = int(box[1])
-#                         w = int(box[2])
-#                         h = int(box[3])
-#                         t = int(box[4])
-#                         obj_id = int(box[5])
-#                         score = 1.0
-#                     if height_range[0] is not None and \
-#                        height_range[1] is not None and \
-#                        h < height_range[0] and h > height_range[1]:
-#                         continue
-#                     elif height_range[0] is not None and h < height_range[0]:
-#                         continue
-#                     elif height_range[1] is not None and h > height_range[1]:
-#                         continue
-#                     if target_types is not None and t not in target_types:
-#                         continue
-#                     if score < score_range[0] or score > score_range[1]:
-#                         continue
-#                         # choose car and truch objects
-#                     gt_boxes_final.append([x, y, x+w, y+h, t, score, obj_id])
-#             full_model_dt[img_index] = gt_boxes_final
-
-#     return full_model_dt, img_index
 
 def load_full_model_detection(filename):
     '''
@@ -288,7 +175,7 @@ def load_full_model_detection(filename):
 def filter_video_detections(video_detections, width_range=None,
                             height_range=None, target_types=None,
                             score_range=(0.0, 1.0)):
-    '''
+    """
     filter detection by height range, score range, types
     frame_detections: a dict mapping frame index to a list of object detections
                       each detection is in the format of list e.g.
@@ -304,7 +191,7 @@ def filter_video_detections(video_detections, width_range=None,
                   height range limit.
 
     return a dict which contains the filtered frame to object detections
-    '''
+    """
     assert (width_range is None) or \
            (isinstance(width_range, tuple) and len(width_range) == 2 and
             width_range[0] <= width_range[1]), \
@@ -379,6 +266,44 @@ def filter_frame_detections(detections, width_range=None, height_range=None,
     return filtered_boxes
 
 
+def remove_overlappings(boxes, overlap_thr=None):
+    """ to solve the occutation issue.
+    remove the smaller box if two boxes overlap """
+    # sort all boxes based on area
+    if overlap_thr is None:
+        return boxes
+    assert 0 <= overlap_thr <= 1.0
+    sorted_boxes = sorted(boxes, key=compute_area, reverse=True)
+    idx_2_remove = set()
+    for i, box_i in enumerate(sorted_boxes):
+        # if i in indices_2_remove:
+        #     continue
+        for j in range(i+1, len(sorted_boxes)):
+            area_j = compute_area(sorted_boxes[j])
+            inter = compute_intersection_area(box_i, sorted_boxes[j])
+            if inter/area_j > overlap_thr:  # for sure area i >= area_j
+                idx_2_remove.add(j)
+    ret = [box for i, box in enumerate(sorted_boxes) if i not in idx_2_remove]
+    return ret
+
+
+def compute_area(box):
+    """ compute the absolute area of a box in number of pixels """
+    return (box[2]-box[0]+1) * (box[3]-box[1]+1)
+
+
+def compute_intersection_area(box_i, box_j):
+    """ compute the relative overlapping of the  """
+    xmin = max(box_i[0], box_j[0])
+    ymin = max(box_i[1], box_j[1])
+    xmax = min(box_i[2], box_j[2])
+    ymax = min(box_i[3], box_j[3])
+
+    # compute the area of intersection rectangle
+    inter_area = max(0, xmax-xmin+1) * max(0, ymax-ymin+1)
+
+    return inter_area
+
 def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
     gt_idx_thr = []
     pred_idx_thr = []
@@ -394,9 +319,9 @@ def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
     args_desc = np.argsort(ious)[::-1]
     if len(args_desc) == 0:
         # No matches
-        tp = 0
-        fp = len(pred_boxes)
-        fn = len(gt_boxes)
+        tpos = 0
+        fpos = len(pred_boxes)
+        fneg = len(gt_boxes)
     else:
         gt_match_idx = []
         pred_match_idx = []
@@ -407,10 +332,10 @@ def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
             if (gt_idx not in gt_match_idx) and (pr_idx not in pred_match_idx):
                 gt_match_idx.append(gt_idx)
                 pred_match_idx.append(pr_idx)
-        tp = len(gt_match_idx)
-        fp = len(pred_boxes) - len(pred_match_idx)
-        fn = len(gt_boxes) - len(gt_match_idx)
-    return tp, fp, fn
+        tpos = len(gt_match_idx)
+        fpos = len(pred_boxes) - len(pred_match_idx)
+        fneg = len(gt_boxes) - len(gt_match_idx)
+    return tpos, fpos, fneg
 
 
 def eval_single_image(gt_boxes, dt_boxes, iou_thresh=0.5):

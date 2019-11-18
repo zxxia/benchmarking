@@ -1,5 +1,8 @@
 """This module contains some constants used accross different modules"""
-RESOL_DICT = {'240p': (426, 240),
+from enum import Enum
+
+RESOL_DICT = {'180p': (320, 180),
+              '240p': (426, 240),
               '300p': (534, 300),
               '360p': (640, 360),
               '480p': (854, 480),
@@ -16,5 +19,13 @@ CAMERA_TYPES = {
                    'russia1', 'traffic', 'tw', 'tw1', 'tw_road',
                    'tw_under_bridge', 't_crossroad'],
         'moving': ['driving1', 'driving2', 'driving_downtown', 'park',
-                   'lane_split']
+                   'lane_split', 'road_trip']
 }
+
+
+class COCOLabels(Enum):
+    """ COCO dataset object labels """
+    CAR = 3
+    BUS = 6
+    TRAIN = 7
+    TRUCK = 8

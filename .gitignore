@@ -6,5 +6,9 @@
 *.pyc
 .tags
 .pylintrc
+*.npy
+*.tar
+*.tar.gz
+*.zip
 __pycache__
 results
