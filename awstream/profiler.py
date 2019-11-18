@@ -2,7 +2,7 @@
 import os
 import subprocess
 import copy
-# import pdb
+import pdb
 from collections import defaultdict
 from utils.model_utils import eval_single_image
 from utils.utils import interpolation, compute_f1
@@ -41,7 +41,6 @@ def scale(box, in_resol, out_resol):
 
 def scale_boxes(boxes, in_resol, out_resol):
     """ scale a list of boxes """
-    # for idx, box in enumerate(boxes):
     return [scale(box, in_resol, out_resol) for box in boxes]
 
 
@@ -77,9 +76,9 @@ def compute_video_size(video_name, img_path, frame_range,
                              target_config.quantizer, output_video)
     # get the video size
     video_size = os.path.getsize(output_video)
-    os.remove(output_video)
+    # os.remove(output_video)
     os.remove(tmp_list_file)
-    print('target frame rate={}, target image resolution={}, video size={}'
+    print('target fps={}, target resolution={}, video size={}'
           .format(target_config.fps, image_resolution, video_size))
     return video_size
 
@@ -92,6 +91,7 @@ def eval_images(image_range, gtruth, full_model_dt, original_config,
     fpos = defaultdict(int)
     fneg = defaultdict(int)
     save_dt = []
+    # pdb.set_trace()
     for idx in range(image_range[0], image_range[1]+1):
         if idx not in full_model_dt or idx not in gtruth:
             continue
@@ -133,11 +133,12 @@ def find_target_fps(f1_list, fps_list, target_f1):
     return target_fps
 
 
-def profile(video_name, gtruth, dt_dict, original_config, frame_range,
+def profile(video_name, dt_dict, original_config, frame_range,
             f_profile, resolution_list, temporal_sampling_list, target_f1=0.9):
     """ profile the combinations of fps and resolution
         return a list of config that satisfys the requirements """
     result = []
+    gtruth = dt_dict[str(original_config.resolution[1]) + 'p']
 
     for resolution in resolution_list:
         # choose resolution
@@ -145,11 +146,9 @@ def profile(video_name, gtruth, dt_dict, original_config, frame_range,
 
         if resolution not in dt_dict:
             continue
-        print('profile start={}, end={}, resolution={}, orginal resolution={}'
+        print('profile [{}, {}], resolution={}, orginal resolution={}'
               .format(frame_range[0], frame_range[1], resolution,
                       original_config.resolution))
-
-        full_model_dt = copy.deepcopy(dt_dict[resolution])
 
         for sample_rate in temporal_sampling_list:
             # choose frame rate
@@ -157,7 +156,7 @@ def profile(video_name, gtruth, dt_dict, original_config, frame_range,
                                         original_config.fps/sample_rate)
 
             tp_total, fp_total, fn_total = eval_images(frame_range, gtruth,
-                                                       full_model_dt,
+                                                       dt_dict[resolution],
                                                        original_config,
                                                        target_config)
             f1_score = compute_f1(tp_total, fp_total, fn_total)
@@ -171,11 +170,9 @@ def profile(video_name, gtruth, dt_dict, original_config, frame_range,
             f1_list.append(f1_score)
 
         fps_list = [original_config.fps/x for x in temporal_sampling_list]
-        # f1_list = f1_score_list
 
         target_fps = find_target_fps(f1_list, fps_list, target_f1)
-        print("Resolution = {} and target frame rate = {}"
-              .format(resolution, target_fps))
+        print("Resolution={} and target fps={}".format(resolution, target_fps))
 
         if target_fps is not None:
             tmp = copy.deepcopy(original_config)
