@@ -1,10 +1,19 @@
 """ Some helper functions needed in feature scanning """
+from collections import defaultdict
+import numpy as np
 
 
 def nonzero(orig_list):
     """ strip off all zero values in the input list """
     nonzero_list = [e for e in orig_list if e != 0]
     return nonzero_list
+
+
+def nonan(orig_list):
+    """ strip off all numpy nan in the input list """
+    # nonzero_list = [e for e in orig_list if e != 0]
+    nonan_list = [x for x in orig_list if not np.isnan(x)]
+    return nonan_list
 
 
 def parse_feature_line(line):
@@ -162,3 +171,125 @@ def load_videostorm_results(filename):
                 acc_list.append(float(line_list[2]))
 
     return videos, perf_list, acc_list
+
+
+def load_videostorm_profile(filename):
+    """ Load videostorm profiling file """
+    videos = []
+    perf_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()  # remove headers
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            video = line_list[0]
+            if video not in videos:
+                videos.append(video)
+            perf_dict[video].append(float(line_list[1]))
+            # if len(line_list) == 3:
+            acc_dict[video].append(float(line_list[2]))
+
+    return videos, perf_dict, acc_dict
+
+
+def load_awstream_profile(filename, size_filename):
+    """ Load awstream profiling file """
+    video_sizes = {}
+    with open(size_filename, 'r') as f_size:
+        for line in f_size:
+            line_list = line.strip().split(',')
+            video_sizes[line_list[0]] = float(line_list[1])
+    videos = []
+    resol_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    size_dict = defaultdict(list)
+    cnt_dict = defaultdict(list)
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()  # remove headers
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            video = line_list[0]
+            if video not in videos:
+                videos.append(video)
+            # print(int(line_list[1].strip('p')))
+            resol_dict[video].append(int(line_list[1].strip('p')))
+            # if len(line_list) == 3:
+            acc_dict[video].append(float(line_list[3]))
+            if video+'_'+line_list[1] in video_sizes:
+                size_dict[video].append(video_sizes[video+'_'+line_list[1]])
+            else:
+                size_dict[video].append(0)
+            cnt_dict[video].append(int(line_list[4])+int(line_list[6]))
+
+    return videos, resol_dict, acc_dict, size_dict, cnt_dict
+
+
+# def load_awstream_results(filename):
+#     """ Load awstream result file """
+#     # TODO: finish this function
+#     videos = []
+#     perf_list = []
+#     acc_list = []
+#     with open(filename, 'r') as f_vs:
+#         f_vs.readline()
+#         for line in f_vs:
+#             line_list = line.strip().split(',')
+#             videos.append(line_list[0])
+#             perf_list.append(float(line_list[1]))
+#
+#             if len(line_list) == 3:
+#                 acc_list.append(float(line_list[2]))
+#
+#     return videos, perf_list, acc_list
+
+
+def load_30s_video_features(filename):
+    """ Load video features computed from FasterRCNN detections """
+    features = np.loadtxt(filename, delimiter=',', skiprows=1, usecols=(44))
+    videos = np.loadtxt(filename, dtype=str, delimiter=',', skiprows=1,
+                        usecols=(0))
+
+    ret_features = []
+    ret_videos = []
+    for feature, video in zip(features, videos):
+        if feature > 0:
+            ret_features.append(feature)
+            ret_videos.append(video)
+
+    return ret_videos, ret_features
+
+
+def num_frames_sampled(nb_frames, n_frame):
+    sample_times = nb_frames // n_frame
+    return sample_times * 2
+
+
+def sample_video_features(video_features, metadata, short_video_length,
+                          sample_rate):
+    """ Sample video features """
+    fps = metadata['frame rate']
+    # resolution = metadata['resolution']
+    frame_cnt = metadata['frame count']
+    short_vid_features = defaultdict(lambda: {'Object Count': [],
+                                              'Object Area': [],
+                                              'Total Object Area': [],
+                                              'Object Velocity': []})
+    short_vid_to_frame_id = defaultdict(list)
+    # sampled_velos = []
+    print("vidoe frame count={}, features frame count={}"
+          .format(frame_cnt, len(video_features.keys())))
+    for fid in range(1, frame_cnt+1):
+        short_vid = (fid-1)//(fps * short_video_length)
+        if fid % sample_rate == 0 and fid in video_features:
+            # print(frame_features[frame_idx])
+            # sampled_velos.extend(video_features[fid]['Object Velocity'])
+            short_vid_features[short_vid]['Object Velocity']\
+                .extend(video_features[fid]['Object Velocity'])
+            short_vid_features[short_vid]['Object Area'] \
+                .extend(video_features[fid]['Object Area'])
+            short_vid_features[short_vid]['Object Count'] \
+                .append(video_features[fid]['Object Count'])
+            short_vid_features[short_vid]['Total Object Area'] \
+                .append(video_features[fid]['Total Object Area'])
+            short_vid_to_frame_id[short_vid].append(fid)
+    return short_vid_features, short_vid_to_frame_id
