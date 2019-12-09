@@ -51,6 +51,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def main():
     """ feature scanning """
     args = parse_args()
@@ -71,7 +72,6 @@ def main():
         obj_area = video_features[i]['Object Area']
         filtered_obj_area = [val for val in obj_area if val > 0.02]
         video_features[i]['Object Area'] = filtered_obj_area
-
 
     if args.feature_file_simple:
         video_features_simple = load_video_features(args.feature_file_simple)
