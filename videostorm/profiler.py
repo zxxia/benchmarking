@@ -1,13 +1,13 @@
-""" VideoStrom Profiler """
+"""VideoStrom Profiler."""
 import copy
 from collections import defaultdict
 from utils.model_utils import eval_single_image
 from utils.utils import interpolation, compute_f1
 
 
-def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
+def profile(video_name, gt, start_frame, end_frame, frame_rate,
             temporal_sampling_list, f_profile, target_f1=0.9):
-    """ profile a list of frame rate """
+    """Profile a list of frame rate."""
     f1_list = []
     for sample_rate in temporal_sampling_list:
         tpos = defaultdict(int)
@@ -17,7 +17,7 @@ def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
 
         for img_index in range(start_frame, end_frame+1):
             dt_boxes_final = []
-            current_full_model_dt = full_model_dt[img_index]
+            current_full_model_dt = gt[img_index]
             current_gt = gt[img_index]
             # based on sample rate, decide whether this frame is sampled
             if img_index % sample_rate >= 1:
@@ -44,8 +44,6 @@ def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
 
     frame_rate_list = [frame_rate/x for x in temporal_sampling_list]
 
-    # current_f1_list = f1_score_list
-
     if f1_list[-1] < target_f1:
         target_frame_rate = None
         target_frame_rate = frame_rate
@@ -69,8 +67,8 @@ def profile(video_name, gt, full_model_dt, start_frame, end_frame, frame_rate,
     return best_frame_rate
 
 
-def profile_eval(gt, full_model_dt, best_sample_rate, start_frame, end_frame):
-    """ evaluation """
+def profile_eval(gt, best_sample_rate, start_frame, end_frame):
+    """Evaluation."""
     tpos = defaultdict(int)
     fpos = defaultdict(int)
     fneg = defaultdict(int)
@@ -78,7 +76,7 @@ def profile_eval(gt, full_model_dt, best_sample_rate, start_frame, end_frame):
 
     for img_index in range(start_frame, end_frame + 1):
         dt_boxes_final = []
-        current_full_model_dt = full_model_dt[img_index]
+        current_full_model_dt = gt[img_index]
         current_gt = gt[img_index]
         # based on sample rate, decide whether this frame is sampled
         if img_index % best_sample_rate >= 1:
