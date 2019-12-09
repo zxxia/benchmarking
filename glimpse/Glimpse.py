@@ -1,4 +1,5 @@
 """Glimpse Definition."""
+import csv
 from collections import defaultdict
 import numpy as np
 import cv2
@@ -20,7 +21,7 @@ def debug_print(msg):
 class Glimpse():
     """Glimpse Pipeline."""
 
-    def __init__(self, para1_list, para2_list, profile_log, mode='defulat',
+    def __init__(self, para1_list, para2_list, profile_log, mode='default',
                  target_f1=0.9):
         """Load the configs.
 
@@ -37,10 +38,9 @@ class Glimpse():
         self.para1_list = para1_list
         self.para2_list = para2_list
         self.target_f1 = target_f1
-        self.f_profile = open(profile_log, 'w', 1)
-        header = 'video chunk,para1,para2,f1,frame rate,' \
-            'ideal frame rate,trigger f1\n'
-        self.f_profile.write(header)
+        self.writer = csv.writer(open(profile_log, 'w', 1))
+        self.writer.writerow(['video chunk', 'para1', 'para2', 'f1',
+                              'frame rate,' 'ideal frame rate', 'trigger f1'])
         assert mode == 'default' or mode == 'frame select' or \
             mode == 'perfect tracking', 'wrong mode specified'
         self.mode = mode
@@ -50,8 +50,8 @@ class Glimpse():
         f1_diff = 1
         # the minimum f1 score which is greater than
         # or equal to target f1(e.g. 0.9)
-        fps = video.get_frame_rate()
-        resolution = video.get_resolution()
+        fps = video.frame_rate
+        resolution = video.resolution
         best_para1 = -1
         best_para2 = -1
 
@@ -76,12 +76,12 @@ class Glimpse():
                       'Profiled f1={}, Profiled perf={}, Ideal perf={}'
                       .format(para1, para2, f1, current_fps/fps,
                               ideal_fps / fps))
-                self.f_profile.write(','.join([clip, str(para1), str(para2),
-                                               str(f1), str(current_fps/fps),
-                                               str(ideal_fps/fps),
-                                               str(trigger_f1),
-                                               str(pix_change_obj),
-                                               str(pix_change_bg)])+'\n')
+                self.writer.writerow([clip, para1, para2,
+                                      f1, current_fps/fps,
+                                      ideal_fps/fps,
+                                      trigger_f1,
+                                      pix_change_obj,
+                                      pix_change_bg])
                 test_f1_list.append(f1)
                 test_fps_list.append(current_fps)
 
@@ -101,17 +101,15 @@ class Glimpse():
 
     def evaluate(self, video, test_start, test_end, para1, para2):
         """Evaluate a video from test start to test end."""
-        resolution = video.get_resolution()
+        resolution = video.resolution
         frame_diff_th = resolution[0]*resolution[1]/para1
         tracking_error_th = para2
-        triggered_frame, ideal_triggered_frame, f1, \
-            trigger_f1, video_trigger_log, pix_change_obj, \
-            pix_change_bg, frames_triggered = \
-            self.pipeline(video, test_start, test_end,
-                          frame_diff_th, tracking_error_th,
-                          view=False, mask_flag=True)
-        return triggered_frame, ideal_triggered_frame, f1, trigger_f1, \
-            video_trigger_log, pix_change_obj, pix_change_bg, frames_triggered
+        ideal_triggered_frame, f1, trigger_f1, pix_change_obj, pix_change_bg, \
+            frames_triggered = self.pipeline(video, test_start, test_end,
+                                             frame_diff_th, tracking_error_th,
+                                             view=False, mask_flag=True)
+        return ideal_triggered_frame, f1, trigger_f1, \
+            pix_change_obj, pix_change_bg, frames_triggered
 
     def pipeline(self, video, frame_start, frame_end,
                  frame_difference_thresh, tracking_error_thresh,
@@ -137,13 +135,24 @@ class Glimpse():
             frames_triggered - indices of frames triggered
 
         """
-        resolution = video.get_resolution()
-        filtered_gt = filter_video_detections(
-            video.get_video_detection(),
-            height_range=(resolution[1] // 20, resolution[1]),
-            target_types={COCOLabels.CAR.value,
-                          COCOLabels.BUS.value,
-                          COCOLabels.TRUCK.value})
+        resolution = video.resolution
+
+        # get filtered groudtruth
+        if video.video_type == 'static':
+            filtered_gt = filter_video_detections(
+                video.get_video_detection(),
+                target_types={COCOLabels.CAR.value,
+                              COCOLabels.BUS.value,
+                              COCOLabels.TRUCK.value},
+                width_range=(0, resolution[0]/2),
+                height_range=(0, resolution[1] / 2))
+        elif video.video_type == 'moving':
+            filtered_gt = filter_video_detections(
+                video.get_video_detection(),
+                target_types={COCOLabels.CAR.value,
+                              COCOLabels.BUS.value,
+                              COCOLabels.TRUCK.value},
+                height_range=(resolution[1] // 20, resolution[1]))
         obj_to_frame_range, frame_to_new_obj = object_appearance(frame_start,
                                                                  frame_end,
                                                                  filtered_gt)
@@ -216,7 +225,6 @@ class Glimpse():
                 frame_gray_masked = frame_gray.copy() * mask
                 # compute frame difference
 
-                # TODO: the computation of useful pixels has a bug
                 frame_diff, pix_change, pix_change_obj, pix_change_bg = \
                     frame_difference(lastTriggeredFrameGray_masked,
                                      frame_gray_masked,
@@ -226,7 +234,6 @@ class Glimpse():
                 pix_change_bg_list.append(pix_change_bg)
             else:
                 # compute frame difference
-                # TODO: the computation of useful pixels has a bug
                 frame_diff, pix_change, pix_change_obj, pix_change_bg = \
                     frame_difference(lastTriggeredFrameGray, frame_gray,
                                      filtered_gt[last_triggered_frame_idx],
@@ -296,6 +303,7 @@ class Glimpse():
                     dt_glimpse[i] = [box for box in filtered_gt[i]
                                      if box[-1] in obj_id_in_perv_frame]
                 else:
+                    # TODO: need to test
                     # default mode do tracking
                     # prev frame is not empty, do tracking
                     status, new_boxes = \
