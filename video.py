@@ -1,10 +1,11 @@
 """Definition of videos."""
 import os
+import subprocess
+import cv2
 from utils.model_utils import load_full_model_detection, \
     filter_video_detections
 from utils.utils import load_metadata
 from constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
-import cv2
 
 
 class Video:
@@ -79,10 +80,10 @@ class Video:
         """Return the object detections at frame index."""
         return self._detections
 
-    def encode(self):
-        # TODO: finish the encoding logic
-        """Encode the frames into a video."""
-        return None
+    def encode(self, output_video_name, target_frame_indices=None,
+               target_frame_rate=None):
+        """Encode the frames into a video and return output video size."""
+        return 0
 
 
 class YoutubeVideo(Video):
@@ -134,12 +135,40 @@ class YoutubeVideo(Video):
     def get_frame_image(self, frame_index, is_gray_scale=False):
         """Return the image at frame index."""
         img_name = format(frame_index, '06d') + '.jpg'
-        img_file = os.path.join(self.image_path, img_name)
+        img_file = os.path.join(self._image_path, img_name)
         if is_gray_scale:
             img = cv2.imread(img_file, 0)
         else:
             img = cv2.imread(img_file)
         return img
+
+    def encode(self, output_video_name, target_frame_indices=None,
+               target_frame_rate=None):
+        # TODO: need to test
+        """Encode the frames into a video."""
+        tmp_list_file = output_video_name + '_list.txt'
+        with open(tmp_list_file, 'w') as f_list:
+            for i in target_frame_indices:
+                # based on sample rate, decide whether this frame is sampled
+                line = 'file \'{}/{:06}.jpg\'\n'.format(self._image_path, i)
+                f_list.write(line)
+
+        # compress the sampled image into a video
+        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+
+        cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
+               str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+               tmp_list_file, '-s', frame_size,
+               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+               'yuv420p', '-hide_banner', output_video_name]
+        subprocess.run(cmd, check=True)
+        # get the video size
+        video_size = os.path.getsize(output_video_name)
+        # os.remove(output_video)
+        os.remove(tmp_list_file)
+        print('target fps={}, target resolution={}, video size={}'
+              .format(target_frame_rate, self._resolution, video_size))
+        return video_size
 
 
 class KittiVideo(Video):
@@ -161,7 +190,7 @@ class KittiVideo(Video):
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img_name = format(frame_index, '010d') + '.png'
-        img_file = os.path.join(self.image_path, img_name)
+        img_file = os.path.join(self._image_path, img_name)
         img = cv2.imread(img_file)
         return img
 
