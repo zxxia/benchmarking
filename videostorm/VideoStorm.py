@@ -109,3 +109,40 @@ class VideoStorm():
 
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         return f1_score, triggered_frames
+
+
+def load_videostorm_results(filename):
+    """Load videostorm result file."""
+    videos = []
+    perf_list = []
+    acc_list = []
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            videos.append(line_list[0])
+            perf_list.append(float(line_list[1]))
+
+            if len(line_list) == 3:
+                acc_list.append(float(line_list[2]))
+
+    return videos, perf_list, acc_list
+
+
+def load_videostorm_profile(filename):
+    """Load videostorm profiling file."""
+    videos = []
+    perf_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()  # remove headers
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            video = line_list[0]
+            if video not in videos:
+                videos.append(video)
+            perf_dict[video].append(float(line_list[1]))
+            # if len(line_list) == 3:
+            acc_dict[video].append(float(line_list[2]))
+
+    return videos, perf_dict, acc_dict
