@@ -2,25 +2,9 @@
 import csv
 import copy
 from collections import defaultdict
-# import os
-# import subprocess
 import pdb
 from utils.model_utils import eval_single_image
 from utils.utils import interpolation, compute_f1
-
-
-# class VideoConfig:
-#     """VideoConfig used in Awstream."""
-#
-#     def __init__(self, resolution, fps, quantizer=25):
-#         self.resolution = resolution
-#         self.fps = fps
-#         self.quantizer = quantizer
-#
-#     def debug_print(self):
-#         """Print the detail of a config."""
-#         print('resolution={}, fps={}, quantizer={}'
-#               .format(self.resolution, self.fps, self.quantizer))
 
 
 class Awstream():
@@ -41,8 +25,7 @@ class Awstream():
 
         Return a list of config that satisfys the requirements.
         """
-        original_bw = original_video.encode(video_name+'mp4',
-                                            original_video,
+        original_bw = original_video.encode(video_name+'.mp4',
                                             list(range(frame_range[0],
                                                        frame_range[1])),
                                             original_video.frame_rate)
@@ -94,11 +77,11 @@ class Awstream():
                 bndwdth = video.encode(video_name + '.mp4',
                                        target_frame_indices,
                                        target_fps)
-
+                print(min_bw, bndwdth)
                 if bndwdth <= min_bw:
                     min_bw = bndwdth
                     best_resol = video.resolution
-                    best_fps = video.frame_rate
+                    best_fps = video.frame_rate / sample_rate
         best_relative_bw = min_bw / original_bw
         return best_resol, best_fps, best_relative_bw
 
@@ -116,6 +99,7 @@ class Awstream():
             # based on sample rate,decide whether this frame is sampled
             if img_index % sample_rate >= 1:
                 continue
+            target_frame_indices.append(img_index)
         bndwdth = video.encode(
             video_name, target_frame_indices, best_frame_rate)
         tp_total, fp_total, fn_total = eval_images(frame_range, original_video,
