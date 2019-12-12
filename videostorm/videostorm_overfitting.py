@@ -41,8 +41,8 @@ def main():
     print("processing", args.video)
     video = YoutubeVideo(args.video, '720p', args.metadata_file, args.input,
                          None, True)
-    frame_rate = video.get_frame_rate()
-    frame_count = video.get_frame_count()
+    frame_rate = video.frame_rate
+    frame_count = video.frame_count
 
     system = VideoStorm(TEMPORAL_SAMPLING_LIST, args.log)
 
