@@ -85,6 +85,10 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
+    # def compute_object_size():
+    #     # TODO: consider implementing the feature computation in video
+    #     return 0
+
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
@@ -97,6 +101,7 @@ class YoutubeVideo(Video):
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = RESOL_DICT[resolution_name]
 
+        # TODO: handle overlapping boxes
         if name in CAMERA_TYPES['static']:
             camera_type = 'static'
             if filter_flag:  # doing bboxes filtering
@@ -146,6 +151,7 @@ class YoutubeVideo(Video):
                target_frame_rate=None):
         # TODO: need to test
         """Encode the frames into a video."""
+        print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
         with open(tmp_list_file, 'w') as f_list:
             for i in target_frame_indices:
@@ -168,6 +174,8 @@ class YoutubeVideo(Video):
         os.remove(tmp_list_file)
         print('target fps={}, target resolution={}, video size={}'
               .format(target_frame_rate, self._resolution, video_size))
+        print('finish generating {} and size={}'.format(
+            output_video_name, video_size))
         return video_size
 
 

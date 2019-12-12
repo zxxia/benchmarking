@@ -2,8 +2,8 @@
 import json
 import os
 import numpy as np
-from skimage.io import imread
-from skimage.transform import resize
+# from skimage.io import imread
+# from skimage.transform import resize
 # from keras.preprocessing import image
 from collections import defaultdict, Counter
 
@@ -13,6 +13,7 @@ def resol_str_to_int(resol_str):
         e.g. "720p" -> 720
     """
     return int(resol_str.strip('p'))
+
 
 def create_dir(path):
     if not os.path.exists(path):
@@ -26,6 +27,7 @@ def load_metadata(filename):
     with open(filename) as f:
         metadata = json.load(f)
     return metadata
+
 
 def compute_f1(tp, fp, fn):
     if tp:
@@ -128,6 +130,7 @@ def interpolation(point_a, point_b, target_x):
     target_y = k*target_x + b
     return target_y
 
+
 def Most_Common(lst):
     data = Counter(lst)
     return data.most_common(1)[0][0]
@@ -158,7 +161,7 @@ def IoU(boxA, boxB):
 
 
 def CDF(data, num_bins=20, normed=True):
-    data_size=len(data)
+    data_size = len(data)
 
     # Set bins edges
     data_set = sorted(set(data))

@@ -95,41 +95,46 @@ def parse_args():
 def load_detections(video, dt_file, resol):
     """ load and filter  """
     dts, nb_frame = load_full_model_detection(dt_file)
-    if video in CAMERA_TYPES['moving']:
-        dts = filter_video_detections(dts,
-                                      target_types={COCOLabels.CAR.value,
-                                                    COCOLabels.BUS.value,
-                                                    COCOLabels.TRAIN.value,
-                                                    COCOLabels.TRUCK.value},
-                                      height_range=(RESOL_DICT[resol][1]//20,
-                                                    RESOL_DICT[resol][1]))
-    else:
-        dts = filter_video_detections(dts,
-                                      target_types={COCOLabels.CAR.value,
-                                                    COCOLabels.BUS.value,
-                                                    COCOLabels.TRAIN.value,
-                                                    COCOLabels.TRUCK.value},
-                                      width_range=(0, RESOL_DICT[resol][0]/2),
-                                      height_range=(RESOL_DICT[resol][0]//20,
-                                                    RESOL_DICT[resol][0]/2))
-    for frame_idx, bboxes in dts.items():
-        for box_pos, box in enumerate(bboxes):
-            box[4] = COCOLabels.CAR.value
-            bboxes[box_pos] = box
-        dts[frame_idx] = bboxes
+    # if video in CAMERA_TYPES['moving']:
+    #     dts = filter_video_detections(dts,
+    #                                   target_types={COCOLabels.CAR.value,
+    #                                                 COCOLabels.BUS.value,
+    #                                                 COCOLabels.TRAIN.value,
+    #                                                 COCOLabels.TRUCK.value},
+    #                                   height_range=(RESOL_DICT[resol][1]//20,
+    #                                                 RESOL_DICT[resol][1]))
+    # else:
+    #     dts = filter_video_detections(dts,
+    #                                   target_types={COCOLabels.CAR.value,
+    #                                                 COCOLabels.BUS.value,
+    #                                                 COCOLabels.TRAIN.value,
+    #                                                 COCOLabels.TRUCK.value},
+    #                                   width_range=(0, RESOL_DICT[resol][0]/2),
+    #                                   height_range=(RESOL_DICT[resol][0]//20,
+    #                                                 RESOL_DICT[resol][0]/2))
+    # for frame_idx, bboxes in dts.items():
+    #     for box_pos, box in enumerate(bboxes):
+    #         box[4] = COCOLabels.CAR.value
+    #         bboxes[box_pos] = box
+    #     dts[frame_idx] = bboxes
+
     # road_trip
-    # for frame_idx in frcnn_dt2:
+    # for frame_idx in dts:
     #     tmp_boxes = []
-    #     for box in frcnn_dt2[frame_idx]:
+    #     for box in dts[frame_idx]:
     #         xmin, ymin, xmax, ymax = box[:4]
-    #         if ymin >= 500 and ymax >= 500 and (xmax - xmin) >= 1280/2:
+    #         if ymin >= 500/720*RESOL_DICT[resol][1]:
     #             continue
+    #         if ymax >= 600/720*RESOL_DICT[resol][1]:
+    #             continue
+    #         # if (xmax - xmin) >= 2/3 * RESOL_DICT[resol][0]:
+    #         #     continue
     #         tmp_boxes.append(box)
-    #     frcnn_dt2[frame_idx] = tmp_boxes
-    for i, boxes in dts.items():
+    #     dts[frame_idx] = tmp_boxes
+    # for i, boxes in dts.items():
         # import pdb
         # pdb.set_trace()
-        dts[i] = remove_overlappings(boxes)
+        # dts[i] = remove_overlappings(boxes)
 
     return dts, nb_frame
 
