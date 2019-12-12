@@ -10,5 +10,6 @@
 *.tar
 *.tar.gz
 *.zip
+*.png
 __pycache__
 results

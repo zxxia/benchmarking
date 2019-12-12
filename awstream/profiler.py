@@ -1,4 +1,4 @@
-""" the functions needed to profile and evaluate in Awstream """
+"""The functions needed to profile and evaluate in Awstream."""
 import os
 import subprocess
 import copy
@@ -11,6 +11,7 @@ from constants import RESOL_DICT
 
 class VideoConfig:
     """ VideoConfig used in Awstream """
+
     def __init__(self, resolution, fps, quantizer=25):
         self.resolution = resolution
         self.fps = fps
@@ -46,7 +47,7 @@ def scale_boxes(boxes, in_resol, out_resol):
 
 def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
                              quality: int, output_name: str):
-    ''' Compress a set of frames to a video.  '''
+    '''Compress a set of frames to a video.'''
     cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r', str(frame_rate), '-f',
            'concat', '-safe', '0', '-i', list_file, '-s', str(resolution),
            '-vcodec', 'libx264', '-crf', str(quality), '-pix_fmt', 'yuv420p',
@@ -56,7 +57,7 @@ def compress_images_to_video(list_file: str, frame_rate: str, resolution: str,
 
 def compute_video_size(video_name, img_path, frame_range,
                        original_config, target_config):
-    """ return the size of the video compressed based on the parameters """
+    """Return the size of the video compressed based on the parameters"""
     image_resolution = target_config.resolution
     # Create a tmp list file contains all the selected iamges
     tmp_list_file = video_name + '_list.txt'
@@ -85,7 +86,7 @@ def compute_video_size(video_name, img_path, frame_range,
 
 def eval_images(image_range, gtruth, full_model_dt, original_config,
                 target_config):
-    """ evaluate the tp, fp, fn of a range of images """
+    """Evaluate the tp, fp, fn of a range of images."""
     sample_rate = round(original_config.fps/target_config.fps)
     tpos = defaultdict(int)
     fpos = defaultdict(int)
@@ -118,12 +119,16 @@ def eval_images(image_range, gtruth, full_model_dt, original_config,
 
 
 def find_target_fps(f1_list, fps_list, target_f1):
-    """ use interpolation to find the ideal fps at target f1 """
+    """Use interpolation to find the ideal fps at target f1."""
     if f1_list[-1] < target_f1:
         target_fps = None
     else:
-        index = next(x[0] for x in enumerate(f1_list)
-                     if x[1] > target_f1)
+        try:
+            index = next(x[0] for x in enumerate(f1_list)
+                         if x[1] >= target_f1)
+        except StopIteration:
+            pdb.set_trace()
+
         if index == 0:
             target_fps = fps_list[0]
         else:
@@ -135,8 +140,10 @@ def find_target_fps(f1_list, fps_list, target_f1):
 
 def profile(video_name, dt_dict, original_config, frame_range,
             f_profile, resolution_list, temporal_sampling_list, target_f1=0.9):
-    """ profile the combinations of fps and resolution
-        return a list of config that satisfys the requirements """
+    """Profile the combinations of fps and resolution.
+
+    Return a list of config that satisfys the requirements.
+    """
     result = []
     gtruth = dt_dict[str(original_config.resolution[1]) + 'p']
 
@@ -184,7 +191,7 @@ def profile(video_name, dt_dict, original_config, frame_range,
 
 def select_best_config(video, img_path_dict, original_config, configs,
                        frame_range):
-    """ select the best config from a list of configs """
+    """Select the best config from a list of configs."""
     resol = str(original_config.resolution[1]) + 'p'
     best_config = original_config
     original_bw = compute_video_size(video, img_path_dict[resol], frame_range,

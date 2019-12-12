@@ -20,7 +20,7 @@ DATA_PATH = '/data/zxxia/videos/'
 TEMPORAL_SAMPLING_LIST = [1]
 
 OFFSET = 0
-RESOLUTION_LIST = ['720p', '540p', '480p', '360p', '180p']  # '2160p', '1080p',
+RESOLUTION_LIST = ['720p', '540p', '480p', '360p']  # '2160p', '1080p',
 ORIGINAL_REOSL = '720p'
 
 
@@ -74,34 +74,36 @@ def main():
                     filter_video_detections(dt_dict[resol],
                                             target_types={COCOLabels.CAR.value,
                                                           COCOLabels.BUS.value,
-                                                          COCOLabels.TRAIN.value,
+                                                          # COCOLabels.TRAIN.value,
                                                           COCOLabels.TRUCK.value},
                                             height_range=(cur_h//20, cur_h))
             else:
                 dt_dict[resol] = \
                     filter_video_detections(dt_dict[resol], target_types={
-                        COCOLabels.CAR.value, COCOLabels.BUS.value,
-                        COCOLabels.TRAIN.value, COCOLabels.TRUCK.value},
-                                            width_range=(0, cur_w/2),
-                                            height_range=(cur_h//20, cur_h/2))
+                        COCOLabels.CAR.value,
+                        COCOLabels.BUS.value,
+                        # COCOLabels.TRAIN.value,
+                        COCOLabels.TRUCK.value},
+                    width_range=(0, cur_w/2),
+                    height_range=(cur_h//20, cur_h/2))
             for frame_idx, boxes in dt_dict[resol].items():
                 for box_idx, _ in enumerate(boxes):
                     # Merge all cars and trucks into cars
                     dt_dict[resol][frame_idx][box_idx][4] = COCOLabels.CAR.value
                 dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
 
-            # if args.video == 'road_trip':
-            #     for frame_idx in dt_dict[resol]:
-            #         tmp_boxes = []
-            #         for box in dt_dict[resol][frame_idx]:
-            #             xmin, ymin, xmax, ymax = box[:4]
-            #             if ymin >= 500/720*RESOL_DICT[resol][1] \
-            #                     and ymax >= 500/720*RESOL_DICT[resol][1]:
-            #                 continue
-            #             if (xmax - xmin) >= 2/3 * RESOL_DICT[resol][0]:
-            #                 continue
-            #             tmp_boxes.append(box)
-            #         dt_dict[resol][frame_idx] = tmp_boxes
+            if args.video == 'road_trip':
+                for frame_idx in dt_dict[resol]:
+                    tmp_boxes = []
+                    for box in dt_dict[resol][frame_idx]:
+                        xmin, ymin, xmax, ymax = box[:4]
+                        if ymin >= 500/720*RESOL_DICT[resol][1] \
+                                and ymax >= 500/720*RESOL_DICT[resol][1]:
+                            continue
+                        if (xmax - xmin) >= 2/3 * RESOL_DICT[resol][0]:
+                            continue
+                        tmp_boxes.append(box)
+                    dt_dict[resol][frame_idx] = tmp_boxes
 
         for i in range(num_of_short_videos):
             clip = args.video + '_' + str(i)
