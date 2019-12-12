@@ -615,3 +615,50 @@ def object_appearance(start, end, gt):
             frame_to_new_obj[obj_to_frame_range[obj_id][0]] = [obj_id]
 
     return obj_to_frame_range, frame_to_new_obj
+
+
+def load_glimpse_profile(filename):
+    """Load glimplse profile file."""
+    videos = []
+    para1_dict = defaultdict(list)
+    perf_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    with open(filename, 'r') as f_gl:
+        f_gl.readline()  # remove headers
+        for line in f_gl:
+            cols = line.strip().split(',')
+            video = cols[0]
+            if video not in videos:
+                videos.append(video)
+            perf_dict[video].append(float(cols[4]))
+            acc_dict[video].append(float(cols[3]))
+            para1_dict[video].append(float(cols[1]))
+
+    return videos, perf_dict, acc_dict, para1_dict
+
+
+def load_glimpse_results(filename):
+    """Load glimplse result file."""
+    video_clips = []
+    f1_score = []
+    perf = []
+    ideal_perf = []
+    trigger_f1 = []
+    with open(filename, 'r') as f_glimpse:
+        f_glimpse.readline()
+        for line in f_glimpse:
+            print(line)
+            cols = line.strip().split(',')
+            video_clips.append(cols[0])
+            f1_score.append(float(cols[3]))
+            perf.append(float(cols[4]))
+            if len(cols) == 6:
+                ideal_perf.append(float(cols[5]))
+            if len(cols) == 7:
+                ideal_perf.append(float(cols[5]))
+                trigger_f1.append(float(cols[6]))
+    if len(cols) == 6:
+        return video_clips, perf, f1_score, ideal_perf
+    if len(cols) == 7:
+        return video_clips, perf, f1_score, ideal_perf, trigger_f1
+    return video_clips, perf, f1_score

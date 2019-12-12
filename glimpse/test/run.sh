@@ -12,27 +12,32 @@ VIDEOS="crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
         tw_under_bridge lane_split russia"
 # VIDEOS="traffic"
 
+# for VIDEO in $VIDEOS
+# do
+#     python test_glimpse_frame_select.py \
+#         --video $VIDEO \
+#         --metadata $DATA_PATH$VIDEO/metadata.json \
+#         --output glimpse_e2e_frame_select_results/glimpse_frame_select_${VIDEO}.csv \
+#         --log glimpse_e2e_frame_select_profile/profile_${VIDEO}.csv \
+#         --short_video_length $SHORT_VIDEO_LENGTH \
+#         --profile_length $PROFILE_LENGTH \
+#         --offset $OFFSET \
+#         --trace_path frame_select_traces &
+#         # --target_f1 $TARGET_F1 &
+# done
+
 for VIDEO in $VIDEOS
 do
-    # python glimpse_E2E.py \
-    #     --path $DATA_PATH$VIDEO/ \
-    #     --video $VIDEO \
-    #     --metadata $DATA_PATH$VIDEO/metadata.json \
-    #     --output $OUTPUT_FILE \
-    #     --short_video_length $SHORT_VIDEO_LENGTH \
-    #     --profile_length $PROFILE_LENGTH \
-    #     --offset $OFFSET \
-    #     --target_f1 $TARGET_F1
-    python glimpse_frame_select.py \
-        --path $DATA_PATH$VIDEO/ \
+    python test_glimpse_frame_select.py \
         --video $VIDEO \
         --metadata $DATA_PATH$VIDEO/metadata.json \
-        --output test_traces_results/glimpse_perfect_tracking_${VIDEO}.csv \
-        --log test_traces_profile/profile_${VIDEO}.csv \
+        --output glimpse_e2e_perfect_tracking_results/glimpse_perfect_tracking_${VIDEO}.csv \
+        --log glimpse_e2e_perfect_tracking_profile/profile_${VIDEO}.csv \
         --short_video_length $SHORT_VIDEO_LENGTH \
         --profile_length $PROFILE_LENGTH \
         --offset $OFFSET \
-        --target_f1 $TARGET_F1 &
+        --trace_path perfect_tracking_traces &
+        # --target_f1 $TARGET_F1 &
 done
 
 # DATA_PATH='/data2/zxxia/KITTI/'

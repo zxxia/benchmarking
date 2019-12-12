@@ -2,11 +2,13 @@ import cv2
 # import time
 import numpy as np
 from collections import defaultdict
-# import os
+import os
 from utils.utils import interpolation, compute_f1
-from utils.model_utils import eval_single_image, filter_video_detections, filter_frame_detections
+from utils.model_utils import eval_single_image, filter_video_detections, \
+    filter_frame_detections
 from matplotlib import pyplot as plt
 import pdb
+from constants import COCOLabels, RESOL_DICT
 
 DEBUG = False
 # DEBUG = True
@@ -17,7 +19,8 @@ def debug_print(msg):
         print(msg)
 
 
-def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes, thresh=35):
+def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
+                     thresh=35):
     '''
     Compute the number of pixel value differences which are greater than thresh
     '''
@@ -38,14 +41,13 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes, thresh
     pix_change = np.sum(mask)
     pix_change_bg = pix_change - pix_change_obj
 
-    return pix_change, (mask*255).astype(np.uint8), pix_change_obj, pix_change_bg
+    return pix_change, (mask*255).astype(np.uint8), pix_change_obj, \
+        pix_change_bg
 
 
 def object_pixel_difference(old_frame, new_frame, boxes, thresh=35):
-    '''
-    Compute the number of boxed pixel value differences which are greater than
-    thresh
-    '''
+    '''Compute the number of boxed pixel value differences which are greater
+    than thresh.'''
     # thresh = 35 is used in Glimpse paper
     pdb.set_trace()
     diff = np.absolute(new_frame - old_frame)
@@ -77,14 +79,16 @@ def compute_target_frame_rate(frame_rate_list, f1_list, target_f1=0.9):
     index = next(x[0] for x in enumerate(f1_list_sorted) if x[1] > target_f1)
     if index == 0:
         target_frame_rate = frame_rate_list_sorted[0]
-        return target_frame_rate, -1, f1_list_sorted[index], -1, frame_rate_list_sorted[index]
+        return target_frame_rate, -1, f1_list_sorted[index], -1,\
+            frame_rate_list_sorted[index]
     else:
         point_a = (f1_list_sorted[index-1], frame_rate_list_sorted[index-1])
         point_b = (f1_list_sorted[index], frame_rate_list_sorted[index])
 
         target_frame_rate = interpolation(point_a, point_b, target_f1)
-        return target_frame_rate, f1_list_sorted[index-1], f1_list_sorted[index], \
-               frame_rate_list_sorted[index-1], frame_rate_list_sorted[index]
+        return target_frame_rate, f1_list_sorted[index - 1], \
+            f1_list_sorted[index], frame_rate_list_sorted[index-1], \
+            frame_rate_list_sorted[index]
 
 
 # write glimpse detection results to file
@@ -396,14 +400,16 @@ def bbox_to_ids(bboxes):
 def visualize(newFrameGray, mask, gt, dt_glimpse, i, frame_to_new_obj):
 
     # print(newFrameGray.shape)
-    for [x, y, xmax, ymax, t, score, obj_id] in filter_frame_detections(dt_glimpse[i], target_types={3, 8}):
+    for [x, y, xmax, ymax, t, score, obj_id] in filter_frame_detections(
+            dt_glimpse[i], target_types={3, 8}):
         try:
             cv2.rectangle(newFrameGray, (x, y), (xmax, ymax),
                           (255, 255, 255), 3)
         except TypeError:
             pdb.set_trace()
 
-    for [x, y, xmax, ymax, t, score, obj_id] in filter_frame_detections(gt[i], target_types={3, 8}):
+    for [x, y, xmax, ymax, t, score, obj_id] in filter_frame_detections(
+            gt[i], target_types={3, 8}):
         cv2.rectangle(newFrameGray, (x, y), (xmax, ymax), (0, 0, 0), 1)
         if frame_to_new_obj is not None and i in frame_to_new_obj and \
                 obj_id in frame_to_new_obj[i]:
@@ -511,11 +517,11 @@ def pipeline_perfect_tracking(img_path, gt, frame_start, frame_end,
             newFrameGray_masked = newFrameGray.copy() * mask
             # compute frame difference
             frame_diff, pix_change = frame_difference(
-                    lastTriggeredFrameGray_masked, newFrameGray_masked)
+                lastTriggeredFrameGray_masked, newFrameGray_masked)
         else:
             # compute frame difference
             frame_diff, pix_change = frame_difference(
-                    lastTriggeredFrameGray, newFrameGray)
+                lastTriggeredFrameGray, newFrameGray)
         if frame_diff > frame_difference_thresh:
             # triggered
             # run inference to get the detection results
@@ -760,8 +766,8 @@ def pipeline(img_path, gt, frame_start, frame_end, image_resolution,
 
 
 def pipeline_frame_select(img_path, gt, frame_start, frame_end,
-                              frame_difference_thresh, tracking_error_thresh,
-                              img_name_format, view=False, mask_flag=False):
+                          frame_difference_thresh, tracking_error_thresh,
+                          img_name_format, view=False, mask_flag=False):
     '''
     Only frame difference triggering is implemented in this function.
     Tracking module is not implmented. Instead, detections from the previsous
@@ -769,27 +775,29 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
     videostorm.
     '''
 
-    filtered_gt = filter_video_detections(gt, height_range=(720//20, 720), target_types={3, 8})
+    filtered_gt = filter_video_detections(
+        gt, height_range=(720 // 20, 720),
+        target_types={COCOLabels.CAR.value,
+                      COCOLabels.BUS.value,
+                      COCOLabels.TRUCK.value})
     obj_to_frame_range, frame_to_new_obj = object_appearance(frame_start,
                                                              frame_end,
                                                              filtered_gt)
-    # object_duration_analysis(obj_to_frame_range)
-    # return
     ideally_triggered_frames = set()
     for obj_id in obj_to_frame_range:
         frame_range = obj_to_frame_range[obj_id]
         ideally_triggered_frames.add(frame_range[0])
     ideal_nb_triggered = len(ideally_triggered_frames)
 
-    # frame_flag = {}
     dt_glimpse = defaultdict(list)
     triggered_frame = 0
+    frames_triggered = set()
     cn = 0
     video_trigger_log = list()
 
     # start from the first frame
     # The first frame has to be sent to server.
-    img_name = img_path + img_name_format.format(frame_start)
+    img_name = os.path.join(img_path, img_name_format.format(frame_start))
     oldFrameGray = cv2.imread(img_name, 0)
     assert oldFrameGray is not None, 'cannot read image {}'.format(img_name)
     lastTriggeredFrameGray = oldFrameGray.copy()
@@ -798,7 +806,6 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
     # get detection from server
     dt_glimpse[frame_start] = gt[frame_start]
     # if detection is obtained from server, set frame_flag to 1
-    # frame_flag[frame_start] = 1
     pix_change = np.zeros_like(oldFrameGray)
     if view:
         view = visualize(oldFrameGray, pix_change, gt, dt_glimpse, frame_start,
@@ -809,6 +816,7 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
                          'threshold': float(frame_difference_thresh)}
     video_trigger_log.append(frame_trigger_log)
     triggered_frame += 1  # count triggered fames
+    frames_triggered.add(frame_start)
     cn += 1
     tp = 0
 
@@ -831,7 +839,8 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
             for box in dt_glimpse[last_triggered_frame_idx]:
                 # print('\t', box)
                 xmin, ymin, xmax, ymax, t = box[:5]
-                if t not in {3, 8}:
+                if t not in {COCOLabels.CAR.value, COCOLabels.BUS.value,
+                             COCOLabels.TRUCK.value}:
                     mask[ymin:ymax, xmin:xmax] = 0
             # print('previous frame {} has boxes:'.format(i-1))
 
@@ -839,7 +848,8 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
             for box in gt[i]:
                 # print('\t', box)
                 xmin, ymin, xmax, ymax, t = box[:5]
-                if t not in {3, 8}:
+                if t not in {COCOLabels.CAR.value, COCOLabels.BUS.value,
+                             COCOLabels.TRUCK.value}:
                     mask[ymin:ymax, xmin:xmax] = 0
             # for box in dt_glimpse[i-1]:
             #     # print('\t', box)
@@ -850,26 +860,42 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
             newFrameGray_masked = newFrameGray.copy() * mask
             # compute frame difference
             frame_diff, pix_change, pix_change_obj, pix_change_bg = frame_difference(
-                    lastTriggeredFrameGray_masked, newFrameGray_masked,
-                    filter_frame_detections(dt_glimpse[last_triggered_frame_idx],
-                                            target_types={3,8}, height_range=(720//20, 720)),
-                    filter_frame_detections(gt[i],
-                                            target_types={3,8}, height_range=(720//20, 720)))
+                lastTriggeredFrameGray_masked, newFrameGray_masked,
+                filter_frame_detections(dt_glimpse[last_triggered_frame_idx],
+                                        target_types={COCOLabels.CAR.value,
+                                                      COCOLabels.BUS.value,
+                                                      COCOLabels.TRUCK.value},
+                                        height_range=(720 // 20, 720)),
+                filter_frame_detections(gt[i],
+                                        target_types={COCOLabels.CAR.value,
+                                                      COCOLabels.BUS.value,
+                                                      COCOLabels.TRUCK.value},
+                                        height_range=(720 // 20, 720)))
             pix_change_obj_list.append(pix_change_obj)
             pix_change_bg_list.append(pix_change_bg)
         else:
             # compute frame difference
-            frame_diff, pix_change, pix_change_obj, pix_change_bg = frame_difference(
-                    lastTriggeredFrameGray, newFrameGray, dt_glimpse[last_triggered_frame_idx],
-                    filter_frame_detections(dt_glimpse[last_triggered_frame_idx],
-                                            target_types={3,8}, height_range=(720//20, 720)),
-                    filter_frame_detections(gt[i],
-                                            target_types={3,8}, height_range=(720//20, 720)))
+            frame_diff, pix_change, pix_change_obj, pix_change_bg = \
+                frame_difference(lastTriggeredFrameGray, newFrameGray,
+                                 dt_glimpse[last_triggered_frame_idx],
+                                 filter_frame_detections(
+                                     dt_glimpse[last_triggered_frame_idx],
+                                     target_types={COCOLabels.CAR.value,
+                                                   COCOLabels.BUS.value,
+                                                   COCOLabels.TRUCK.value},
+                                     height_range=(720 // 20, 720)),
+                                 filter_frame_detections(
+                                     gt[i],
+                                     target_types={COCOLabels.CAR.value,
+                                                   COCOLabels.BUS.value,
+                                                   COCOLabels.TRUCK.value},
+                                     height_range=(720 // 20, 720)))
         if frame_diff > frame_difference_thresh:
             # triggered
             # run inference to get the detection results
             dt_glimpse[i] = gt[i].copy()
             triggered_frame += 1
+            frames_triggered.add(i)
             oldFrameGray = newFrameGray.copy()
             lastTriggeredFrameGray = oldFrameGray.copy()
             debug_print('frame diff {} > th {}, trigger {}, last trigger {}'
@@ -932,18 +958,25 @@ def pipeline_frame_select(img_path, gt, frame_start, frame_end,
 
     # write_pipeline_result(frame_start, frame_end, gt_annot, dt_glimpse,
     #                         frame_flag, csvf)
-    filtered_dt_glimpse = filter_video_detections(dt_glimpse, height_range=(720//20, 720),
-                                                  target_types={3, 8})
+    filtered_dt_glimpse = filter_video_detections(
+        dt_glimpse,
+        height_range=(720 // 20, 720),
+        target_types={COCOLabels.CAR.value,
+                      COCOLabels.BUS.value,
+                      COCOLabels.TRUCK.value})
     f1 = eval_pipeline_accuracy(frame_start, frame_end, filtered_gt,
                                 filtered_dt_glimpse)
     fp = triggered_frame - tp
     fn = len(ideally_triggered_frames)
-    print('tp={}, fp={}, fn={}, nb_triggered={}, nb_ideal={}, pix_change_obj={}, pix_change_bg={}'
-          .format(tp, fp, fn, triggered_frame, ideal_nb_triggered, np.mean(pix_change_obj_list), np.mean(pix_change_bg_list)))
+    print('tp={}, fp={}, fn={}, nb_triggered={}, nb_ideal={}, '
+          'pix_change_obj={}, pix_change_bg={}'
+          .format(tp, fp, fn, triggered_frame, ideal_nb_triggered,
+                  np.mean(pix_change_obj_list), np.mean(pix_change_bg_list)))
 
     trigger_f1 = compute_f1(tp, fp, fn)
     return triggered_frame, ideal_nb_triggered, f1, trigger_f1, \
-        video_trigger_log, np.mean(pix_change_obj_list), np.mean(pix_change_bg_list)
+        video_trigger_log, np.mean(pix_change_obj_list), \
+        np.mean(pix_change_bg_list), frames_triggered
 
 
 # def pipeline_perfect_trigger(img_path, dt_annot, gt_annot,

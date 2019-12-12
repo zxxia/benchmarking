@@ -138,6 +138,8 @@ def main():
 
             profile_start = start
             profile_end = min(start+profile_length*fps-1, end)
+            test_start = profile_end + 1
+            test_end = end
             print("{} {} start={}, end={}".format(clip, img_path, start, end))
 
             # Run inference on the first 30s video
@@ -172,12 +174,6 @@ def main():
                                           tracking_error_thresh,
                                           img_name_format, view=False,
                                           mask_flag=True)
-                # pipeline_perfect_tracking(img_path, gt_annot,
-                #                           profile_start, profile_end,
-                #                           frame_difference_thresh,
-                #                           tracking_error_thresh,
-                #                           img_name_format, view=False,
-                #                           mask_flag=True)
                 current_fps = triggered_frame/profile_length
                 ideal_fps = ideal_triggered_frame/profile_length
                 print('para1 = {}, para2 = {}, '
@@ -204,26 +200,7 @@ def main():
                     best_pix_change_obj = pix_change_obj
                     best_pix_change_bg = pix_change_bg
                     best_frames_triggered = frames_triggered
-                # if f1 >= 0.90 and f1 <= 0.92:
-                #     break
-                    # best_video_trigger_log = video_trigger_log
 
-                # if f1 >= target_f1 and \
-                #    f1 <= min_f1_gt_target and \
-                #    current_fps < min_fps:
-                #     # record min f1 which is greater than target f1
-                #     min_f1_gt_target = f1
-                #     min_fps = current_fps
-                #     # record the best config
-                #     best_para1 = para1
-                #     best_para2 = para2
-                #     best_trigger_f1 = trigger_f1
-                #     best_video_trigger_log = video_trigger_log
-                #     break
-            # plt.scatter(test_fps_list, test_f1_list)
-            # plt.xlabel('relative fps')
-            # plt.ylabel('f1')
-            # plt.show()
             test_f1_list.append(1.0)
             test_fps_list.append(fps)
             final_fps, f1_left, f1_right, fps_left, fps_right =\
@@ -231,6 +208,18 @@ def main():
 
             print("best_para1 = {}, best_para2={}"
                   .format(best_para1, best_para2))
+
+            frame_difference_thresh = 1280*720/best_para1
+            tracking_error_thresh = best_para2
+            triggered_frame, ideal_triggered_frame, f1, \
+                trigger_f1, video_trigger_log, pix_change_obj, \
+                pix_change_bg, frames_triggered = \
+                pipeline_frame_select(img_path, gt_annot,
+                                      test_start, test_end,
+                                      frame_difference_thresh,
+                                      tracking_error_thresh,
+                                      img_name_format, view=False,
+                                      mask_flag=True)
             # use the selected parameters for the next 5 mins
             final_result_f.write(','.join([clip,
                                            str(best_para1),
@@ -244,8 +233,8 @@ def main():
                                            str(f1_left), str(f1_right),
                                            str(fps_left),
                                            str(fps_right)]) + '\n')
-            for idx in range(start, end+1):
-                if idx in best_frames_triggered:
+            for idx in range(start, end + 1):
+                if idx in set(range(profile_start, profile_end+1)).union(frames_triggered):
                     f_trace.write(
                         ','.join([str(idx), str(tstamp), str(1)])+'\n')
                 else:

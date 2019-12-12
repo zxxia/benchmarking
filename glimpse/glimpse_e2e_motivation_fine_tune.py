@@ -8,27 +8,7 @@ import argparse
 import json
 import numpy as np
 display = False
-# kitti = False
-# DATASET_LIST = sorted(['highway', 'crossroad2', 'crossroad', 'crossroad3',
-#                        'crossroad4', 'driving1','driving2','traffic','jp_hw',
-#                        'russia', 'tw_road', 'tw_under_bridge','jp','russia1',
-#                        'highway_normal_traffic', 'tw', 'tw1', 'drift', 'nyc',
-#                        'motorway', 'park', 'lane_split', 'driving_downtown'])
 
-# PROFILE_LENGTH = 30  # 30 seconds
-# OFFSET = 0  # offset from the start of the video in unit of second
-# # standard_frame_rate = 10.0 # for comparison with KITTI
-# PATH = '/mnt/data/zhujun/dataset/Youtube/'
-# SHORT_VIDEO_LENGTH = 30
-# INFERENCE_TIME = 100 # avg. GPU processing  time
-# TARGET_F1 = 0.9
-
-# drift parameters
-# PARA1_LIST = [100, 150, 180, 200, 220, 250]
-# PARA2_LIST = np.concatenate([np.arange(6, 1, -2), np.arange(1, 0, -0.2)])
-
-# russia1 parameters
-PARA1_LIST = [100, 120, 140, 150, 160, 170]
 PARA1_DICT = {'crossroad': np.arange(15, 25, 5),
               'crossroad2': np.arange(15, 45, 5),
               'crossroad3': np.arange(50, 70, 5),
@@ -50,9 +30,6 @@ PARA1_DICT = {'crossroad': np.arange(15, 25, 5),
               'tw1': np.arange(10, 50, 10),
               'tw_road': np.arange(20, 50, 5),
               'tw_under_bridge': np.arange(100, 200, 40)}
-# PARA2_LIST = np.arange(1.0, 0, -0.3)
-
-# PARA2_DICT = np.arange(1.0, 0, -0.3)
 PARA2_DICT = {'crossroad': np.arange(1, 0, -0.2),
               'crossroad2': np.arange(8, 0, -1),
               'crossroad3': np.arange(2, 0, -0.2),
@@ -75,7 +52,9 @@ PARA2_DICT = {'crossroad': np.arange(1, 0, -0.2),
               'tw_road': np.arange(20, 50, 5),
               'tw_under_bridge': np.arange(100, 200, 40)}
 
-def main():
+
+def parse_args():
+    """ parse arguments  """
     parser = argparse.ArgumentParser(
         description="Glimpse with perfect tracking")
     parser.add_argument("--path", type=str,
@@ -100,6 +79,10 @@ def main():
                         help="image name format")
 
     args = parser.parse_args()
+    return args
+
+def main():
+    args = parse_args()
     path = args.path
     video_name = args.video
     output_file = args.output
@@ -110,21 +93,6 @@ def main():
     target_f1 = args.target_f1
     img_name_format = args.format
 
-    # para1_dict = {}
-    # with open('glimpse_perfect_tracking.csv', 'r') as f:
-    #     f.readline()
-    #     for line in f:
-    #         cols = line.strip().split(',')
-    #         para1_dict[cols[0]] = float(cols[1])
-
-    # with open(
-    #     '/home/zxxia/benchmarking/feature_analysis/selected_videos.json',
-    #         'r') as f:
-    #     selected_videos = json.load(f)
-    # interested_videos = []
-    # for l in selected_videos.values():
-    #     interested_videos.extend(l)
-    # choose the first 3 mins to get the best frame diff thresh
     with open(output_file, 'w', 1) as final_result_f:
         header = 'video,para1,para2,f1,gpu,ideal frame rate,trigger f1,profiled f1,profiled gpu\n'
         final_result_f.write(header)
