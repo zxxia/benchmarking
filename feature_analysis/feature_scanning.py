@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utils.utils import load_metadata
 from feature_analysis.helpers import load_video_features, nonzero, nonan, \
-    load_videostorm_profile, sample_video_features
+    load_videostorm_profile, sample_video_features, plot_cdf
 
 
 # DATASET = 't_crossroad'
@@ -19,19 +19,19 @@ SAMPLE_EVERY_N_FRAME_LIST = [1, 10]
 PLOT_FLAG = True
 
 
-def plot_cdf(data, num_bins, title, legend, xlabel):
-    """ Use the histogram function to bin the data """
-    counts, bin_edges = np.histogram(data, bins=num_bins, density=True)
-    d_x = bin_edges[1] - bin_edges[0]
-    # Now find the cdf
-    cdf = np.cumsum(counts) * d_x
-    # And finally plot the cdf
-    plt.plot(bin_edges[1:], cdf, label=legend)
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel('CDF')
-    plt.ylim([0, 1.1])
-    plt.legend()
+# def plot_cdf(data, num_bins, title, legend, xlabel):
+#     """ Use the histogram function to bin the data """
+#     counts, bin_edges = np.histogram(data, bins=num_bins, density=True)
+#     d_x = bin_edges[1] - bin_edges[0]
+#     # Now find the cdf
+#     cdf = np.cumsum(counts) * d_x
+#     # And finally plot the cdf
+#     plt.plot(bin_edges[1:], cdf, label=legend)
+#     plt.title(title)
+#     plt.xlabel(xlabel)
+#     plt.ylabel('CDF')
+#     plt.ylim([0, 1.1])
+#     plt.legend()
 
 
 def parse_args():
@@ -189,16 +189,18 @@ def main():
     # '/data/zxxia/benchmarking/videostorm/baseline_profile_10_17_10s_50/videostorm_baseline_profile_{}.csv'.format(video))
     # '/data/zxxia/benchmarking/videostorm/baseline_profile_30s_100/videostorm_baseline_profile_{}.csv'.format(video))
     # baseline_file = '/data/zxxia/benchmarking/videostorm/baseline_profile_30s_100/videostorm_baseline_profile_{}.csv'.format(dataset)
-    baseline_file = '/data/zxxia/benchmarking/videostorm/baseline_profile_30s_20/videostorm_baseline_profile_{}.csv'.format(args.video)
-    profile_file = '/data/zxxia/benchmarking/videostorm/overfitting_profile_10_14/videostorm_overfitting_profile_{}.csv'.format(args.video)
+    baseline_file = '/data/zxxia/benchmarking/videostorm/baseline_profile_30s_20/videostorm_baseline_profile_{}.csv'.format(
+        args.video)
+    profile_file = '/data/zxxia/benchmarking/videostorm/overfitting_profile_10_14/videostorm_overfitting_profile_{}.csv'.format(
+        args.video)
     # profile_file = '/data/zxxia/benchmarking/videostorm/overfitting_profile_10_21_30s/videostorm_overfitting_profile_{}.csv'.format(dataset)
     original_good_percent, original_bad_percent, \
         scan_good_percent, scan_bad_percent, baseline_good_percent, \
         baseline_bad_percent = \
         compute_acc(original_means, sampled_means_simple, args.video,
                     profile_file, baseline_file)
-        # compute_acc(original_means, sampled_means, dataset, baseline_file)
-        # compute_acc(original_means, original_means_simple, dataset, baseline_file)
+    # compute_acc(original_means, sampled_means, dataset, baseline_file)
+    # compute_acc(original_means, original_means_simple, dataset, baseline_file)
     # f_out.write(','.join([dataset, str(original_good_percent),
     #                       str(original_bad_percent),
     #                       str(scan_good_percent), str(scan_bad_percent),
@@ -334,7 +336,8 @@ def compute_acc(original_features, sampled_features, video, profile_file,
             nb_bad += 1
     baseline_good_percent = nb_good/len(acc_at_target_perf[offset:offset+57])
     baseline_bad_percent = nb_bad/len(acc_at_target_perf[offset:offset+57])
-    print('num of baseline acc={}'.format(len(acc_at_target_perf[offset:offset+57])))
+    print('num of baseline acc={}'.format(
+        len(acc_at_target_perf[offset:offset+57])))
     print('num of good cases={}'.format(nb_good))
     print("baseline good percent={}, bad percent={}"
           .format(baseline_good_percent, baseline_bad_percent))

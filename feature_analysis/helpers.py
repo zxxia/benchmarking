@@ -1,6 +1,10 @@
 """ Some helper functions needed in feature scanning """
 from collections import defaultdict
 import numpy as np
+from constants import RESOL_DICT
+from utils.model_utils import compute_area
+import matplotlib.pyplot as plt
+import pdb
 
 
 def nonzero(orig_list):
@@ -128,6 +132,26 @@ def load_selected_data(videos, data, target_videos):
     return selected_data
 
 
+def load_glimpse_profile(filename):
+    """Load glimplse profile file."""
+    videos = []
+    para1_dict = defaultdict(list)
+    perf_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    with open(filename, 'r') as f_gl:
+        f_gl.readline()  # remove headers
+        for line in f_gl:
+            cols = line.strip().split(',')
+            video = cols[0]
+            if video not in videos:
+                videos.append(video)
+            perf_dict[video].append(float(cols[4]))
+            acc_dict[video].append(float(cols[3]))
+            para1_dict[video].append(float(cols[1]))
+
+    return videos, perf_dict, acc_dict, para1_dict
+
+
 def load_glimpse_results(filename):
     """ Load glimplse result file """
     video_clips = []
@@ -147,7 +171,6 @@ def load_glimpse_results(filename):
             if len(cols) == 7:
                 ideal_perf.append(float(cols[5]))
                 trigger_f1.append(float(cols[6]))
-
     if len(cols) == 6:
         return video_clips, perf, f1_score, ideal_perf
     if len(cols) == 7:
@@ -190,6 +213,23 @@ def load_videostorm_profile(filename):
             acc_dict[video].append(float(line_list[2]))
 
     return videos, perf_dict, acc_dict
+
+
+def load_vigil_results(filename):
+    """Load vigil profiling file."""
+    videos = []
+    perfs = []
+    accs = []
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()  # remove headers
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            video = line_list[0]
+            videos.append(video)
+            perfs.append(float(line_list[2]))
+            accs.append(float(line_list[1]))
+
+    return videos, perfs, accs
 
 
 def load_awstream_profile(filename, size_filename):
@@ -293,3 +333,56 @@ def sample_video_features(video_features, metadata, short_video_length,
                 .append(video_features[fid]['Total Object Area'])
             short_vid_to_frame_id[short_vid].append(fid)
     return short_vid_features, short_vid_to_frame_id
+
+
+def sample_frames(dts, nb_frame, n_frame):
+    """ sample a frame every n_frame"""
+    sampled_dts = defaultdict(list)
+    for i in range(1, nb_frame+1):
+        if i % n_frame == 0 and i in dts:
+            sampled_dts[i] = dts[i]
+    return sampled_dts
+
+
+def get_areas(dets, start, end, resol):
+    """ get a list of area
+    dets: detections (frame idx->bboxes)
+    start: start frame index
+    end: end frame index (inclusive)
+    resol: resolution of detections e.g. 720p"""
+    areas = list()
+    for frame_idx in range(start, end+1):
+        if frame_idx in dets:
+            areas.extend([compute_area(box)/(RESOL_DICT[resol][0] *
+                                             RESOL_DICT[resol][1])
+                          for box in dets[frame_idx]])
+    return areas
+
+
+# def plot_cdf(data, num_bins, title, legend, xlabel):
+#     """ Use the histogram function to bin the data """
+#     counts, bin_edges = np.histogram(data, bins=num_bins, density=True)
+#     d_x = bin_edges[1] - bin_edges[0]
+#     # Now find the cdf
+#     cdf = np.cumsum(counts) * d_x
+#     # And finally plot the cdf
+#     plt.plot(bin_edges[1:], cdf, label=legend)
+#     plt.title(title)
+#     plt.xlabel(xlabel)
+#     plt.ylabel('CDF')
+#     plt.ylim([0, 1.1])
+#     plt.legend()
+
+def plot_cdf(data, num_bins, legend):
+    """ Use the histogram function to bin the data """
+    counts, bin_edges = np.histogram(data, bins=num_bins, density=True)
+    d_x = bin_edges[1] - bin_edges[0]
+    # Now find the cdf
+    cdf = np.cumsum(counts) * d_x
+    # And finally plot the cdf
+    plt.plot(bin_edges[1:], cdf, label=legend)
+    # plt.title(title)
+    # plt.xlabel(xlabel)
+    # plt.ylabel('CDF')
+    # plt.ylim([0, 1.1])
+    # plt.legend()

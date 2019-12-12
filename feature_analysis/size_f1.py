@@ -1,16 +1,16 @@
 """ object size vs accuracy """
 import os
-import pdb
-from collections import defaultdict
+# import pdb
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 from constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
 from utils.utils import IoU, compute_f1, load_metadata
 from utils.model_utils import load_full_model_detection, \
-    filter_video_detections, remove_overlappings, compute_area
+    filter_video_detections, remove_overlappings
 from awstream.profiler import scale_boxes
-from feature_analysis.helpers import load_awstream_profile
+from feature_analysis.helpers import load_awstream_profile, sample_frames, \
+    get_areas, plot_cdf
 
 ROOT = '/data/zxxia/benchmarking/results/videos'
 VIDEO_TO_DELETE = ['crossroad', 'nyc', 'russia', 'crossroad2',
@@ -20,19 +20,20 @@ VIDEO_TO_DELETE = ['crossroad', 'nyc', 'russia', 'crossroad2',
 DATA_PATH = '/data/zxxia/videos'
 DATA_PATH2 = '/data2/zxxia/videos'
 VIDEO_LIST = sorted(['crossroad', 'crossroad2', 'crossroad3', 'crossroad4',
-                     'driving1', 'driving_downtown', 'lane_split',
+                     'driving1', 'driving_downtown',  # 'lane_split',
                      'highway', 'driving2',  # 'jp', drift
                      # 'jp_hw','highway_normal_traffic'
                      'motorway', 'nyc', 'park',
-                     'russia1', 'traffic',
-                     'tw', 'tw1',  # 'tw_road', 'tw_under_bridge',
+                     'russia1',
+                     'traffic',
+                     # 'tw', 'tw1',  # 'tw_road', 'tw_under_bridge',
                      # 'road_trip'
                      ])
 # VIDEO_LIST = ['driving_downtown']
 SHORT_VIDEO_LENGTH = 30
 
-GOOD_CASE_TH = 0.85
-BAD_CASE_TH = 0.50
+GOOD_CASE_TH = 0.90
+BAD_CASE_TH = 0.60
 
 
 def main():
@@ -55,39 +56,42 @@ def main():
     #                        np.arange(0.1, 0.6, 0.05)])
     axs.set_title('F1 vs object size using all videos at different resols',
                   fontsize=15)
-    for resol2 in resol_list:
-        print('Drawing f1 vs object size at {} ...'.format(resol2))
-        tps, fps, fns = [], [], []
-        for video in VIDEO_LIST:
-            tp_cnt, fp_cnt, fn_cnt = profile(video, resol2, area_bins)
-            f1_scores = binwise_f1(tp_cnt, fp_cnt, fn_cnt)
-            # axs.plot(area_bins[:-1], f1_scores, 'o-', ms=5, label=video+resol2)
-            # print(video, tp_cnt + fn_cnt)
-            # axs.plot(area_bins[:-1], f1_scores, 'o-', ms=5, label=video+resol2)
-            tps.append(tp_cnt)
-            fps.append(fp_cnt)
-            fns.append(fn_cnt)
-            if video == 'driving_downtown':
-                axs.plot(area_bins[:-1], f1_scores,
-                         '^-', ms=5, label=video+resol2)
-        tps_tot = np.sum(tps, axis=0)
-        fps_tot = np.sum(fps, axis=0)
-        fns_tot = np.sum(fns, axis=0)
-        # print('all', tps_tot + fns_tot)
-        f1_scores_all = binwise_f1(tps_tot, fps_tot, fns_tot)
+    # for resol2 in resol_list:
+    #     print('Drawing f1 vs object size at {} ...'.format(resol2))
+    #     tps, fps, fns = [], [], []
+    #     for video in VIDEO_LIST:
+    #         tp_cnt, fp_cnt, fn_cnt = profile(video, resol2, area_bins)
+    #         f1_scores = binwise_f1(tp_cnt, fp_cnt, fn_cnt)
+    #         # axs.plot(area_bins[:-1], f1_scores, 'o-', ms=5, label=video+resol2)
+    #         # print(video, tp_cnt + fn_cnt)
+    #         # axs.plot(area_bins[:-1], f1_scores, 'o-', ms=5, label=video+resol2)
+    #         tps.append(tp_cnt)
+    #         fps.append(fp_cnt)
+    #         fns.append(fn_cnt)
+    #         if video == 'driving_downtown':
+    #             axs.plot(area_bins[:-1], f1_scores,
+    #                      '^-', ms=5, label=video+resol2)
+    #     tps_tot = np.sum(tps, axis=0)
+    #     fps_tot = np.sum(fps, axis=0)
+    #     fns_tot = np.sum(fns, axis=0)
+    #     # print('all', tps_tot + fns_tot)
+    #     f1_scores_all = binwise_f1(tps_tot, fps_tot, fns_tot)
+    #
+    #     axs.plot(area_bins[:-1], f1_scores_all,
+    #              'x-', ms=5, label='all '+resol2)
+    #     np.save('{}_binwise_f1.npy'.format(resol2), f1_scores)
+    #     np.save('{}_obj_size_bins.npy'.format(resol2), area_bins)
 
-        axs.plot(area_bins[:-1], f1_scores_all,
-                 'x-', ms=5, label='all '+resol2)
-    #     np.save('{}_binwise_f1_new.npy'.format(resol2), f1_scores)
-    #     np.save('{}_obj_size_bins_new.npy'.format(resol2), area_bins)
-    plt.legend()
-    # axs.set_xscale('log')
-    plt.xlabel('object size', fontsize=15)
-    plt.ylabel('f1', fontsize=15)
+    # plt.legend()
+    # # axs.set_xscale('log')
+    # plt.xlabel('object size', fontsize=15)
+    # plt.ylabel('f1', fontsize=15)
     # plt.savefig('f1_vs_obj_sizes/f1_vs_obj_size_log.png'.format(video, resol2))
 
+    video_list = ['driving1']
     # video_list = ['driving_downtown']
-    for video in VIDEO_LIST:
+    # video_list = ['park']
+    for video in video_list:
         metadata_file = '/data/zxxia/videos/{}/metadata.json'.format(video)
         metadata = load_metadata(metadata_file)
         dt_file = os.path.join(ROOT, video, '720p', 'profile',
@@ -98,7 +102,7 @@ def main():
                                'updated_gt_mobilenet_COCO_no_filter.csv')
         dts_mobilenet, _ = load_detections(video, dt_file, '720p')
 
-        if SHORT_VIDEO_LENGTH == 30:
+        if SHORT_VIDEO_LENGTH == 0:
             _, resol_dict, acc_dict, _, _ = \
                 load_awstream_profile('/data/zxxia/benchmarking/awstream/'
                                       'spatial_overfitting_profile_11_06/'
@@ -106,17 +110,17 @@ def main():
                                       .format(video),
                                       '/data/zxxia/benchmarking/awstream/'
                                       'short_video_size.csv')
-        elif SHORT_VIDEO_LENGTH == 10:
+        else:  # SHORT_VIDEO_LENGTH == 10:
             _, resol_dict, acc_dict, _, _ = \
                 load_awstream_profile('/data/zxxia/benchmarking/awstream/'
-                                      'spatial_overfitting_profile_11_19/'
+                                      'spatial_overfitting_profile_{}s/'
                                       'awstream_spatial_overfitting_profile_{}.csv'
-                                      .format(video),
+                                      .format(SHORT_VIDEO_LENGTH, video),
                                       '/data/zxxia/benchmarking/awstream/'
                                       'short_video_size.csv')
         resol2 = '480p'
-        # f1_scores = np.load('{}_binwise_f1_new.npy'.format(resol2))
-        # area_bins = np.load('{}_obj_size_bins_new.npy'.format(resol2))
+        f1_scores_all = np.load('{}_binwise_f1.npy'.format(resol2))
+        area_bins = np.load('{}_obj_size_bins.npy'.format(resol2))
 
         interest_sid, gt_f1, scan_f1, scan_f1_mobilenet, \
             scan_f1_mobilenet_sampled = scan(dts, dts_mobilenet, metadata,
@@ -125,6 +129,11 @@ def main():
                                              resol2, area_bins)
 
         plt.figure(figsize=(15, 10))
+        assert len(interest_sid) == len(scan_f1)
+        assert len(interest_sid) == len(scan_f1_mobilenet_sampled)
+        assert len(interest_sid) == len(scan_f1_mobilenet)
+        assert len(interest_sid) == len(gt_f1), str(
+            len(interest_sid)) + ' ' + str(len(gt_f1))
         plt.plot(interest_sid, scan_f1, 'o-', label='frcnn scanned f1')
         plt.plot(interest_sid, gt_f1, 'o-', label='groundtruth f1')
         plt.plot(interest_sid, scan_f1_mobilenet, 'o-',
@@ -361,30 +370,6 @@ def profile(video, resol2, area_bins, iou_thresh=0.5):
     return tp_cnt, fp_cnt, fn_cnt
 
 
-def get_areas(dets, start, end, resol):
-    """ get a list of area
-    dets: detections (frame idx->bboxes)
-    start: start frame index
-    end: end frame index (inclusive)
-    resol: resolution of detections e.g. 720p"""
-    areas = list()
-    for frame_idx in range(start, end+1):
-        if frame_idx in dets:
-            areas.extend([compute_area(box)/(RESOL_DICT[resol][0] *
-                                             RESOL_DICT[resol][1])
-                          for box in dets[frame_idx]])
-    return areas
-
-
-def sample_frames(dts, nb_frame, n_frame):
-    """ sample a frame every n_frame"""
-    sampled_dts = defaultdict(list)
-    for i in range(1, nb_frame+1):
-        if i % n_frame == 0 and i in dts:
-            sampled_dts[i] = dts[i]
-    return sampled_dts
-
-
 def scan(dts, dts_mobilenet, metadata, resol, benchmark_f1,
          resol_dict, acc_dict, video, resol2, area_bins):
     """ do feature scanning on object size """
@@ -392,9 +377,23 @@ def scan(dts, dts_mobilenet, metadata, resol, benchmark_f1,
     dts_mobilenet_sampled = sample_frames(dts_mobilenet,
                                           metadata['frame count'], nframe)
     # print(len(dts_mobilenet), len(dts_mobilenet_sampled))
-
+    # areas = get_areas(dts, 1, metadata['frame count'], resol)
+    # areas_sampled = get_areas(dts, 1, metadata['frame count'], resol)
+    # areas_mobilenet = get_areas(
+    #     dts_mobilenet, 1, metadata['frame count'], resol)
+    # areas_mobilenet_sampled = get_areas(dts_mobilenet_sampled, 1,
+    #                                     metadata['frame count'], resol)
+    #
+    # plot_cdf(areas, 1000, 'frcnn')
+    # plot_cdf(areas_sampled, 1000, 'frcnn sampled {}'.format(nframe))
+    # plot_cdf(areas_mobilenet, 1000, 'mobilenet')
+    # plot_cdf(areas_mobilenet_sampled, 1000,
+    #          'mobilenet sampled {}'.format(nframe))
+    # plt.legend()
+    # plt.show()
     nb_short_videos = metadata['frame count']//(
         SHORT_VIDEO_LENGTH*metadata['frame rate'])
+    print(nb_short_videos)
     gt_f1 = []
     scan_f1 = []
     scan_f1_mobilenet = []
@@ -455,6 +454,7 @@ def scan(dts, dts_mobilenet, metadata, resol, benchmark_f1,
                                    np.nan_to_num(cnt_percent_mobilenet))
         scan_f1_mobilenet.append(pred_f1_mobilenet)
 
+        # print(np.sum(cnt_mobilenet_sampled))
         cnt_percent_mobilenet_sampled = cnt_mobilenet_sampled / \
             np.sum(cnt_mobilenet_sampled)
         pred_f1_mobilenet_sampled = np.dot(np.nan_to_num(benchmark_f1),
@@ -492,7 +492,10 @@ def scan(dts, dts_mobilenet, metadata, resol, benchmark_f1,
         interest_sid.append(i)
     # baseline
     nb_baseline_videos = len(gt_f1)//nframe
-    for acc in gt_f1[0:nb_baseline_videos]:
+    print('nb of baseline', nb_baseline_videos)
+    print(gt_f1[158:158 + nb_baseline_videos])
+    print(gt_f1[77:77 + nb_baseline_videos])
+    for acc in gt_f1[0:0 + nb_baseline_videos]:
         if acc >= GOOD_CASE_TH:
             baseline_good_cnt += 1
         elif acc <= BAD_CASE_TH:
@@ -512,9 +515,10 @@ def scan(dts, dts_mobilenet, metadata, resol, benchmark_f1,
     print('\tSampled(per {}) Mobilenet scan good percent={}, bad percent={}'
           .format(nframe, scan_good_cnt_mobilenet_sampled/len(interest_sid),
                   scan_bad_cnt_mobilenet_sampled/len(interest_sid)))
-    print('\tbaseline good percent={}, bad percent={}'
-          .format(baseline_good_cnt/nb_baseline_videos,
-                  baseline_bad_cnt/nb_baseline_videos))
+    if nb_baseline_videos > 0:
+        print('\tbaseline good percent={}, bad percent={}'
+              .format(baseline_good_cnt/nb_baseline_videos,
+                      baseline_bad_cnt/nb_baseline_videos))
 
     return interest_sid, gt_f1, scan_f1, scan_f1_mobilenet, scan_f1_mobilenet_sampled
 
