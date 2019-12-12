@@ -294,7 +294,8 @@ def smooth(input_frame_to_obj, overlap_percent=0.2,
                             # frame_to_obj[j].append(box_i)
                             try:
                                 to_be_add_box = \
-                                    frame_to_obj[j+steps][obj_id_record[j-frame_start+steps]]
+                                    frame_to_obj[j +
+                                                 steps][obj_id_record[j-frame_start+steps]]
                                 add_flag = True
                                 for box in frame_to_obj[j]:
                                     tmp_box = box.copy()
@@ -308,7 +309,8 @@ def smooth(input_frame_to_obj, overlap_percent=0.2,
                                         add_flag = False
                                 if add_flag:
                                     tagged[j].append(len(frame_to_obj[j]))
-                                    frame_to_obj[j].append(frame_to_obj[j+steps][obj_id_record[j-frame_start+steps]])
+                                    frame_to_obj[j].append(
+                                        frame_to_obj[j+steps][obj_id_record[j-frame_start+steps]])
                                     votes[obj_idx_i, j-frame_start] = 1
                             except IndexError:
                                 print(votes[obj_idx_i], j-frame_start)
@@ -332,7 +334,8 @@ def read_annot(annot_path):
             # each line:
             # (image_name, bounding boxes (x, y, w, h, object_type, score))
             line_list = line.strip().split(',')
-            frame_id = int(line_list[0].replace('.jpg', ''))
+            frame_id = int(line_list[0].replace('.png', ''))
+            # frame_id = int(line_list[0].replace('.jpg', ''))
             boxes_list = line_list[1].split(';')
             all_filename.append(frame_id)
 

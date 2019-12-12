@@ -1,28 +1,20 @@
-""" create input.record file  """
+"""Create input.record file."""
 import os
+import glob
 import tensorflow as tf
 from object_detection.utils import dataset_util
-#  from collections import defaultdict
-#  from PIL import Image
-#  import PIL
-#  import io
-from utils.utils import load_metadata
-from constants import RESOL_DICT
+from PIL import Image
 
 flags = tf.app.flags
-flags.DEFINE_string('resol', 'original',
-                    'Image resolution after resizing.')
 flags.DEFINE_string('data_path', '', 'Data path.')
-flags.DEFINE_string('metadata_file', '', 'Metadata file.')
 flags.DEFINE_string('output_path', '', 'Dataset name.')
-flags.DEFINE_string('start_frame', None, 'Start frame')
-flags.DEFINE_string('end_frame', None, 'End fame(included).')
+flags.DEFINE_string('dataset', None, 'dataset name.')
 
 FLAGS = flags.FLAGS
 
 
 def create_tf_example(image, image_dir, include_masks=False):
-    """ do the input record file generation """
+    """Do the input record file generation."""
     # TODO(user): Populate the following variables from your example.
 
     filename = image['filename']
@@ -31,7 +23,7 @@ def create_tf_example(image, image_dir, include_masks=False):
 
     height = image['height']  # Image height
     width = image['width']  # Image width
-    with tf.gfile.GFile(full_path, 'rb') as fid:
+    with tf.io.gfile.GFile(full_path, 'rb') as fid:
         encoded_jpg = fid.read()
 
     encoded_image_data = encoded_jpg  # Encoded image bytes
@@ -50,49 +42,43 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 
 def main(_):
-    """ do the input record file generation """
-    required_flags = ['metadata_file', 'data_path', 'output_path']
+    """Do the input record file generation."""
+    required_flags = ['data_path', 'output_path']
 
     for flag_name in required_flags:
         if not getattr(FLAGS, flag_name):
             raise ValueError('Flag --{} is required'.format(flag_name))
     data_path = FLAGS.data_path
     output_path = FLAGS.output_path
-    output_file = output_path + 'input.record'
+    output_file = os.path.join(output_path, 'input.record')
 
     if not os.path.exists(output_path):
         os.mkdir(output_path)
 
-    writer = tf.python_io.TFRecordWriter(output_file)
+    writer = tf.io.TFRecordWriter(output_file)
 
-    metadata = load_metadata(FLAGS.metadata_file)
-    img_resolution = metadata['resolution']
-
-    if FLAGS.resol:
-        img_resolution = RESOL_DICT[FLAGS.resol]
-    if FLAGS.start_frame is not None:
-        start_frame = int(FLAGS.start_frame)
+    if FLAGS.dataset == 'kitti':  # is not None:
+        img_name_template = '*.png'
+        # image['filename'] = '{0:010d}.png'.format(index)
+    elif FLAGS.dataset == 'waymo':
+        img_name_template = '*.jpg'
+        # image['filename'] = '{0:04d}.jpg'.format(index)
     else:
-        start_frame = 1
-    if FLAGS.end_frame is not None:
-        end_frame = int(FLAGS.end_frame) + 1
-    else:
-        end_frame = metadata['frame count']+1
+        img_name_template = '*.jpg'
+        # image['filename'] = '{0:06d}.jpg'.format(index)
+    img_paths = sorted(glob.glob(os.path.join(data_path, img_name_template)))
 
-    for index in range(start_frame, end_frame):
+    for img_path in img_paths:
         image = {}
-        if FLAGS.resol != 'original':
-            resol = RESOL_DICT[FLAGS.resol]
-            image['height'] = resol[1]
-            image['width'] = resol[0]
-        else:
-            image['height'] = img_resolution[1]
-            image['width'] = img_resolution[0]
-        image['filename'] = '{0:06d}.jpg'.format(index)
+        img = Image.open(img_path)
+        image['filename'] = os.path.basename(img_path)
+        image['width'] = img.size[0]
+        image['height'] = img.size[1]
+        img.close()
         tf_example = create_tf_example(image, data_path)
         writer.write(tf_example.SerializeToString())
     writer.close()
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf.compat.v1.app.run()

@@ -29,7 +29,7 @@ DATASET_LIST="crossroad crossroad2 crossroad3 crossroad4 driving1 driving2
               lane_split motorway nyc park russia russia1 tw tw1 tw_under_bridge tw_road traffic"
 
 RESULT_PATH='/data/zxxia/benchmarking/results/videos/'
-# DATASET_LIST="road_trip"
+DATASET_LIST="road_trip"
 declare -A VIDEO_TYPE_ARRAY
 VIDEO_TYPE_ARRAY["driving1"]="moving"
 VIDEO_TYPE_ARRAY["driving2"]="moving"

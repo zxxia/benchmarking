@@ -38,8 +38,7 @@ import itertools
 import time
 import os
 import tensorflow as tf
-from object_detection.inference import detection_inference_for_ground_truth \
-    as detection_inference
+import detection_inference_for_ground_truth as detection_inference
 # from object_detection.metrics import tf_example_parser
 
 
@@ -64,10 +63,10 @@ FLAGS = tf.flags.FLAGS
 
 
 def main(_):
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
     os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
     all_time = []
-    tf.logging.set_verbosity(tf.logging.INFO)
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
     required_flags = ['input_tfrecord_paths', 'output_tfrecord_path',
                       'inference_graph', 'output_time_path', 'gt_csv']
@@ -80,46 +79,46 @@ def main(_):
     gt_f = open(FLAGS.gt_csv, 'w')
     gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
 
-    config = tf.ConfigProto()
+    config = tf.compat.v1.ConfigProto()
     config.gpu_options.per_process_gpu_memory_fraction = 0.9
-    with tf.Session(config=config) as sess:
+    with tf.compat.v1.Session(config=config) as sess:
         input_tfrecord_paths = [
             v for v in FLAGS.input_tfrecord_paths.split(',') if v]
-        tf.logging.info('Reading input from %d files',
+        tf.compat.v1.logging.info('Reading input from %d files',
                         len(input_tfrecord_paths))
         serialized_example_tensor, image_tensor, image_filename_tensor, height, width \
             = detection_inference.build_input(input_tfrecord_paths)
-        tf.logging.info('Reading graph and building model...')
+        tf.compat.v1.logging.info('Reading graph and building model...')
         (detected_boxes_tensor, detected_scores_tensor, detected_labels_tensor) \
             = detection_inference.build_inference_graph(image_tensor, FLAGS.inference_graph)
 
-        tf.logging.info('Running inference and writing output to {}'.format(
+        tf.compat.v1.logging.info('Running inference and writing output to {}'.format(
             FLAGS.output_tfrecord_path))
-        sess.run(tf.local_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
         tf.train.start_queue_runners()
-        with tf.python_io.TFRecordWriter(FLAGS.output_tfrecord_path) as tf_record_writer:
+        with tf.io.TFRecordWriter(FLAGS.output_tfrecord_path) as tf_record_writer:
             try:
                 for counter in itertools.count():
-                    tf.logging.log_every_n(tf.logging.INFO,
+                    tf.compat.v1.logging.log_every_n(tf.compat.v1.logging.INFO,
                                            'Processed %d images...',
                                            10, counter)
                     start_time = time.time()
                     tf_example, image_filename = \
                         detection_inference. \
                         infer_detections_and_add_to_example(
-                                gt_f, serialized_example_tensor,
-                                detected_boxes_tensor, detected_scores_tensor,
-                                detected_labels_tensor, image_filename_tensor,
-                                height, width, FLAGS.discard_image_pixels)
+                            gt_f, serialized_example_tensor,
+                            detected_boxes_tensor, detected_scores_tensor,
+                            detected_labels_tensor, image_filename_tensor,
+                            height, width, FLAGS.discard_image_pixels)
                     all_time.append(time.time()-start_time)
                     image_filename = image_filename.decode("utf-8")
                     f.write(image_filename + ','
                             + "{:.9f}".format(time.time()-start_time) + '\n')
                     tf_record_writer.write(tf_example.SerializeToString())
             except tf.errors.OutOfRangeError:
-                tf.logging.info('Finished processing records')
+                tf.compat.v1.logging.info('Finished processing records')
     print(sum(all_time)/len(all_time))
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf.compat.v1.app.run()
