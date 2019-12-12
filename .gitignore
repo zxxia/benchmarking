@@ -1,0 +1,15 @@
+*.csv
+*.jpg
+*.json
+*.mp4
+*.txt
+*.pyc
+.tags
+.pylintrc
+*.npy
+*.tar
+*.tar.gz
+*.zip
+*.png
+__pycache__
+results
