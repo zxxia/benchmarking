@@ -186,3 +186,51 @@ def scale(box, in_resol, out_resol):
 def scale_boxes(boxes, in_resol, out_resol):
     """Scale a list of boxes."""
     return [scale(box, in_resol, out_resol) for box in boxes]
+
+
+def load_awstream_profile(filename, size_filename):
+    """Load awstream profiling file."""
+    video_sizes = {}
+    with open(size_filename, 'r') as f_size:
+        for line in f_size:
+            line_list = line.strip().split(',')
+            video_sizes[line_list[0]] = float(line_list[1])
+    videos = []
+    resol_dict = defaultdict(list)
+    acc_dict = defaultdict(list)
+    size_dict = defaultdict(list)
+    cnt_dict = defaultdict(list)
+    with open(filename, 'r') as f_vs:
+        f_vs.readline()  # remove headers
+        for line in f_vs:
+            line_list = line.strip().split(',')
+            video = line_list[0]
+            if video not in videos:
+                videos.append(video)
+            # print(int(line_list[1].strip('p')))
+            resol_dict[video].append(int(line_list[1].strip('p')))
+            # if len(line_list) == 3:
+            acc_dict[video].append(float(line_list[3]))
+            if video+'_'+line_list[1] in video_sizes:
+                size_dict[video].append(video_sizes[video+'_'+line_list[1]])
+            else:
+                size_dict[video].append(0)
+            cnt_dict[video].append(int(line_list[4])+int(line_list[6]))
+
+    return videos, resol_dict, acc_dict, size_dict, cnt_dict
+
+
+def load_awstream_results(filename):
+    """Load awstream result file."""
+    videos = []
+    bw_list = []
+    acc_list = []
+    with open(filename, 'r') as f:
+        f.readline()
+        for line in f:
+            cols = line.strip().split(',')
+            videos.append(cols[0])
+            bw_list.append(float(cols[4]))
+            acc_list.append(float(cols[2]))
+
+    return videos, bw_list, acc_list
