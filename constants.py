@@ -31,3 +31,7 @@ class COCOLabels(Enum):
     BUS = 6
     TRAIN = 7
     TRUCK = 8
+
+
+MODEL_COST = {'mobilenet': 33,
+              'frcnn': 100}
