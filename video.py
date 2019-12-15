@@ -71,7 +71,7 @@ class Video:
 
     @property
     def model(self):
-        """Return video duration in seconds."""
+        """Return detection model type."""
         return self._model
 
     def get_frame_image(self, frame_index):
@@ -100,7 +100,7 @@ class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, name, resolution_name, metadata_file, detection_file,
-                 image_path, model='frcnn', filter_flag=False):
+                 image_path, model='FasterRCNN', filter_flag=False):
         """Youtube Video Constructor."""
         metadata = load_metadata(metadata_file)
         frame_rate = metadata['frame rate']
@@ -143,14 +143,14 @@ class YoutubeVideo(Video):
         super().__init__(name, frame_rate, resolution, dets,
                          image_path, camera_type, model)
 
-    def get_frame_image(self, frame_index, is_gray_scale=False):
+    def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img_name = format(frame_index, '06d') + '.jpg'
         img_file = os.path.join(self._image_path, img_name)
-        if is_gray_scale:
-            img = cv2.imread(img_file, 0)
-        else:
-            img = cv2.imread(img_file)
+        # if is_gray_scale:
+        #     img = cv2.imread(img_file, 0)
+        # else:
+        img = cv2.imread(img_file)
         return img
 
     def encode(self, output_video_name, target_frame_indices=None,

@@ -33,5 +33,5 @@ class COCOLabels(Enum):
     TRUCK = 8
 
 
-MODEL_COST = {'mobilenet': 33,
-              'frcnn': 100}
+MODEL_COST = {'mobilenet': 31,
+              'FasterRCNN': 106}
