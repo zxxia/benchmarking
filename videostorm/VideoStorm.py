@@ -4,7 +4,7 @@ import copy
 from collections import defaultdict
 from utils.model_utils import eval_single_image
 from utils.utils import interpolation, compute_f1
-from utils.utils import MODEL_COST
+from constants import MODEL_COST
 
 
 class VideoStorm():
@@ -54,7 +54,8 @@ class VideoStorm():
             for sample_rate in self.temporal_sampling_list:
                 f1_score, relative_gpu_time, _ = self.evaluate(
                     video, original_video, sample_rate, frame_range)
-                print('relative fps={}, f1={}'.format(1/sample_rate, f1_score))
+                print('{}, relative fps={:.3}, f1={:.3}'.format(
+                    model, 1/sample_rate, f1_score))
                 f1_list.append(f1_score)
                 self.profile_writer.writerow(
                     [video_name, video.model, 1 / sample_rate,
