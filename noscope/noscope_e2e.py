@@ -7,7 +7,7 @@ import numpy as np
 from noscope.Noscope import Noscope
 from noscope.Noscope import load_simple_model_classification, load_ground_truth
 
-THRESH_LIST = np.arange(0, 1, 0.1)
+THRESH_LIST = np.arange(0.7, 1, 0.1)
 
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 
