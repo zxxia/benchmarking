@@ -3,7 +3,7 @@
 # import imp
 # import glob
 # import csv
-# import os
+import os
 # import time
 import pdb
 import copy
@@ -334,8 +334,7 @@ def read_annot(annot_path):
             # each line:
             # (image_name, bounding boxes (x, y, w, h, object_type, score))
             line_list = line.strip().split(',')
-            frame_id = int(line_list[0].replace('.png', ''))
-            # frame_id = int(line_list[0].replace('.jpg', ''))
+            frame_id = int(os.path.splitext(line_list[0])[0])
             boxes_list = line_list[1].split(';')
             all_filename.append(frame_id)
 
