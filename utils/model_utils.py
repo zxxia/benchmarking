@@ -9,134 +9,6 @@ def nonnegative(num):
     return num
 
 
-def load_jackson_detection(fullmodel_detection_path):
-    full_model_dt = defaultdict(list)
-    with open(fullmodel_detection_path, 'r') as f:
-        f.readline()
-        for line in f:
-            img_idx, t, score, xmin, ymin, xmax, ymax = line.strip().split(',')
-            # real image index starts from 1
-            img_idx = int(img_idx)  # - 1
-            xmin = nonnegative(float(xmin)) * 600
-            ymin = nonnegative(float(ymin)) * 400
-            xmax = nonnegative(float(xmax)) * 600
-            ymax = nonnegative(float(ymax)) * 400
-            # if not line_list[1]: # no detected object
-            #     gt_boxes_final = []
-            # else:
-            #     gt_boxes_final = []
-            #     for gt_box in gt_boxes:
-            #         # t is object type
-            #         tmp = [int(i) for i in gt_box.split(' ')]
-            #         assert len(tmp) == 6, print(tmp, line)
-            #         x = tmp[0]
-            #         y = tmp[1]
-            #         w = tmp[2]
-            #         h = tmp[3]
-            #         t = tmp[4]
-            #         #if t == 3 or t == 8: # choose car and truch objects
-            if (ymax-ymin) > 400/float(20) and (xmax - xmin) > 600/60:
-                # ignore objects that are too small
-                #         gt_boxes_final.append([x, y, x+w, y+h, t])
-                full_model_dt[img_idx].append([xmin, ymin, xmax, ymax, t])
-
-    return full_model_dt, img_idx
-
-
-def load_ssd_detection(fullmodel_detection_path):
-    full_model_dt = {}
-    gt = {}
-    img_list = []
-    with open(fullmodel_detection_path, 'r') as f:
-        for line in f:
-            line_list = line.strip().split(',')
-            img_index = int(line_list[0].split('.')[0])
-
-            # if img_index > 5000: # test on ~3 mins
-            #   break
-            if not line_list[1]:  # no detected object
-                dt_boxes_final = []
-            else:
-                dt_boxes_final = []
-                dt_boxes = line_list[1].split(';')
-                for dt_box in dt_boxes:
-                    # t is object type
-                    [x, y, w, h, t] = [int(i) for i in dt_box.split(' ')]
-                    if t == 1:  # object is car, this depends on the task
-                        dt_boxes_final.append([x, y, x+w, y+h, t])
-
-            # load the ground truth
-            if not line_list[2]:
-                gt_boxes_final = []
-            else:
-                gt_boxes_final = []
-                gt_boxes = line_list[2].split(';')
-                for gt_box in gt_boxes:
-                    # t is object type
-                    [x, y, w, h, t] = [int(i) for i in gt_box.split(' ')]
-                    if t == 1:  # object is car, this depends on the task
-                        gt_boxes_final.append([x, y, x+w, y+h, t])
-
-            img_list.append(img_index)
-            full_model_dt[img_index] = dt_boxes_final
-            gt[img_index] = gt_boxes_final
-
-    return full_model_dt, gt, img_list
-
-
-def load_kitti_ground_truth(filename, target_types=['Car']):
-    '''
-    Load kitti dataset ground truth (not the one detected by FasterRCNN)
-    '''
-    frame_to_obj = defaultdict(list)
-    with open(filename, 'r') as f:
-        # remove header
-        f.readline()
-        for line in f:
-            cols = line.strip().split(',')
-            frame_id = int(cols[0])
-            obj_id = int(cols[1])
-            x = int(cols[2])
-            y = int(cols[3])
-            w = int(cols[4])
-            h = int(cols[5])
-            t = str(cols[6])
-            if t in target_types:
-                frame_to_obj[frame_id].append([x, y, x+w, y+h, t, 1, obj_id])
-    return frame_to_obj
-
-
-def load_waymo_detection(fullmodel_detection_path):
-    full_model_dt = {}
-    with open(fullmodel_detection_path, 'r') as f:
-        for line in f:
-            line_list = line.strip().split(',')
-            # real image index starts from 1
-            img_index = int(line_list[0].split('.')[0])  # - 1
-            if not line_list[1]:  # no detected object
-                gt_boxes_final = []
-            else:
-                gt_boxes_final = []
-                gt_boxes = line_list[1].split(';')
-                for gt_box in gt_boxes:
-                    # t is object type
-                    box = gt_box.split(' ')
-                    # if len(box) == 7, print(box, line)
-                    w = int(float(box[2]))
-                    h = int(float(box[3]))
-                    x = int(float(box[0]) - float(box[2])/2)
-                    y = int(float(box[1]) - float(box[3])/2)
-                    t = int(box[4])
-                    obj_id = box[-1]
-                    if t == 1:  # choose car and truck objects
-                        # if h > height/float(20):
-                        # ignore objects that are too small
-                        gt_boxes_final.append([x, y, x+w, y+h, 3, 1, obj_id])
-            full_model_dt[img_index] = gt_boxes_final
-
-    return full_model_dt, img_index
-
-
 def load_full_model_detection(filename):
     '''
     Load full model detection results. This function should not filter any
@@ -175,22 +47,26 @@ def load_full_model_detection(filename):
 def filter_video_detections(video_detections, width_range=None,
                             height_range=None, target_types=None,
                             score_range=(0.0, 1.0)):
-    """
-    filter detection by height range, score range, types
-    frame_detections: a dict mapping frame index to a list of object detections
-                      each detection is in the format of list e.g.
-                      [xmin, ymin, xmax, ymax, t, score, object id]
-    height_range: a tuple (height_min, height_max) boudary included, it
-                  restrains the height of bounding boxes. Default: None. No
-                  height range limit.
-    target_types: a set which contains the target types. Object with ypes not
-                  in the set will be filered out. Default no types will be
-                  filtered
-    score_range: a tuple (score_min, score_max) boudary included, it
-                  restrains the height of bounding boxes. Default: None. No
-                  height range limit.
+    """Filter video detection by height range, score range, types.
 
-    return a dict which contains the filtered frame to object detections
+    Args
+        frame_detections: a dict mapping frame index to a list of object
+                          detections each detection is in the format of list
+                          e.g.  [xmin, ymin, xmax, ymax, t, score, object id]
+        height_range: a tuple (height_min, height_max) boudary included, it
+                      restrains the height of bounding boxes. Default: None. No
+                      height range limit.
+        target_types: a set which contains the target types. Object with ypes
+                      not in the set will be filered out. Default no types will
+                      be filtered
+        score_range: a tuple (score_min, score_max) boudary included, it
+                      restrains the height of bounding boxes. Default: None. No
+                      height range limit.
+
+    Return
+        a dict which contains the filtered frame to object detections
+        a dict which contains the discarded frame to object detections
+
     """
     assert (width_range is None) or \
            (isinstance(width_range, tuple) and len(width_range) == 2 and
@@ -206,33 +82,38 @@ def filter_video_detections(video_detections, width_range=None,
             score_range[0] <= score_range[1]), \
         'score range needs to be a length 2 tuple or None'
     filtered_detections = dict()
+    discarded_detections = dict()
 
     for frame_idx in video_detections:
-        filtered_detections[frame_idx] = \
+        filtered_detections[frame_idx], discarded_detections[frame_idx] = \
             filter_frame_detections(video_detections[frame_idx], width_range,
                                     height_range, target_types, score_range)
 
-    return filtered_detections
+    return filtered_detections, discarded_detections
 
 
 def filter_frame_detections(detections, width_range=None, height_range=None,
                             target_types=None, score_range=(0.0, 1.0)):
-    '''
-    filter detection by height range, score range, types
-    detections: a list of object detections each detection is in the format of
-                list e.g.  [xmin, ymin, xmax, ymax, t, score, object id]
-    height_range: a tuple (height_min, height_max) boudary included, it
-                  restrains the height of bounding boxes. Default: None. No
-                  height range limit.
-    target_types: a set which contains the target types. Object with ypes not
-                  in the set will be filered out. Default no types will be
-                  filtered
-    score_range: a tuple (score_min, score_max) boudary included, it
-                  restrains the height of bounding boxes. Default: None. No
-                  height range limit.
+    """Filter frame detection by height range, score range, types.
 
-    return a dict which contains the filtered frame to object detections
-    '''
+    Args
+        detections: a list of object detections each detection is in the format
+                    of list e.g.  [xmin, ymin, xmax, ymax, t, score, object id]
+        height_range: a tuple (height_min, height_max) boudary included, it
+                      restrains the height of bounding boxes. Default: None. No
+                      height range limit.
+        target_types: a set which contains the target types. Object with ypes
+                      not in the set will be filered out. Default no types will
+                      be filtered
+        score_range: a tuple (score_min, score_max) boudary included, it
+                      restrains the height of bounding boxes. Default: None. No
+                      height range limit.
+
+    Return
+        a list of object detection boxes that pass filter
+        a list of object detection boxes that do not pass filter
+
+    """
     assert (width_range is None) or \
            (isinstance(width_range, tuple) and len(width_range) == 2 and
             width_range[0] <= width_range[1]), \
@@ -246,24 +127,29 @@ def filter_frame_detections(detections, width_range=None, height_range=None,
     assert (isinstance(score_range, tuple) and len(score_range) == 2 and
             score_range[0] <= score_range[1]), \
         'score range needs to be a length 2 tuple or None'
-    filtered_boxes = list()
+    kept_boxes = list()
+    discarded_boxes = list()
     for box in detections:
         xmin, ymin, xmax, ymax, t, score, obj_id = box
         w = xmax - xmin
         h = ymax - ymin
         if target_types is not None and t not in target_types:
+            discarded_boxes.append(box.copy())
             continue
         if width_range is not None and \
            (w < width_range[0] or w > width_range[1]):
+            discarded_boxes.append(box.copy())
             continue
         if height_range is not None and \
            (h < height_range[0] or h > height_range[1]):
+            discarded_boxes.append(box.copy())
             continue
         if score_range is not None and \
            (score < score_range[0] or score > score_range[1]):
+            discarded_boxes.append(box.copy())
             continue
-        filtered_boxes.append(box.copy())
-    return filtered_boxes
+        kept_boxes.append(box.copy())
+    return kept_boxes, discarded_boxes
 
 
 def remove_overlappings(boxes, overlap_thr=None):
@@ -303,6 +189,7 @@ def compute_intersection_area(box_i, box_j):
     inter_area = max(0, xmax-xmin+1) * max(0, ymax-ymin+1)
 
     return inter_area
+
 
 def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
     gt_idx_thr = []
