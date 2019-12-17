@@ -2,10 +2,11 @@
 import os
 import subprocess
 import cv2
-from utils.model_utils import load_full_model_detection, \
+import numpy as np
+from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections
-from utils.utils import load_metadata
-from constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
+from benchmarking.utils.utils import load_metadata
+from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
 
 
 class Video:
@@ -91,9 +92,8 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
-    # def compute_object_size():
-    #     # TODO: consider implementing the feature computation in video
-    #     return 0
+    def mask_frame_image(self, idx, boxes, save_path=None):
+        return None, None
 
 
 class YoutubeVideo(Video):
@@ -160,7 +160,7 @@ class YoutubeVideo(Video):
 
     def encode(self, output_video_name, target_frame_indices=None,
                target_frame_rate=None):
-        """Encode the target frames into a video and ."""
+        """Encode the target frames into a video and return video size."""
         print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
         with open(tmp_list_file, 'w') as f_list:
@@ -187,6 +187,21 @@ class YoutubeVideo(Video):
         print('finish generating {} and size={}'.format(
             output_video_name, video_size))
         return video_size
+
+    def mask_frame_image(self, idx, boxes, save_path=None):
+        """Keep pixels within boxes and change the background into black."""
+        img = self.get_frame_image(idx)
+        mask = np.zeros(img.shape, dtype=np.uint8)
+        for box in boxes:
+            xmin, ymin, xmax, ymax = box[:4]
+            mask[ymin:ymax, xmin:xmax] = 1
+
+        masked_img = img.copy()
+        masked_img *= mask
+        if save_path is not None:
+            cv2.imwrite(os.path.join(save_path, '{:06d}.jpg'.format(idx)),
+                        masked_img)
+        return mask, masked_img
 
 
 class KittiVideo(Video):
