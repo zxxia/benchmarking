@@ -12,7 +12,7 @@ class Video:
     """Base class of Video."""
 
     def __init__(self, name, frame_rate, resolution, detections, image_path,
-                 video_type):
+                 video_type, model):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
@@ -21,6 +21,7 @@ class Video:
         self._frame_count = len(detections)
         self._image_path = image_path
         self._video_type = video_type
+        self._model = model
 
     @property
     def video_name(self):
@@ -64,9 +65,14 @@ class Video:
         return self._video_type
 
     @property
-    def get_video_duration(self):
+    def duration(self):
         """Return video duration in seconds."""
         return self._frame_count / self._frame_rate
+
+    @property
+    def model(self):
+        """Return detection model type."""
+        return self._model
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -77,7 +83,7 @@ class Video:
         return self._detections[frame_index]
 
     def get_video_detection(self):
-        """Return the object detections at frame index."""
+        """Return the object detections of the video."""
         return self._detections
 
     def encode(self, output_video_name, target_frame_indices=None,
@@ -94,7 +100,7 @@ class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, name, resolution_name, metadata_file, detection_file,
-                 image_path, filter_flag=False):
+                 image_path, model='FasterRCNN'):
         """Youtube Video Constructor."""
         metadata = load_metadata(metadata_file)
         frame_rate = metadata['frame rate']
@@ -104,23 +110,23 @@ class YoutubeVideo(Video):
         # TODO: handle overlapping boxes
         if name in CAMERA_TYPES['static']:
             camera_type = 'static'
-            if filter_flag:  # doing bboxes filtering
-                dets = filter_video_detections(
-                    dets,
-                    target_types={COCOLabels.CAR.value,
-                                  COCOLabels.BUS.value,
-                                  COCOLabels.TRUCK.value},
-                    width_range=(0, resolution[0]/2),
-                    height_range=(0, resolution[1] / 2))
+            dets, dropped_dets = filter_video_detections(
+                dets,
+                target_types={COCOLabels.CAR.value,
+                              COCOLabels.BUS.value,
+                              COCOLabels.TRUCK.value},
+                width_range=(0, resolution[0]/2),
+                height_range=(0, resolution[1] / 2))
+            self._dropped_detections = dropped_dets
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
-            if filter_flag:  # doing bboxes filtering
-                dets = filter_video_detections(
-                    dets,
-                    target_types={COCOLabels.CAR.value,
-                                  COCOLabels.BUS.value,
-                                  COCOLabels.TRUCK.value},
-                    height_range=(resolution[1] // 20, resolution[1]))
+            dets, dropped_dets = filter_video_detections(
+                dets,
+                target_types={COCOLabels.CAR.value,
+                              COCOLabels.BUS.value,
+                              COCOLabels.TRUCK.value},
+                height_range=(resolution[1] // 20, resolution[1]))
+            self._dropped_detections = dropped_dets
         # TODO: need to handle roadtrip
         # if name == 'road_trip':
         #     for frame_idx in dets:
@@ -135,22 +141,26 @@ class YoutubeVideo(Video):
         #         dets[frame_idx] = tmp_boxes
 
         super().__init__(name, frame_rate, resolution, dets,
-                         image_path, camera_type)
+                         image_path, camera_type, model)
 
-    def get_frame_image(self, frame_index, is_gray_scale=False):
+    def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img_name = format(frame_index, '06d') + '.jpg'
         img_file = os.path.join(self._image_path, img_name)
-        if is_gray_scale:
-            img = cv2.imread(img_file, 0)
-        else:
-            img = cv2.imread(img_file)
+        img = cv2.imread(img_file)
         return img
+
+    def get_dropped_frame_detection(self, frame_index):
+        """Return the object detections which are dropped at frame index."""
+        return self._dropped_detections[frame_index]
+
+    def get_dropped_video_detection(self):
+        """Return the dropped object detections of the video by filter."""
+        return self._dropped_detections
 
     def encode(self, output_video_name, target_frame_indices=None,
                target_frame_rate=None):
-        # TODO: need to test
-        """Encode the frames into a video."""
+        """Encode the target frames into a video and ."""
         print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
         with open(tmp_list_file, 'w') as f_list:
@@ -182,7 +192,8 @@ class YoutubeVideo(Video):
 class KittiVideo(Video):
     """Class of KittiVideo."""
 
-    def __init__(self, name, detection_file, image_path, filter_flag=False):
+    def __init__(self, name, detection_file, image_path, model='frcnn',
+                 filter_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = (1242, 375)
@@ -193,7 +204,8 @@ class KittiVideo(Video):
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
-        super().__init__(name, 10, resolution, dets, image_path, 'moving')
+        super().__init__(name, 10, resolution, dets, image_path, 'moving',
+                         model)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -206,7 +218,8 @@ class KittiVideo(Video):
 class WaymoVideo(Video):
     """Class of WaymoVideo."""
 
-    def __init__(self, name, detection_file, image_path):
+    def __init__(self, name, detection_file, image_path, model='frcnn'):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        super().__init__(name, 20, (1272, 375), dets, image_path, 'moving')
+        super().__init__(name, 20, (1272, 375), dets, image_path, 'moving',
+                         model)

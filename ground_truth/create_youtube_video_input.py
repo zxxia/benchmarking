@@ -43,7 +43,7 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 def main(_):
     """Do the input record file generation."""
-    required_flags = ['data_path', 'output_path']
+    required_flags = ['data_path', 'output_path', 'dataset']
 
     for flag_name in required_flags:
         if not getattr(FLAGS, flag_name):

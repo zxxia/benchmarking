@@ -1,13 +1,17 @@
 """VideoStorm Overfitting Script."""
-import pdb
 import argparse
 import csv
+import os
+import pdb
 from video import YoutubeVideo
 from videostorm.VideoStorm import VideoStorm
 
 TEMPORAL_SAMPLING_LIST = [20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1]
+MODEL_LIST = ['FasterRCNN', 'Inception', 'mobilenet']
 
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
+
+DT_ROOT = '/data/zxxia/benchmarking/results/videos'
 
 
 def parse_args():
@@ -15,8 +19,8 @@ def parse_args():
     parser = argparse.ArgumentParser(
         description="VideoStorm with temporal overfitting")
     parser.add_argument("--video", type=str, required=True, help="video name")
-    parser.add_argument("--input", type=str, required=True,
-                        help="input full model detection file")
+    # parser.add_argument("--input", type=str, required=True,
+    #                     help="input full model detection file")
     parser.add_argument("--output", type=str, required=True,
                         help="output result file")
     parser.add_argument("--metadata_file", type=str, default=None,
@@ -39,15 +43,28 @@ def main():
     triggered_frames = []
     tstamp = 0
     print("processing", args.video)
-    video = YoutubeVideo(args.video, '720p', args.metadata_file, args.input,
-                         None, True)
-    frame_rate = video.frame_rate
-    frame_count = video.frame_count
+    original_dt_file = os.path.join(
+        DT_ROOT, args.video, '720p',
+        'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
+    original_video = YoutubeVideo(args.video, '720p', args.metadata_file,
+                                  original_dt_file, None)
+    video_dict = {}
+    for model in MODEL_LIST:
+        dt_file = os.path.join(
+            DT_ROOT, args.video, '720p',
+            'profile/updated_gt_{}_COCO_no_filter.csv'.format(model))
+        video_dict[model] = YoutubeVideo(args.video, '720p',
+                                         args.metadata_file, dt_file,
+                                         None, model=model)
+    frame_rate = original_video.frame_rate
+    frame_count = original_video.frame_count
 
-    system = VideoStorm(TEMPORAL_SAMPLING_LIST, args.log)
+    pipeline = VideoStorm(TEMPORAL_SAMPLING_LIST, MODEL_LIST, args.log)
 
     with open(args.output, 'w', 1) as f_out:
-        f_out.write("video_name,frame_rate,f1\n")
+        writer = csv.writer(f_out)
+        writer.writerow(
+            ["video_name", 'model', 'gpu time', "frame_rate", "f1"])
 
         # Chop long videos into small chunks
         # Floor division drops the last sequence of frames which is not as
@@ -71,10 +88,9 @@ def main():
             triggered_frames.extend(list(range(profile_start_frame,
                                                profile_end_frame + 1)))
 
-            best_frame_rate = system.profile(clip, video.get_video_detection(),
-                                             profile_start_frame,
-                                             profile_end_frame,
-                                             frame_rate)
+            best_frame_rate, best_model = pipeline.profile(
+                clip, video_dict, original_video,
+                [profile_start_frame, profile_end_frame])
             # test on the rest of the short video
             best_sample_rate = frame_rate/best_frame_rate
 
@@ -83,25 +99,27 @@ def main():
             test_start_frame = profile_end_frame + 1
             test_end_frame = end_frame
 
-            f1_score, triggered_frames_tmp = system.evaluate(
-                video.get_video_detection(),
-                best_sample_rate,
-                test_start_frame, test_end_frame)
+            f1_score, relative_gpu_time, triggered_frames_tmp = \
+                pipeline.evaluate(video_dict[best_model], original_video,
+                                  best_sample_rate,
+                                  [test_start_frame, test_end_frame])
             triggered_frames.extend(triggered_frames_tmp)
 
-            print(clip, best_frame_rate, f1_score)
-            f_out.write(','.join([clip, str(best_frame_rate/frame_rate),
-                                  str(f1_score)]) + '\n')
+            print(clip, best_model, relative_gpu_time,
+                  best_frame_rate / frame_rate, f1_score)
+            writer.writerow(
+                [clip, best_model, relative_gpu_time,
+                 best_frame_rate/frame_rate, f1_score])
 
-        with open('{}_trace.csv'.format(args.video), 'w', 1) as f_trace:
-            writer = csv.writer(f_trace)
-            writer.writerow(['frame id', 'timestamp', 'trigger'])
-            for i in range(1, frame_count + 1):
-                if i in triggered_frames:
-                    writer.writerow([i, tstamp, 1])
-                else:
-                    writer.writerow([i, tstamp, 0])
-                tstamp += 1/frame_rate
+    with open('{}_trace.csv'.format(args.video), 'w', 1) as f_trace:
+        writer = csv.writer(f_trace)
+        writer.writerow(['frame id', 'timestamp', 'trigger'])
+        for i in range(1, frame_count + 1):
+            if i in triggered_frames:
+                writer.writerow([i, tstamp, 1])
+            else:
+                writer.writerow([i, tstamp, 0])
+            tstamp += 1/frame_rate
 
 
 if __name__ == '__main__':
