@@ -43,13 +43,15 @@ frame_rate = 30
 
 
 def build_train_val(dim, dataset, filename):
+    """Build train-validatation set."""
     # load label file, create training, validation data generator
     path = '/home/zhujunxiao/video_analytics_pipelines/fast/data/'
     label_file = os.path.join(path,
                               dataset + '_ground_truth' + filename + '.csv')
 
     # path to cropped images
-    img_path = '/home/zhujunxiao/video_analytics_pipelines/fast/data/' + dataset + '/360p/'
+    img_path = '/home/zhujunxiao/video_analytics_pipelines/fast/data/{}/360p/'.format(
+        dataset)
     labels = {}
     train_images = []
     train_labels = {}
@@ -76,7 +78,7 @@ def build_train_val(dim, dataset, filename):
         label = labels[img_index]
         assert label in all_classes, print(label)
         train_test[label] += 1
-        image_name = img_path + '/' + format(img_index, '06d') + '.jpg'
+        image_name = os.path.join(img_path, format(img_index, '06d') + '.jpg')
         train_images.append(image_name)
         basename = os.path.basename(image_name)
         train_labels[basename] = all_classes.index(label)
@@ -91,7 +93,7 @@ def build_train_val(dim, dataset, filename):
         label = labels[img_index]
         assert label in all_classes, print(label)
         val_test[label] += 1
-        image_name = img_path + '/' + format(img_index, '06d') + '.jpg'
+        image_name = os.path.join(img_path, format(img_index, '06d') + '.jpg')
         val_images.append(image_name)
         basename = os.path.basename(image_name)
         val_labels[basename] = all_classes.index(label)
@@ -113,11 +115,13 @@ def build_train_val(dim, dataset, filename):
 
 
 def parse_args():
-    '''Parse arguments.'''
+    """Parse arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', required=True, help='GPU number')
     parser.add_argument('--model', default='O1')
     parser.add_argument('--dataset', required=True, help='Dataset name')
+    parser.add_argument('--model_save_path',
+                        required=True, help='Model save path.')
     args = parser.parse_args()
     return args
 
@@ -165,70 +169,67 @@ def main():
     # save the trained model
     model.load_weights(temp_fname)
     os.remove(temp_fname)
-    model_path = '/home/zhujunxiao/video_analytics_pipelines/final_code/fast/models/noscope/'
-    model.save(model_path + dataset + filename + '.h5')
-
-    # nb_classes = len(all_classes)
-    # for dataset in ['cropped_crossroad4']:
-    # 	test_images, test_labels = build_test(dim, dataset, all_classes)
-    # 	num_of_seg = len(test_images) // (frame_rate*short_video_length)
-    # 	for seg_index in range(num_of_seg):
-    # 		current_test_images = test_images[seg_index*(frame_rate*short_video_length):
-    # 										(seg_index+1)*(frame_rate*short_video_length)]
-
-    # 		current_test_labels = {os.path.basename(k): test_labels[os.path.basename(k)] for k in current_test_images}
-
-    # 		test_cn = defaultdict(int)
-    # 		for img in current_test_labels.keys():
-    # 			test_cn[current_test_labels[img]] += 1
-    # 		test_distribution = [test_cn[all_classes.index(key)] for key in all_classes]
-    # 		print(train_distribution, test_distribution)
-    # 		train_test_dist = 1 - spatial.distance.cosine(train_distribution,
-    # 													  test_distribution)
-
-    # 		test_gen = DataGenerator(current_test_images, current_test_labels, batch_size, dim,
-    # 		n_classes=nb_classes, shuffle=False)
-    # 		_, acc = model.evaluate_generator(
-    # 			test_gen)
-    # 		# print('test acc: %f' % acc)
-    # 		f1_list = []
-    # 		avg_gpu_list = []
-    # 		full_model_cn_list = []
-    # 		for thresh in np.arange(0, 1, 0.1):
-    # 			print('Thresh:', thresh)
-    # 			y_pred, y_true, y_pipeline, test_time, full_model_cn = get_labels(model,
-    # 				current_test_images, current_test_labels, thresh, dim)
-    # 			# print('Small model performance:')
-    # 			# print('F1 score:', f1_score(y_true, y_pred,average='micro'))
-    # 			# print(confusion_matrix(y_true, y_pred))
-    # 			# print(classification_report(y_true, y_pred))
-
-    # 			print('Pipeline performance:')
-    # 			# print('number of full model:', full_model_cn)
-    # 			f1 = f1_score(y_true, y_pipeline, average='micro')
-    # 			if thresh == 0:
-    # 				assert abs(acc-f1) < 0.01
-
-    # 			f1_list.append(f1)
-    # 			print('F1 score:', f1)
-    # 			print(confusion_matrix(y_true, y_pipeline))
-    # 			print(classification_report(y_true, y_pipeline))
-    # 			full_model_speed = 0.1
-    # 			small_model_speed = 0.005
-    # 			avg_gpu = (full_model_cn * full_model_speed + (len(y_pred) -
-    # 			 full_model_cn) * small_model_speed) / len(y_pred)
-    # 			avg_gpu_list.append(avg_gpu)
-    # 			full_model_cn_list.append(full_model_cn)
-    # 		print(list(zip(avg_gpu_list, f1_list, full_model_cn_list)))
-    # 		result_file.write(dataset + '_' + str(20 + seg_index) + ',')
-    # 		result_file.write(' '.join([str(x) for x in f1_list]) + ',')
-    # 		result_file.write(' '.join([str(x) for x in avg_gpu_list]) + ',')
-    # 		result_file.write(' '.join([str(x) for x in full_model_cn_list]) + ',')
-    # 		result_file.write(' '.join([str(x) for x in train_distribution]) + ',')
-    # 		result_file.write(' '.join([str(x) for x in test_distribution]) + ',')
-    # 		result_file.write(str(train_test_dist) + '\n')
-    return
+    model.save(os.path.join(args.model_save_path, dataset + filename + '.h5'))
 
 
 if __name__ == '__main__':
     main()
+# nb_classes = len(all_classes)
+# for dataset in ['cropped_crossroad4']:
+# 	test_images, test_labels = build_test(dim, dataset, all_classes)
+# 	num_of_seg = len(test_images) // (frame_rate*short_video_length)
+# 	for seg_index in range(num_of_seg):
+# 		current_test_images = test_images[seg_index*(frame_rate*short_video_length):
+# 										(seg_index+1)*(frame_rate*short_video_length)]
+
+# 		current_test_labels = {os.path.basename(k): test_labels[os.path.basename(k)] for k in current_test_images}
+
+# 		test_cn = defaultdict(int)
+# 		for img in current_test_labels.keys():
+# 			test_cn[current_test_labels[img]] += 1
+# 		test_distribution = [test_cn[all_classes.index(key)] for key in all_classes]
+# 		print(train_distribution, test_distribution)
+# 		train_test_dist = 1 - spatial.distance.cosine(train_distribution,
+# 													  test_distribution)
+
+# 		test_gen = DataGenerator(current_test_images, current_test_labels, batch_size, dim,
+# 		n_classes=nb_classes, shuffle=False)
+# 		_, acc = model.evaluate_generator(
+# 			test_gen)
+# 		# print('test acc: %f' % acc)
+# 		f1_list = []
+# 		avg_gpu_list = []
+# 		full_model_cn_list = []
+# 		for thresh in np.arange(0, 1, 0.1):
+# 			print('Thresh:', thresh)
+# 			y_pred, y_true, y_pipeline, test_time, full_model_cn = get_labels(model,
+# 				current_test_images, current_test_labels, thresh, dim)
+# 			# print('Small model performance:')
+# 			# print('F1 score:', f1_score(y_true, y_pred,average='micro'))
+# 			# print(confusion_matrix(y_true, y_pred))
+# 			# print(classification_report(y_true, y_pred))
+
+# 			print('Pipeline performance:')
+# 			# print('number of full model:', full_model_cn)
+# 			f1 = f1_score(y_true, y_pipeline, average='micro')
+# 			if thresh == 0:
+# 				assert abs(acc-f1) < 0.01
+
+# 			f1_list.append(f1)
+# 			print('F1 score:', f1)
+# 			print(confusion_matrix(y_true, y_pipeline))
+# 			print(classification_report(y_true, y_pipeline))
+# 			full_model_speed = 0.1
+# 			small_model_speed = 0.005
+# 			avg_gpu = (full_model_cn * full_model_speed + (len(y_pred) -
+# 			 full_model_cn) * small_model_speed) / len(y_pred)
+# 			avg_gpu_list.append(avg_gpu)
+# 			full_model_cn_list.append(full_model_cn)
+# 		print(list(zip(avg_gpu_list, f1_list, full_model_cn_list)))
+# 		result_file.write(dataset + '_' + str(20 + seg_index) + ',')
+# 		result_file.write(' '.join([str(x) for x in f1_list]) + ',')
+# 		result_file.write(' '.join([str(x) for x in avg_gpu_list]) + ',')
+# 		result_file.write(' '.join([str(x) for x in full_model_cn_list]) + ',')
+# 		result_file.write(' '.join([str(x) for x in train_distribution]) + ',')
+# 		result_file.write(' '.join([str(x) for x in test_distribution]) + ',')
+# 		result_file.write(str(train_test_dist) + '\n')

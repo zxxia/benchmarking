@@ -15,7 +15,7 @@ OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 def parse_args():
     """Parse arguments."""
     parser = argparse.ArgumentParser(
-        description="VideoStorm with temporal overfitting")
+        description="Noscope without temporal pruning")
     parser.add_argument("--video", type=str, required=True, help="video name")
     parser.add_argument("--input", type=str, required=True,
                         help="input full model detection file")
