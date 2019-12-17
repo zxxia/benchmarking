@@ -7,7 +7,7 @@ from video import YoutubeVideo
 from videostorm.VideoStorm import VideoStorm
 
 TEMPORAL_SAMPLING_LIST = [20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1]
-MODEL_LIST = ['FasterRCNN', 'mobilenet']
+MODEL_LIST = ['FasterRCNN', 'Inception', 'mobilenet']
 
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 
@@ -47,7 +47,7 @@ def main():
         DT_ROOT, args.video, '720p',
         'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
     original_video = YoutubeVideo(args.video, '720p', args.metadata_file,
-                                  original_dt_file, None, filter_flag=True)
+                                  original_dt_file, None)
     video_dict = {}
     for model in MODEL_LIST:
         dt_file = os.path.join(
@@ -55,7 +55,7 @@ def main():
             'profile/updated_gt_{}_COCO_no_filter.csv'.format(model))
         video_dict[model] = YoutubeVideo(args.video, '720p',
                                          args.metadata_file, dt_file,
-                                         None, model=model, filter_flag=True)
+                                         None, model=model)
     frame_rate = original_video.frame_rate
     frame_count = original_video.frame_count
 
