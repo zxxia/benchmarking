@@ -4,10 +4,8 @@ import pdb
 from collections import defaultdict
 import numpy as np
 import cv2
-from glimpse.glimpse import compute_target_frame_rate
-from utils.model_utils import eval_single_image, filter_video_detections
-from utils.utils import compute_f1
-from constants import COCOLabels
+from benchmarking.utils.model_utils import eval_single_image
+from benchmarking.utils.utils import compute_f1, interpolation
 
 DEBUG = False
 # DEBUG = True
@@ -550,6 +548,30 @@ def object_appearance(start, end, gt):
             frame_to_new_obj[obj_to_frame_range[obj_id][0]] = [obj_id]
 
     return obj_to_frame_range, frame_to_new_obj
+
+
+def compute_target_frame_rate(frame_rate_list, f1_list, target_f1=0.9):
+    '''Compute target frame rate when target f1 is achieved.'''
+    index = frame_rate_list.index(max(frame_rate_list))
+    f1_list_normalized = [x/f1_list[index] for x in f1_list]
+    result = [(y, x) for x, y in sorted(zip(f1_list_normalized,
+                                            frame_rate_list))]
+    # print(list(zip(frame_rate_list,f1_list_normalized)))
+    frame_rate_list_sorted = [x for (x, _) in result]
+    f1_list_sorted = [y for (_, y) in result]
+    index = next(x[0] for x in enumerate(f1_list_sorted) if x[1] > target_f1)
+    if index == 0:
+        target_frame_rate = frame_rate_list_sorted[0]
+        return target_frame_rate, -1, f1_list_sorted[index], -1,\
+            frame_rate_list_sorted[index]
+    else:
+        point_a = (f1_list_sorted[index-1], frame_rate_list_sorted[index-1])
+        point_b = (f1_list_sorted[index], frame_rate_list_sorted[index])
+
+        target_frame_rate = interpolation(point_a, point_b, target_f1)
+        return target_frame_rate, f1_list_sorted[index - 1], \
+            f1_list_sorted[index], frame_rate_list_sorted[index-1], \
+            frame_rate_list_sorted[index]
 
 
 def load_glimpse_profile(filename):

@@ -3,8 +3,8 @@ import csv
 import copy
 from collections import defaultdict
 import pdb
-from utils.model_utils import eval_single_image
-from utils.utils import interpolation, compute_f1
+from benchmarking.utils.model_utils import eval_single_image
+from benchmarking.utils.utils import interpolation, compute_f1
 
 
 class Awstream():

@@ -1,6 +1,6 @@
 import csv
 from collections import defaultdict
-from utils.utils import interpolation
+from benchmarking.utils.utils import interpolation
 
 
 class Noscope():

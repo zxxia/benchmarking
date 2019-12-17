@@ -1,6 +1,6 @@
 from collections import defaultdict
 import numpy as np
-from utils.utils import IoU
+from benchmarking.utils.utils import IoU
 
 
 def nonnegative(num):
