@@ -100,7 +100,7 @@ class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, name, resolution_name, metadata_file, detection_file,
-                 image_path, model='FasterRCNN'):
+                 image_path, model='FasterRCNN', filter_flag=True):
         """Youtube Video Constructor."""
         metadata = load_metadata(metadata_file)
         frame_rate = metadata['frame rate']
@@ -110,23 +110,31 @@ class YoutubeVideo(Video):
         # TODO: handle overlapping boxes
         if name in CAMERA_TYPES['static']:
             camera_type = 'static'
-            dets, dropped_dets = filter_video_detections(
-                dets,
-                target_types={COCOLabels.CAR.value,
-                              COCOLabels.BUS.value,
-                              COCOLabels.TRUCK.value},
-                width_range=(0, resolution[0]/2),
-                height_range=(0, resolution[1] / 2))
-            self._dropped_detections = dropped_dets
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
+                    dets,
+                    target_types={COCOLabels.CAR.value,
+                                  COCOLabels.BUS.value,
+                                  COCOLabels.TRUCK.value},
+                    width_range=(0, resolution[0]/2),
+                    height_range=(0, resolution[1] / 2))
+                self._dropped_detections = dropped_dets
+            else:
+                self._dropped_detections = None
+
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
-            dets, dropped_dets = filter_video_detections(
-                dets,
-                target_types={COCOLabels.CAR.value,
-                              COCOLabels.BUS.value,
-                              COCOLabels.TRUCK.value},
-                height_range=(resolution[1] // 20, resolution[1]))
-            self._dropped_detections = dropped_dets
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
+                    dets,
+                    target_types={COCOLabels.CAR.value,
+                                  COCOLabels.BUS.value,
+                                  COCOLabels.TRUCK.value},
+                    height_range=(resolution[1] // 20, resolution[1]))
+                self._dropped_detections = dropped_dets
+            else:
+                self._dropped_detections = None
+
         # TODO: need to handle roadtrip
         # if name == 'road_trip':
         #     for frame_idx in dets:

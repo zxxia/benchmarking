@@ -1,4 +1,6 @@
-from collections import defaultdict
+import csv
+import pdb
+from benchmarking.constants import MODEL_COST
 
 
 class Chameleon:
@@ -7,16 +9,38 @@ class Chameleon:
         self.target_f1 = target_f1
 
     def profile(self, video_dict, gt, frame_range):
+        # print(gt_labels)
+        best_f1 = 1
+        f1_diff = 1
+        selected_model = None
         for model in self.model_list:
-            pred_labels = [video_dict[i]
-                           for i in range(frame_range[0], frame_range[1] + 1)]
-            gt_labels = [gt[i][0]
+            gpu, f1 = self.evaluate(
+                video_dict, model, gt, frame_range)
+            if abs(f1 - self.target_f1) < f1_diff:
+                f1_diff = abs(f1 - self.target_f1)
+                best_f1 = f1
+                selected_model = model
+
+                # print(model, f1, gpu)
+        if best_f1 < 0.85:
+            return 'FasterRCNN'
+
+        return selected_model
+
+    def evaluate(self, video_dict, model, gt_labels, frame_range):
+        if model == 'FasterRCNN':
+            return 1, 1
+        else:
+            gt_labels = [gt_labels[i][0]
                          for i in range(frame_range[0], frame_range[1] + 1)]
+            pred_labels = [video_dict[model][i]
+                           for i in range(frame_range[0], frame_range[1] + 1)]
             f1 = compute_f1(pred_labels, gt_labels)
-            print(f1)
+            gpu = MODEL_COST[model] / MODEL_COST['FasterRCNN']
+            return gpu, f1
 
 
-def parse_model_predictions(filename):
+def load_model_predictions(filename):
     mobilenet_pred = {}
     inception_pred = {}
     resnet50_pred = {}
@@ -56,7 +80,20 @@ def compute_f1(pred_labels, gt_labels):
         if pred == gt:
             tp += 1
         cnt += 1
-    print(tp/cnt)
+    return tp/cnt
+
+
+def load_chameleon_results(filename):
+    videos, models, gpus, f1s = [], [], [], []
+    with open(filename, 'r') as f:
+        f.readline()
+        reader = csv.reader(f)
+        for row in reader:
+            videos.append(row[0])
+            models.append(row[1])
+            gpus.append(float(row[2]))
+            f1s.append(float(row[3]))
+    return videos, models, gpus, f1s
 
 # def load_model_selection_perf(perf_file, dataset, gt, short_video_length=30,
 #                               frame_rate=30):
