@@ -10,6 +10,9 @@ class Vigil():
     def __init__(self):
         pass
 
+    def profile(self):
+        pass
+
     def evaluate(self, video_name, video, original_video, frame_range,
                  video_save_path):
         """Evaluate."""
@@ -84,3 +87,19 @@ def resize_bbox(bbox, w_delta_percent, h_delta_percent, resolution):
     ret_bbox[2] = min(xmax+w_delta, resolution[0])
     ret_bbox[3] = min(ymax+h_delta, resolution[1])
     return ret_bbox
+
+
+def load_vigil_results(filename):
+    """Load vigil result file."""
+    videos = []
+    bw_list = []
+    acc_list = []
+    with open(filename, 'r') as f:
+        f.readline()
+        for line in f:
+            cols = line.strip().split(',')
+            videos.append(cols[0])
+            bw_list.append(float(cols[1]))
+            acc_list.append(float(cols[2]))
+
+    return videos, bw_list, acc_list

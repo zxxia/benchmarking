@@ -51,6 +51,10 @@ def main():
     # Load fastercnn detections on blacked background images
     dt_file = '/data/zxxia/blackbg/'+args.video+'/' + \
         'profile/updated_gt_FasterRCNN_COCO_no_filter.csv'
+
+    # dt_file = os.path.join(
+    #     DT_ROOT, args.video, '720p',
+    #     'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
     img_path = '/data/zxxia/blackbg/'+args.video+'/'
     video = YoutubeVideo(args.video, '720p',
                          args.metadata, dt_file, img_path)
@@ -64,6 +68,7 @@ def main():
                                                    original_video.frame_rate)
     profile_frame_cnt = args.profile_length * original_video.frame_rate
     # do the video bandwidth computation
+    # return
     with open(args.output, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(

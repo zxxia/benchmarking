@@ -35,4 +35,5 @@ class COCOLabels(Enum):
 
 MODEL_COST = {'mobilenet': 31,
               'Inception': 58,
+              'resnet50': 89,
               'FasterRCNN': 106}
