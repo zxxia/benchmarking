@@ -196,30 +196,16 @@ class YoutubeVideo(Video):
             output_video_name, video_size))
         return video_size
 
-    def mask_frame_image(self, idx, boxes, save_path=None):
-        """Keep pixels within boxes and change the background into black."""
-        img = self.get_frame_image(idx)
-        mask = np.zeros(img.shape, dtype=np.uint8)
-        for box in boxes:
-            xmin, ymin, xmax, ymax = box[:4]
-            mask[ymin:ymax, xmin:xmax] = 1
-
-        masked_img = img.copy()
-        masked_img *= mask
-        if save_path is not None:
-            cv2.imwrite(os.path.join(save_path, '{:06d}.jpg'.format(idx)),
-                        masked_img)
-        return mask, masked_img
-
 
 class KittiVideo(Video):
     """Class of KittiVideo."""
 
-    def __init__(self, name, detection_file, image_path, model='frcnn',
-                 filter_flag=False):
+    def __init__(self, name, resolution_name, detection_file, image_path,
+                 model='FasterRCNN', filter_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        resolution = (1242, 375)
+        # resolution = (1242, 375)
+        resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets = filter_video_detections(
                 dets,
@@ -235,14 +221,28 @@ class KittiVideo(Video):
         img_name = format(frame_index, '010d') + '.png'
         img_file = os.path.join(self._image_path, img_name)
         img = cv2.imread(img_file)
+        img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
         return img
+
+    # def __init__(self, name, resolution_name, metadata_file, detection_file,
+    #              image_path, model='FasterRCNN', filter_flag=True):
 
 
 class WaymoVideo(Video):
     """Class of WaymoVideo."""
 
-    def __init__(self, name, detection_file, image_path, model='frcnn'):
+    def __init__(self, name, resolution_name, detection_file, image_path,
+                 model='FasterRCNN'):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        super().__init__(name, 20, (1272, 375), dets, image_path, 'moving',
+        resolution = RESOL_DICT[resolution_name]
+        super().__init__(name, 20, resolution, dets, image_path, 'moving',
                          model)
+
+    def get_frame_image(self, frame_index):
+        """Return the image at frame index."""
+        img_name = format(frame_index, '04d') + '.jpg'
+        img_file = os.path.join(self._image_path, img_name)
+        img = cv2.imread(img_file)
+        return img
+# TODO: handle no detection file in inference

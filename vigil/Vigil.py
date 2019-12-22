@@ -1,5 +1,7 @@
 """Vigil Implementation."""
 import os
+import cv2
+import numpy as np
 from benchmarking.utils.model_utils import eval_single_image
 from benchmarking.utils.utils import compute_f1
 
@@ -48,8 +50,8 @@ class Vigil():
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         # TODO: change video name
         original_bw = original_video.encode(
-            os.path.join(video_save_path, video_name +
-                         '.mp4'), list(range(frame_range[0], frame_range[1] + 1)),
+            os.path.join(video_save_path, video_name + '.mp4'),
+            list(range(frame_range[0], frame_range[1] + 1)),
             original_video.frame_rate)
         bw = video.encode(os.path.join(video_save_path, video_name+'.mp4'),
                           list(range(frame_range[0], frame_range[1] + 1)),
@@ -57,14 +59,43 @@ class Vigil():
         return bw/original_bw, f1_score
 
 
+def mask_image(img, boxes):
+    """Keep pixels within boxes and change the background into black."""
+    mask = np.zeros(img.shape, dtype=np.uint8)
+    for box in boxes:
+        xmin, ymin, xmax, ymax = box[:4]
+        mask[ymin:ymax, xmin:xmax] = 1
+
+    masked_img = img.copy()
+    masked_img *= mask
+    return mask, masked_img
+
+
+def mask_video(video, w_delta_percent, h_delta_percent, save_path=None):
+    """Keep pixels within boxes and change the background into black."""
+    for i in range(video.start_frame_index, video.end_frame_index + 1):
+        boxes = video.get_frame_detection(i)
+        boxes = resize_bboxes(boxes, w_delta_percent,
+                              h_delta_percent, video.resolution)
+        img = video.get_frame_image(i)
+        mask, masked_img = mask_image(img, boxes)
+        if save_path is not None:
+            cv2.imwrite(os.path.join(save_path, '{:06d}.jpg'.format(i)),
+                        masked_img)
+
+
 def resize_bboxes(bboxes, w_delta_percent, h_delta_percent, resolution):
-    """Resize a bounding box.
+    """Resize bounding boxes.
 
     Args
         bboxes(list): a list of boxes.
                       [xmin, ymin, xmax, ymax, t, score, obj_id]
         w_delta_percent(float): percent of change over w
         h_delta_percent(float): percent of change over h
+        resolution(tuple/list): (width, height)
+
+    Return
+        a list of resized bboxes
 
     """
     ret_bboxes = [resize_bbox(bbox, w_delta_percent, h_delta_percent,
@@ -75,7 +106,11 @@ def resize_bboxes(bboxes, w_delta_percent, h_delta_percent, resolution):
 def resize_bbox(bbox, w_delta_percent, h_delta_percent, resolution):
     """Resize a bounding box.
 
-    box format is [xmin, ymin, xmax, ymax, t, score, obj_id]
+    Args
+        bbox(list): format is [xmin, ymin, xmax, ymax, t, score, obj_id]
+        w_delta_percent(float): change percentage in width
+        h_delta_percent(float): change percentage in height
+        resolution(tuple/list): (width, height)
 
     """
     ret_bbox = bbox.copy()
