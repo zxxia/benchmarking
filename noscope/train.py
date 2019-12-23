@@ -1,27 +1,28 @@
 import argparse
-from collections import Counter, defaultdict
-import numpy as np
+from collections import defaultdict
 import os
-import keras
-import time
 import random
-import glob
 import tempfile
-from keras.models import model_from_json, Model, load_model
-from keras.layers import Dropout, Dense
+import numpy as np
+import tensorflow as tf
 from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import CSVLogger
-from skimage.io import imread
-from skimage.transform import resize
-# from identify_dominant_class import dominant_classes
-from keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 from models import get_callbacks, build_model
-from sklearn.metrics import f1_score, confusion_matrix, classification_report,\
-    accuracy_score
-from shutil import copyfile, rmtree
-import tensorflow as tf
 from my_utils import DataGenerator
-from scipy import spatial
+# import keras
+# import time
+# import glob
+# from keras.models import model_from_json, Model, load_model
+# from keras.layers import Dropout, Dense
+# from skimage.io import imread
+# from skimage.transform import resize
+# from identify_dominant_class import dominant_classes
+# from keras.preprocessing.image import ImageDataGenerator, load_img, \
+# img_to_array
+# from sklearn.metrics import f1_score, confusion_matrix, \
+# classification_report, accuracy_score
+# from shutil import copyfile, rmtree
+# from scipy import spatial
 
 
 random.seed(0)
@@ -34,7 +35,7 @@ batch_size = 256
 # 'train', 'motorcycle', 'no_object']
 
 
-partition_test = (18001, 32000)
+# partition_test = (18001, 32000)
 partition_train = (1, 18001)
 partition_val = (18001, 22001)
 
