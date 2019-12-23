@@ -11,7 +11,7 @@ from collections import defaultdict  # , Counter
 import numpy as np
 # from PIL import Image
 from absl import app, flags
-from utils.utils import nms, Most_Common, load_metadata, IoU
+from benchmarking.utils.utils import nms, Most_Common, IoU
 # from show_annot import show
 FLAGS = flags.FLAGS
 flags.DEFINE_string('resol', 'None', 'Image resolution.')
@@ -28,14 +28,16 @@ flags.DEFINE_string('model_name', 'FasterRCNN', '')
 
 def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
                dist_coef=0.45):
-    """
-    This function assign object id to bounding boxes
-    frame_to_object: a dict in which frame id maps to object detections
-    output_file and update_gt_file stores the detections with object id
-    but in different format
-    dist_coef: adjust the threshold of distance which is used to determine
-    whether two bounding boxes belong to the same object, if use FasterRCNN
-    dist_coef should be set to 0.45. Otherwise, mobilenet needs to be 0.8
+    """Assign object id to bounding boxes.
+
+    Args
+        frame_to_object: a dict in which frame id maps to object detections
+        output_file and update_gt_file stores the detections with object id
+        but in different format
+        dist_coef: adjust the threshold of distance which is used to determine
+        whether two bounding boxes belong to the same object, if use FasterRCNN
+        dist_coef should be set to 0.45. Otherwise, mobilenet needs to be 0.8
+
     """
     last_frame = []
     object_to_type = defaultdict(list)
@@ -63,9 +65,9 @@ def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
                     object_id = object_cn
                 else:
                     for last_box in last_frame:
-                        dist = np.linalg.norm(np.array([x_c, y_c])
-                                              - np.array([last_box[0],
-                                                          last_box[1]]))
+                        dist = np.linalg.norm(
+                            np.array([x_c, y_c]) - np.array([last_box[0],
+                                                             last_box[1]]))
                         dist_with_last_frame.append(dist)
                     min_dist = min(dist_with_last_frame)
                     index = dist_with_last_frame.index(min_dist)
@@ -173,8 +175,8 @@ def smooth_annot(all_filename, frame_to_object):
                 for last_box in last_boxes:
                     last_x_c = last_box[0] + last_box[2]/2.0
                     last_y_c = last_box[1] + last_box[3]/2.0
-                    dist = np.linalg.norm(np.array([x_c, y_c])
-                                          - np.array([last_x_c, last_y_c]))
+                    dist = np.linalg.norm(
+                        np.array([x_c, y_c]) - np.array([last_x_c, last_y_c]))
                     dist_with_last_frame.append(dist)
                 min_last_dist = min(dist_with_last_frame)
 
@@ -183,8 +185,8 @@ def smooth_annot(all_filename, frame_to_object):
                 for next_box in next_boxes:
                     next_x_c = next_box[0] + next_box[2]/2.0
                     next_y_c = next_box[1] + next_box[3]/2.0
-                    dist = np.linalg.norm(np.array([x_c, y_c])
-                                          - np.array([next_x_c, next_y_c]))
+                    dist = np.linalg.norm(
+                        np.array([x_c, y_c]) - np.array([next_x_c, next_y_c]))
                     dist_with_next_frame.append(dist)
 
                 min_next_dist = min(dist_with_next_frame)
@@ -202,11 +204,16 @@ def smooth_annot(all_filename, frame_to_object):
 
 def smooth(input_frame_to_obj, overlap_percent=0.2,
            vote_percent=0.2, win_size=10):
-    """ Smooth the bounding boxes.
-    input_frame_to_obj: a dict which maps frame id to a list of bounding boxes
-    overlap_percent: the percentage threshold of iou. when above this number,
-    two boxes are considered to belong to the same object
-    win_size: the window size which smoothing will be applied to
+    """Smooth the bounding boxes.
+
+    Args:
+        input_frame_to_obj: a dict which maps frame id to a list of
+                            bounding boxes
+        overlap_percent: the percentage threshold of iou. when above this
+                         number, two boxes are considered to belong to the
+                         same object
+        win_size: the window size which smoothing will be applied to
+
     """
     frame_indices = sorted(input_frame_to_obj.keys())
     min_frame_idx = min(frame_indices)
