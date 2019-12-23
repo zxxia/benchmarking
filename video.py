@@ -2,7 +2,6 @@
 import os
 import subprocess
 import cv2
-import numpy as np
 from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections
 from benchmarking.utils.utils import load_metadata
@@ -92,9 +91,6 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
-    def mask_frame_image(self, idx, boxes, save_path=None):
-        return None, None
-
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
@@ -167,7 +163,7 @@ class YoutubeVideo(Video):
         return self._dropped_detections
 
     def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None):
+               target_frame_rate=None, save_video=True):
         """Encode the target frames into a video and return video size."""
         print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
@@ -188,7 +184,8 @@ class YoutubeVideo(Video):
         subprocess.run(cmd, check=True)
         # get the video size
         video_size = os.path.getsize(output_video_name)
-        # os.remove(output_video)
+        if not save_video:
+            os.remove(output_video_name)
         os.remove(tmp_list_file)
         print('target fps={}, target resolution={}, video size={}'
               .format(target_frame_rate, self._resolution, video_size))
@@ -200,12 +197,12 @@ class YoutubeVideo(Video):
 class KittiVideo(Video):
     """Class of KittiVideo."""
 
-    def __init__(self, name, resolution_name, detection_file, image_path,
+    def __init__(self, name,  detection_file, image_path,
                  model='FasterRCNN', filter_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        # resolution = (1242, 375)
-        resolution = RESOL_DICT[resolution_name]
+        resolution = (1242, 375)
+        # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets = filter_video_detections(
                 dets,
@@ -221,11 +218,8 @@ class KittiVideo(Video):
         img_name = format(frame_index, '010d') + '.png'
         img_file = os.path.join(self._image_path, img_name)
         img = cv2.imread(img_file)
-        img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
+        # img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
         return img
-
-    # def __init__(self, name, resolution_name, metadata_file, detection_file,
-    #              image_path, model='FasterRCNN', filter_flag=True):
 
 
 class WaymoVideo(Video):
