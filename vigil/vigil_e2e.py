@@ -4,7 +4,7 @@ import csv
 import pdb
 import os
 from benchmarking.video import YoutubeVideo
-from benchmarking.vigil.Vigil import Vigil
+from benchmarking.vigil.Vigil import Vigil, mask_video, mask_video_ffmpeg
 
 PATH = '/data/zxxia/videos/'
 
@@ -15,7 +15,7 @@ DATA_ROOT = '/data/zxxia/videos'
 
 
 def parse_args():
-    """ parse input arguments """
+    """Parse input arguments."""
     parser = argparse.ArgumentParser(description="vigil")
     # parser.add_argument("--path", type=str, help="path contains all datasets")
     parser.add_argument("--video", type=str, help="video name")
@@ -38,6 +38,19 @@ def parse_args():
 def main():
     """Vigil end-to-end."""
     args = parse_args()
+    dt_file = os.path.join(
+        DT_ROOT, args.video, '720p',
+        'profile/updated_gt_Inception_COCO_no_filter.csv')
+    img_path = os.path.join(DATA_ROOT, args.video, '720p')
+    video = YoutubeVideo(args.video, '720p', args.metadata,
+                         dt_file, img_path, filter_flag=True)
+    mask_video_ffmpeg(
+        video, 0.2, 0.2,
+        save_path='/data/zxxia/benchmarking/Vigil/test_bg_ffmpeg')
+    return
+    # mask_video(video, 0.2, 0.2,
+    #            save_path='/data/zxxia/benchmarking/Vigil/test_bg')
+
     # load pipeline
     pipeline = Vigil()
     # Load groud truth
@@ -46,18 +59,19 @@ def main():
         'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
     original_video = YoutubeVideo(args.video, '720p', args.metadata,
-                                  dt_file, img_path)
+                                  dt_file, img_path, filter_flag=True)
 
-    # Load fastercnn detections on blacked background images
-    dt_file = '/data/zxxia/blackbg/'+args.video+'/' + \
-        'profile/updated_gt_FasterRCNN_COCO_no_filter.csv'
+    # # Load fastercnn detections on blacked background images
+    # dt_file = '/data/zxxia/blackbg/'+args.video+'/' + \
+    #     'profile/updated_gt_FasterRCNN_COCO_no_filter.csv'
 
-    # dt_file = os.path.join(
-    #     DT_ROOT, args.video, '720p',
-    #     'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
-    img_path = '/data/zxxia/blackbg/'+args.video+'/'
+    dt_file = os.path.join(
+        DT_ROOT, args.video, '720p',
+        'profile/updated_gt_Inception_COCO_no_filter.csv')
+    # img_path = '/data/zxxia/blackbg/'+args.video+'/'
+    img_path = '/data/zxxia/benchmarking/Vigil/test_bg_ffmpeg'
     video = YoutubeVideo(args.video, '720p',
-                         args.metadata, dt_file, img_path)
+                         args.metadata, dt_file, img_path, filter_flag=True)
 
     # Load haar detection results
     # haar_dt_file = 'haar_detections_new/haar_{}.csv'.format(dataset)
@@ -72,7 +86,7 @@ def main():
     with open(args.output, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(
-            ['video', 'f1', 'bw', 'avg upload area', 'avg total obj area'])
+            ['video', 'bw', 'f1'])
         for i in range(nb_short_videos):
             clip = args.video + '_' + str(i)
             start_frame = i*args.short_video_length*original_video.frame_rate+1

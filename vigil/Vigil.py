@@ -1,5 +1,6 @@
 """Vigil Implementation."""
 import os
+import subprocess
 import cv2
 import numpy as np
 from benchmarking.utils.model_utils import eval_single_image
@@ -81,7 +82,52 @@ def mask_video(video, w_delta_percent, h_delta_percent, save_path=None):
         mask, masked_img = mask_image(img, boxes)
         if save_path is not None:
             cv2.imwrite(os.path.join(save_path, '{:06d}.jpg'.format(i)),
-                        masked_img)
+                        masked_img, [cv2.IMWRITE_JPEG_QUALITY, 100])
+
+
+def mask_video_ffmpeg(video, w_delta_percent, h_delta_percent, save_path):
+    """Change the pixels of the input video outside boxes into black."""
+    for i in range(video.start_frame_index, video.end_frame_index + 1):
+        boxes = video.get_frame_detection(i)
+        boxes = resize_bboxes(boxes, w_delta_percent,
+                              h_delta_percent, video.resolution)
+        img_path = video.get_frame_image_name(i)
+        img_name = os.path.basename(img_path)
+        out_img_path = os.path.join(save_path, img_name)
+        mask_image_ffmpeg(img_path, boxes, out_img_path)
+
+
+def mask_image_ffmpeg(input_img, boxes, output_img):
+    """Change the pixels of the input image outside boxes into black.
+
+    Args
+        input_img(string): input image filename
+        boxes(list): a list of boxes
+                    box format [xmin, ymin, xmax, ymax, t, score, obj_id]
+        output_img(string): output image filename
+
+    """
+    filters = 'color=s=1280x720:c=black[bg];'
+    for i, box in enumerate(boxes):
+        filters += '[0:v]crop=w={}:h={}:x={}:y={}[crop{}];'.format(
+            box[2]-box[0], box[3]-box[1], box[0], box[1], i)
+    for i, box in enumerate(boxes):
+        if i == 0:
+            filters += '[bg][crop{}]overlay=x={}:y={}:shortest=1[out{}];'\
+                .format(i, box[0], box[1], i)
+        else:
+            filters += '[out{}][crop{}]overlay=x={}:y={}[out{}];'.format(
+                i-1, i, box[0], box[1], i)
+
+    filters = filters[:-1]
+    cmd = ['ffmpeg', '-loglevel', 'quiet', '-i', input_img, '-y',
+           '-filter_complex', filters, '-map',
+           '[out{}]'.format(len(boxes) - 1), "-qscale:v",
+           "2.0", output_img, '-hide_banner']
+    # print(cmd)
+    # subprocess.run(cmd, check=True)
+
+    p = subprocess.Popen(cmd)
 
 
 def resize_bboxes(bboxes, w_delta_percent, h_delta_percent, resolution):
