@@ -29,9 +29,9 @@ partition = {'train': range(1, 18001),
              'test': range(22001, 30001)}  # IDs
 
 
-def build_model(dim, model_arch, all_classes):
+def build_model(dim, model_arch, nb_classes):
     """Build up a simple model(classification)."""
-    nb_classes = len(all_classes)
+    # nb_classes = len(all_classes)
     if model_arch == 'alexnet':
         model = alexnet((*dim, 3), nb_classes)
     # if model_arch == 'vgg16':

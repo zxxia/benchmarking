@@ -1,4 +1,5 @@
 """Awstream Definition."""
+import os
 import csv
 import copy
 from collections import defaultdict
@@ -18,17 +19,17 @@ class Awstream():
         self.resolution_list = resolution_list
         self.quantizer_list = quantizer_list
         self.profile_writer = csv.writer(open(profile_log, 'w', 1))
-        self.profile_writer.writerow(["video_name", "frame_rate", "f1"])
+        self.profile_writer.writerow(
+            ["video_name", "frame_rate", "f1", "tp", "fp", "fn"])
 
     def profile(self, video_name, video_dict, original_video, frame_range):
         """Profile the combinations of fps and resolution.
 
         Return a list of config that satisfys the requirements.
         """
-        original_bw = original_video.encode(video_name+'.mp4',
-                                            list(range(frame_range[0],
-                                                       frame_range[1])),
-                                            original_video.frame_rate)
+        original_bw = original_video.encode(
+            video_name+'.mp4', list(range(frame_range[0], frame_range[1])),
+            original_video.frame_rate, save_video=False)
         best_resol = original_video.resolution
         best_fps = original_video.frame_rate
         min_bw = original_bw
@@ -40,7 +41,7 @@ class Awstream():
                 continue
             video = video_dict[resolution]
             print('profile [{}, {}], resolution={}, orginal resolution={}'
-                  .format(frame_range[0], frame_range[1], resolution,
+                  .format(frame_range[0], frame_range[1], video.resolution,
                           original_video.resolution))
 
             for sample_rate in self.temporal_sampling_list:
@@ -50,8 +51,8 @@ class Awstream():
                 f1_score = compute_f1(tp_total, fp_total, fn_total)
 
                 self.profile_writer.writerow([video_name, resolution,
-                                              sample_rate, f1_score, tp_total,
-                                              fp_total, fn_total])
+                                              1 / sample_rate, f1_score,
+                                              tp_total, fp_total, fn_total])
                 print('profile on {} {}, resolution={},sample rate={}, f1={}'
                       .format(video_name, frame_range, resolution, sample_rate,
                               f1_score))
@@ -76,7 +77,7 @@ class Awstream():
                     target_frame_indices.append(img_index)
                 bndwdth = video.encode(video_name + '.mp4',
                                        target_frame_indices,
-                                       target_fps)
+                                       target_fps, save_video=False)
                 print(min_bw, bndwdth)
                 if bndwdth <= min_bw:
                     min_bw = bndwdth
@@ -145,7 +146,9 @@ def eval_images(image_range, original_video, video, sample_rate):
 
 def find_target_fps(f1_list, fps_list, target_f1):
     """Use interpolation to find the ideal fps at target f1."""
-    if f1_list[-1] < target_f1:
+    if target_f1 - 0.02 <= f1_list[-1] < target_f1:
+        target_fps = fps_list[-1]
+    elif f1_list[-1] < target_f1:
         target_fps = None
     else:
         try:

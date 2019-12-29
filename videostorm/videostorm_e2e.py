@@ -3,11 +3,11 @@ import argparse
 import csv
 import os
 import pdb
-from video import YoutubeVideo
-from videostorm.VideoStorm import VideoStorm
+from benchmarking.video import YoutubeVideo
+from benchmarking.videostorm.VideoStorm import VideoStorm
 
 TEMPORAL_SAMPLING_LIST = [20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1]
-MODEL_LIST = ['FasterRCNN', 'Inception', 'mobilenet']
+MODEL_LIST = ['FasterRCNN']  # , 'Inception', 'mobilenet']
 
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 

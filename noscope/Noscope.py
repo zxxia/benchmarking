@@ -1,16 +1,21 @@
+"""NoScope Implementation."""
 import csv
-from collections import defaultdict
+# from collections import defaultdict
 from benchmarking.utils.utils import interpolation
 
 
-class Noscope():
+class NoScope():
+    """NoScope definition."""
+
     def __init__(self, thresh_list, profile_file, target_f1=0.9):
+        """Constructor."""
         self.thresh_list = thresh_list
         self.target_f1 = target_f1
         self.writer = csv.writer(open(profile_file, 'w', 1))
 
     def profile(self, video_name, small_model_result, gt, start_frame,
                 end_frame):
+        """Profile a list of confidence score thresholds."""
         f1_list = []
         gpu_list = []
         for thresh in self.thresh_list:
@@ -38,6 +43,8 @@ class Noscope():
 
     def evaluate(self, video_name, small_model_result, gt, start_frame,
                  end_frame, thresh):
+        """Evaluate the target confidence score thresholds."""
+        # TODO: Model spped is not consistent with other pipelines
         small_model_speed = 2.6
         full_model_speed = 100
         full_model_cn = 0
