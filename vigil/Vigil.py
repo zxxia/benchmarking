@@ -1,4 +1,5 @@
 """Vigil Implementation."""
+import time
 import os
 import subprocess
 import cv2
@@ -87,6 +88,7 @@ def mask_video(video, w_delta_percent, h_delta_percent, save_path=None):
 
 def mask_video_ffmpeg(video, w_delta_percent, h_delta_percent, save_path):
     """Change the pixels of the input video outside boxes into black."""
+    processes = []
     for i in range(video.start_frame_index, video.end_frame_index + 1):
         boxes = video.get_frame_detection(i)
         boxes = resize_bboxes(boxes, w_delta_percent,
@@ -94,7 +96,18 @@ def mask_video_ffmpeg(video, w_delta_percent, h_delta_percent, save_path):
         img_path = video.get_frame_image_name(i)
         img_name = os.path.basename(img_path)
         out_img_path = os.path.join(save_path, img_name)
-        mask_image_ffmpeg(img_path, boxes, out_img_path)
+        processes.append(mask_image_ffmpeg(img_path, boxes, out_img_path))
+
+    while processes:
+        # remove finished processes from the list (O(N**2))
+        print('{} tasks to run...'.format(len(processes)), flush=True)
+        for p in processes[:]:
+            if p.poll() is not None:  # process ended
+                # print(p.stdout.read(), end='')  # read the rest
+                # p.stdout.close()
+                processes.remove(p)
+        time.sleep(2)
+    print('Finished all image masking...', flush=True)
 
 
 def mask_image_ffmpeg(input_img, boxes, output_img):
@@ -127,7 +140,9 @@ def mask_image_ffmpeg(input_img, boxes, output_img):
     # print(cmd)
     # subprocess.run(cmd, check=True)
 
-    p = subprocess.Popen(cmd)
+    # return subprocess.Popen(cmd, stdin=subprocess.PIPE)
+    # TODO: solve the terminal recovery issue
+    return subprocess.Popen(cmd)
 
 
 def resize_bboxes(bboxes, w_delta_percent, h_delta_percent, resolution):
