@@ -1,7 +1,8 @@
 """Vigil Implementation."""
+import sys
+from subprocess import Popen
 import time
 import os
-import subprocess
 import cv2
 import numpy as np
 from benchmarking.utils.model_utils import eval_single_image
@@ -89,6 +90,7 @@ def mask_video(video, w_delta_percent, h_delta_percent, save_path=None):
 def mask_video_ffmpeg(video, w_delta_percent, h_delta_percent, save_path):
     """Change the pixels of the input video outside boxes into black."""
     processes = []
+    cmds = []
     for i in range(video.start_frame_index, video.end_frame_index + 1):
         boxes = video.get_frame_detection(i)
         boxes = resize_bboxes(boxes, w_delta_percent,
@@ -96,28 +98,41 @@ def mask_video_ffmpeg(video, w_delta_percent, h_delta_percent, save_path):
         img_path = video.get_frame_image_name(i)
         img_name = os.path.basename(img_path)
         out_img_path = os.path.join(save_path, img_name)
-        processes.append(mask_image_ffmpeg(img_path, boxes, out_img_path))
+        cmds.append(mask_image_ffmpeg_cmd(img_path, boxes, out_img_path))
 
-    while processes:
-        # remove finished processes from the list (O(N**2))
-        print('{} tasks to run...'.format(len(processes)), flush=True)
-        for p in processes[:]:
-            if p.poll() is not None:  # process ended
-                # print(p.stdout.read(), end='')  # read the rest
-                # p.stdout.close()
-                processes.remove(p)
-        time.sleep(2)
+    max_task = 32  # the number of cores in the system
+    while True:
+        print('{} jobs to do...'.format(len(cmds)))
+        while cmds and len(processes) < max_task:
+            task = cmds.pop()
+            processes.append(Popen(task, stdin=open(os.devnull)))
+
+        for p in processes:
+            if p.poll() is not None:
+                if p.returncode == 0:
+                    processes.remove(p)
+                else:
+                    print(task, 'failed!')
+                    sys.exit(1)
+
+        if not processes and not cmds:
+            break
+        else:
+            time.sleep(0.05)
+
     print('Finished all image masking...', flush=True)
 
 
-def mask_image_ffmpeg(input_img, boxes, output_img):
-    """Change the pixels of the input image outside boxes into black.
+def mask_image_ffmpeg_cmd(input_img, boxes, output_img):
+    """Return ffmpeg command that changes the image background into black.
 
     Args
         input_img(string): input image filename
         boxes(list): a list of boxes
                     box format [xmin, ymin, xmax, ymax, t, score, obj_id]
         output_img(string): output image filename
+    Return
+        ffmpeg command
 
     """
     filters = 'color=s=1280x720:c=black[bg];'
@@ -133,16 +148,35 @@ def mask_image_ffmpeg(input_img, boxes, output_img):
                 i-1, i, box[0], box[1], i)
 
     filters = filters[:-1]
-    cmd = ['ffmpeg', '-loglevel', 'quiet', '-i', input_img, '-y',
-           '-filter_complex', filters, '-map',
-           '[out{}]'.format(len(boxes) - 1), "-qscale:v",
-           "2.0", output_img, '-hide_banner']
-    # print(cmd)
-    # subprocess.run(cmd, check=True)
+    return ['ffmpeg', '-loglevel', 'quiet', '-i', input_img, '-y',
+            '-filter_complex', filters, '-map',
+            '[out{}]'.format(len(boxes) - 1), "-qscale:v",
+            "2.0", output_img, '-hide_banner']
 
-    # return subprocess.Popen(cmd, stdin=subprocess.PIPE)
     # TODO: solve the terminal recovery issue
-    return subprocess.Popen(cmd)
+
+
+# def cpu_count():
+#     ''' Returns the number of CPUs in the system
+#     '''
+#     num = 1
+#     if sys.platform == 'win32':
+#         try:
+#             num = int(os.environ['NUMBER_OF_PROCESSORS'])
+#         except (ValueError, KeyError):
+#             pass
+#     elif sys.platform == 'darwin':
+#         try:
+#             num = int(os.popen('sysctl -n hw.ncpu').read())
+#         except ValueError:
+#             pass
+#     else:
+#         try:
+#             num = os.sysconf('SC_NPROCESSORS_ONLN')
+#         except (ValueError, OSError, AttributeError):
+#             pass
+#
+#     return num
 
 
 def resize_bboxes(bboxes, w_delta_percent, h_delta_percent, resolution):
