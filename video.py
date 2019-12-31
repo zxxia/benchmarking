@@ -1,5 +1,6 @@
 """Definition of videos."""
 import os
+import pdb
 import subprocess
 import cv2
 from benchmarking.utils.model_utils import load_full_model_detection, \
@@ -18,6 +19,7 @@ class Video:
         self._frame_rate = frame_rate
         self._resolution = resolution
         self._detections = detections
+        self._dropped_detections = None
         self._frame_count = len(detections)
         self._image_path = image_path
         self._video_type = video_type
@@ -86,6 +88,16 @@ class Video:
         """Return the object detections at frame index."""
         return self._detections[frame_index]
 
+    def get_dropped_frame_detection(self, frame_index):
+        """Return the object detections which are dropped at frame index."""
+        if self._dropped_detections is None:
+            return None
+        return self._dropped_detections[frame_index]
+
+    def get_dropped_video_detection(self):
+        """Return the dropped object detections of the video by filter."""
+        return self._dropped_detections
+
     def get_video_detection(self):
         """Return the object detections of the video."""
         return self._detections
@@ -122,8 +134,6 @@ class YoutubeVideo(Video):
                     width_range=(0, resolution[0]/2),
                     height_range=(0, resolution[1] / 2))
                 self._dropped_detections = dropped_dets
-            else:
-                self._dropped_detections = None
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -138,18 +148,18 @@ class YoutubeVideo(Video):
             else:
                 self._dropped_detections = None
 
-        # TODO: need to handle roadtrip
-        # if name == 'road_trip':
-        #     for frame_idx in dets:
-        #         tmp_boxes = []
-        #         for box in dets[frame_idx]:
-        #             xmin, ymin, xmax, ymax = box[:4]
-        #             if ymin >= 500 and ymax >= 500:
-        #                 continue
-        #             if (xmax - xmin) >= 2/3 * 1280:
-        #                 continue
-        #             tmp_boxes.append(box)
-        #         dets[frame_idx] = tmp_boxes
+        if name == 'road_trip':
+            for frame_idx in dets:
+                tmp_boxes = []
+                for box in dets[frame_idx]:
+                    xmin, ymin, xmax, ymax = box[:4]
+                    if ymin >= 500/720*resolution[1] \
+                            and ymax >= 500/720*resolution[1]:
+                        continue
+                    if (xmax - xmin) >= 2/3 * resolution[0]:
+                        continue
+                    tmp_boxes.append(box)
+                dets[frame_idx] = tmp_boxes
 
         super().__init__(name, frame_rate, resolution, dets,
                          image_path, camera_type, model)
@@ -166,14 +176,6 @@ class YoutubeVideo(Video):
         img_file = os.path.join(
             self._image_path, '{:06d}.jpg'.format(frame_index))
         return img_file
-
-    def get_dropped_frame_detection(self, frame_index):
-        """Return the object detections which are dropped at frame index."""
-        return self._dropped_detections[frame_index]
-
-    def get_dropped_video_detection(self):
-        """Return the dropped object detections of the video by filter."""
-        return self._dropped_detections
 
     def encode(self, output_video_name, target_frame_indices=None,
                target_frame_rate=None, save_video=True):
@@ -232,12 +234,13 @@ class KittiVideo(Video):
         resolution = (1242, 375)
         # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
-            dets, _ = filter_video_detections(
+            dets, dropped_dets = filter_video_detections(
                 dets,
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
+            self._dropped_detections = dropped_dets
         super().__init__(name, 10, resolution, dets, image_path, 'moving',
                          model)
 
@@ -265,12 +268,15 @@ class WaymoVideo(Video):
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = RESOL_DICT[resolution_name]
         if filter_flag:
-            dets, _ = filter_video_detections(
+            dets, dropped_dets = filter_video_detections(
                 dets,
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
+            self._dropped_detections = dropped_dets
+        else:
+            self._dropped_detections = None
         super().__init__(name, 10, resolution, dets, image_path, 'moving',
                          model)
 
