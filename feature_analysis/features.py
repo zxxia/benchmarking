@@ -1,40 +1,50 @@
 from collections import defaultdict
 import numpy as np
-from benchmarking.utils import IoU
+from benchmarking.utils.utils import IoU
 
 
-def compute_velocity(start, end, video_dets, fps, step=0.1):
-    """No distance info from image, so define a metric to capture the velocity.
-    velocity = 1/IoU(current_box, next_box)."""
+def compute_velocity(video_dets, start, end, fps, step=0.1):
+    """Compute object velocity.
+
+    No distance info from image, so define a metric to capture the velocity.
+    velocity = 1/IoU(current_box, next_box).
+
+    Return
+        velocity(dict): a dict mapping frame index to a list of object
+                        velcoties
+
+    """
     velocity = {}
 
     for i in range(start, end + 1):
-        future_frame_idx = int(i + step*fps)
-        if future_frame_idx not in video_dets:
-            velocity[i] = 0
+        boxes = video_dets[i]
+        past_frame_idx = int(i - step*fps)
+        if past_frame_idx not in video_dets:
+            velocity[i] = []
+            # if i - 1 in velocity:
+            #     # TODO: may need to check objec id existence here
+            #     velocity[i] = velocity[i-1]
         else:
-            future_obj_map = object_id_to_boxes(video_dets[future_frame_idx])
-            boxes = video_dets[i]
+            past_obj_map = object_id_to_boxes(video_dets[past_frame_idx])
             all_velo = []
             for box in boxes:
                 obj_id = box[-1]
                 # check if this object is also in the frame of 0.1 second ago
                 # key = (last_filename, object_id)
-                if obj_id not in future_obj_map:
+                if obj_id not in past_obj_map:
                     continue
                 else:
                     # use IoU of the bounding boxes of this object in two
                     # consecutive frames to reflect how fast the object is
                     # moving. the faster the object is moving, the smaller the
                     # IoU will be
-                    iou = IoU(future_obj_map[obj_id], box[0:4])
+                    iou = IoU(box[0:4], past_obj_map[obj_id])
                     if iou < 0.001:
                         print('object {} iou={} too fast from frame {} to frame {}'
-                              .format(obj_id, iou, i, future_frame_idx))
+                              .format(obj_id, iou, i, past_frame_idx))
                         iou = 0.01
                     # remove the influence of frame rate
                     all_velo.append(1/iou)
-                    # all_velo.append(iou)
             velocity[i] = all_velo
 
     return velocity
@@ -83,7 +93,7 @@ def object_appearance(start, end, gt):
     return obj_to_frame_range, frame_to_new_obj
 
 
-def compute_arrival_rate(start, end, video_dets, fps):
+def compute_arrival_rate(video_dets, start, end, fps):
     """Compuate new object arrival rate.
 
     Arrival rate defines as the number of new objects arrive in the following
@@ -93,17 +103,18 @@ def compute_arrival_rate(start, end, video_dets, fps):
         fps: frames per second
 
     """
-
     obj_to_frame_range, frame_to_new_obj = object_appearance(
         start, end, video_dets)
     arrival_rate = {}
-    for i in range(start, end + 1 - fps):
+    for i in range(start, end + 1):
         one_second_events = 0
-        for frame in range(i, i + fps):
-            if frame not in frame_to_new_obj:
+        if i > end - fps:
+            arrival_rate[i] = arrival_rate[i - 1]
+        for j in range(i, i + fps):
+            if j not in frame_to_new_obj:
                 continue
             else:
-                one_second_events += len(frame_to_new_obj[i])
+                one_second_events += len(frame_to_new_obj[j])
         arrival_rate[i] = one_second_events
 
     return arrival_rate
@@ -180,3 +191,51 @@ def compute_frame_object_size(frame_detections, resolution):
         object_size = compute_box_size(box)/image_size
         object_sizes.append(object_size)
     return object_sizes
+
+
+def count_unique_class(video_dets, start, end):
+    """Count unique classes in a video.
+
+    Args
+        video_dets(dict): a dict mapping frame index to a list of bboxes
+
+    Return
+        unique class count
+
+    """
+    unique_classes = set()
+    for i in range(start, end+1):
+        if i not in video_dets:
+            continue
+        for box in video_dets[i]:
+            unique_classes.add(box[4])
+        print(unique_classes)
+    return len(unique_classes)
+
+
+def count_classification_unique_class(video_dets, start, end):
+    """Count unique classes in a video using classification.
+
+    Args
+        video_dets(dict): a dict mapping frame index to a list of bboxes
+
+    Return
+        unique class count
+
+    """
+    unique_classes = set()
+    for i in range(start, end+1):
+        if i not in video_dets:
+            continue
+        for box in video_dets[i]:
+            unique_classes.add(box[4])
+        print(unique_classes)
+    return len(unique_classes)
+
+
+def compute_percentage_frame_with_object(video_dets, start, end):
+    cnt = 0
+    for i in range(start, end+1):
+        if video_dets[i]:
+            cnt += 1
+    return cnt / (end-start+1)

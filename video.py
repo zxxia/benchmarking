@@ -134,6 +134,11 @@ class YoutubeVideo(Video):
                     width_range=(0, resolution[0]/2),
                     height_range=(0, resolution[1] / 2))
                 self._dropped_detections = dropped_dets
+                # for frame_idx, boxes in dets.items():
+                #     for box_idx, _ in enumerate(boxes):
+                #         # Merge all cars and trucks into cars
+                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -145,6 +150,11 @@ class YoutubeVideo(Video):
                                   COCOLabels.TRUCK.value},
                     height_range=(resolution[1] // 20, resolution[1]))
                 self._dropped_detections = dropped_dets
+                # for frame_idx, boxes in dets.items():
+                #     for box_idx, _ in enumerate(boxes):
+                #         # Merge all cars and trucks into cars
+                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
             else:
                 self._dropped_detections = None
 
