@@ -24,6 +24,7 @@ class Video:
         self._image_path = image_path
         self._video_type = video_type
         self._model = model
+        self._quality_level = 23
 
     @property
     def video_name(self):
@@ -48,8 +49,7 @@ class Video:
     @property
     def quality_level(self):
         """Return quality level of the video."""
-        # TODO: finish quality level
-        return 0
+        return self.quality_level
 
     @property
     def start_frame_index(self):
@@ -204,8 +204,8 @@ class YoutubeVideo(Video):
         cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
                str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
                tmp_list_file, '-s', frame_size,
-               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
-               'yuv420p', '-hide_banner', output_video_name]
+               '-vcodec', 'libx264', '-crf', str(self._quality_level),
+               '-pix_fmt', 'yuv420p', '-hide_banner', output_video_name]
         subprocess.run(cmd, check=True)
         # get the video size
         video_size = os.path.getsize(output_video_name)
@@ -219,17 +219,17 @@ class YoutubeVideo(Video):
         return video_size
 
     # a better way to create a video
-    def create_video(self, video, frame_range, every_n_frame, quality_level,
-                     output_path):
-        """Extract frames from videos."""
-        output_video_name = os.path.join(output_path, "tmp.mp4")
+    def encode_ffmpeg(self, video, frame_range, every_n_frame, output_path):
+        """Create a video using ffmepg."""
+        # TODO: add path to original video
+        output_video_name = os.path.join(output_path, "{}.mp4".format(video))
         frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
         cmd = ["ffmpeg", "-y", "-i", video, '-an', '-vf',
                'select=between(n\,{}\,{})*not(mod(n\,{})),'
                'setpts=PTS-STARTPTS'.format(frame_range[0],
                                             frame_range[1], every_n_frame),
                '-vsync', 'vfr', '-s', frame_size, '-crf',
-               str(self.quality_level), output_video_name, "-hide_banner"]
+               str(self._quality_level), output_video_name, "-hide_banner"]
         print(cmd)
         subprocess.run(cmd, check=True)
 

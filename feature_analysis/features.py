@@ -1,13 +1,16 @@
-from collections import defaultdict
+"""Functions to compute object-level features."""
 import numpy as np
 from benchmarking.utils.utils import IoU
 
 
-def compute_velocity(video_dets, start, end, fps, step=0.1):
+def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
     """Compute object velocity.
 
     No distance info from image, so define a metric to capture the velocity.
     velocity = 1/IoU(current_box, next_box).
+
+    Args
+        video_dets(dict)
 
     Return
         velocity(dict): a dict mapping frame index to a list of object
@@ -16,7 +19,7 @@ def compute_velocity(video_dets, start, end, fps, step=0.1):
     """
     velocity = {}
 
-    for i in range(start, end + 1):
+    for i in range(start, end + 1, sample_step):
         boxes = video_dets[i]
         past_frame_idx = int(i - step*fps)
         if past_frame_idx not in video_dets:
@@ -120,7 +123,7 @@ def compute_arrival_rate(video_dets, start, end, fps):
     return arrival_rate
 
 
-def compute_nb_object_per_frame(video_detections, start, end):
+def compute_nb_object_per_frame(video_detections, start, end, sample_step=1):
     """Compute number of object per frame.
 
     Args
@@ -134,11 +137,12 @@ def compute_nb_object_per_frame(video_detections, start, end):
 
     """
     nb_object = {}
-    for i in range(start, end + 1):
+    for i in range(start, end + 1, sample_step):
         if i not in video_detections:
             nb_object[i] = 0
         else:
             nb_object[i] = len(video_detections[i])
+
     return nb_object
 
 
@@ -147,7 +151,8 @@ def compute_box_size(box):
     return (box[2]-box[0]+1) * (box[3]-box[1]+1)
 
 
-def compute_video_object_size(video_dets, start, end, resolution):
+def compute_video_object_size(video_dets, start, end, resolution,
+                              sample_step=1):
     """Compute the size of each object detected in a video.
 
     Args
@@ -163,7 +168,7 @@ def compute_video_object_size(video_dets, start, end, resolution):
     """
     object_size = {}
     total_object_size = {}
-    for i in range(start, end+1):
+    for i in range(start, end+1, sample_step):
         if i not in video_dets:
             continue
         frame_detections = video_dets[i]
@@ -193,7 +198,7 @@ def compute_frame_object_size(frame_detections, resolution):
     return object_sizes
 
 
-def count_unique_class(video_dets, start, end):
+def count_unique_class(video_dets, start, end, sample_step=1):
     """Count unique classes in a video.
 
     Args
@@ -204,7 +209,7 @@ def count_unique_class(video_dets, start, end):
 
     """
     unique_classes = set()
-    for i in range(start, end+1):
+    for i in range(start, end+1, sample_step):
         if i not in video_dets:
             continue
         for box in video_dets[i]:
@@ -213,7 +218,7 @@ def count_unique_class(video_dets, start, end):
     return len(unique_classes)
 
 
-def count_classification_unique_class(video_dets, start, end):
+def count_classification_unique_class(video_dets, start, end, sample_step=1):
     """Count unique classes in a video using classification.
 
     Args
@@ -224,7 +229,7 @@ def count_classification_unique_class(video_dets, start, end):
 
     """
     unique_classes = set()
-    for i in range(start, end+1):
+    for i in range(start, end+1, sample_step):
         if i not in video_dets:
             continue
         for box in video_dets[i]:
@@ -233,9 +238,22 @@ def count_classification_unique_class(video_dets, start, end):
     return len(unique_classes)
 
 
-def compute_percentage_frame_with_object(video_dets, start, end):
+def compute_percentage_frame_with_object(video_dets, start, end,
+                                         sample_step=1):
+    """Compute the percentage of frames with object in a video.
+
+    Args
+        video_dets(dict): a dict mapping frame index to a list of bboxes
+        start(int): start frame
+        end(int): end frame
+        sample_step(int): sample every sample_step steps
+
+    Return
+        percentage
+
+    """
     cnt = 0
-    for i in range(start, end+1):
+    for i in range(start, end+1, sample_step):
         if video_dets[i]:
             cnt += 1
     return cnt / (end-start+1)
