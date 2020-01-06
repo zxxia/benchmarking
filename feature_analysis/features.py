@@ -42,7 +42,7 @@ def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
                     # moving. the faster the object is moving, the smaller the
                     # IoU will be
                     iou = IoU(box[0:4], past_obj_map[obj_id])
-                    if iou < 0.001:
+                    if iou < 0.01:
                         print('object {} iou={} too fast from frame {} to frame {}'
                               .format(obj_id, iou, i, past_frame_idx))
                         iou = 0.01
@@ -257,3 +257,28 @@ def compute_percentage_frame_with_object(video_dets, start, end,
         if video_dets[i]:
             cnt += 1
     return cnt / (end-start+1)
+
+
+def compute_percentage_frame_with_new_object(video_dets, start, end):
+    """Compute the percentage of frames with new object in a video.
+
+    Args
+        video_dets(dict): a dict mapping frame index to a list of bboxes
+        start(int): start frame
+        end(int): end frame
+
+    Return
+        percentage
+
+    """
+    object_first_frame = {}
+    for i in range(start, end+1, sample_step):
+        boxes = video_dets[i] 
+        for box in boxes:
+            _id = box[6]
+            # if this object not exist before, this frame is its first frame
+            if _id not in object_first_frame:
+                object_first_frame[_id] = i
+    
+
+    return len(set(object_first_frame.values())) / (end-start+1)

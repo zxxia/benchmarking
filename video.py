@@ -132,7 +132,7 @@ class YoutubeVideo(Video):
                                   COCOLabels.BUS.value,
                                   COCOLabels.TRUCK.value},
                     width_range=(0, resolution[0]/2),
-                    height_range=(0, resolution[1] / 2))
+                    height_range=(0, resolution[1]/2))
                 self._dropped_detections = dropped_dets
                 # for frame_idx, boxes in dets.items():
                 #     for box_idx, _ in enumerate(boxes):
