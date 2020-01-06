@@ -42,10 +42,10 @@ def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
                     # moving. the faster the object is moving, the smaller the
                     # IoU will be
                     iou = IoU(box[0:4], past_obj_map[obj_id])
-                    if iou < 0.01:
+                    if iou < 0.1:
                         print('object {} iou={} too fast from frame {} to frame {}'
                               .format(obj_id, iou, i, past_frame_idx))
-                        iou = 0.01
+                        iou = 0.1
                     # remove the influence of frame rate
                     all_velo.append(1/iou)
             velocity[i] = all_velo
@@ -214,7 +214,6 @@ def count_unique_class(video_dets, start, end, sample_step=1):
             continue
         for box in video_dets[i]:
             unique_classes.add(box[4])
-        print(unique_classes)
     return len(unique_classes)
 
 
@@ -272,7 +271,7 @@ def compute_percentage_frame_with_new_object(video_dets, start, end):
 
     """
     object_first_frame = {}
-    for i in range(start, end+1, sample_step):
+    for i in range(start, end+1):
         boxes = video_dets[i] 
         for box in boxes:
             _id = box[6]
