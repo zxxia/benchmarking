@@ -4,6 +4,7 @@ import glob
 import tensorflow as tf
 from object_detection.utils import dataset_util
 from PIL import Image
+import pdb
 
 flags = tf.app.flags
 flags.DEFINE_string('data_path', '', 'Data path.')
@@ -43,7 +44,7 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 def main(_):
     """Do the input record file generation."""
-    required_flags = ['data_path', 'output_path']
+    required_flags = ['data_path', 'output_path', 'dataset']
 
     for flag_name in required_flags:
         if not getattr(FLAGS, flag_name):
@@ -67,6 +68,7 @@ def main(_):
         img_name_template = '*.jpg'
         # image['filename'] = '{0:06d}.jpg'.format(index)
     img_paths = sorted(glob.glob(os.path.join(data_path, img_name_template)))
+    print(img_paths)
 
     for img_path in img_paths:
         image = {}

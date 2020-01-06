@@ -80,28 +80,30 @@ def main(_):
     gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
 
     config = tf.compat.v1.ConfigProto()
-    config.gpu_options.per_process_gpu_memory_fraction = 0.9
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5
     with tf.compat.v1.Session(config=config) as sess:
         input_tfrecord_paths = [
             v for v in FLAGS.input_tfrecord_paths.split(',') if v]
         tf.compat.v1.logging.info('Reading input from %d files',
-                        len(input_tfrecord_paths))
+                                  len(input_tfrecord_paths))
         serialized_example_tensor, image_tensor, image_filename_tensor, height, width \
             = detection_inference.build_input(input_tfrecord_paths)
         tf.compat.v1.logging.info('Reading graph and building model...')
         (detected_boxes_tensor, detected_scores_tensor, detected_labels_tensor) \
-            = detection_inference.build_inference_graph(image_tensor, FLAGS.inference_graph)
+            = detection_inference.build_inference_graph(image_tensor,
+                                                        FLAGS.inference_graph)
 
-        tf.compat.v1.logging.info('Running inference and writing output to {}'.format(
-            FLAGS.output_tfrecord_path))
+        tf.compat.v1.logging.info(
+            'Running inference and writing output to {}'.format(
+                FLAGS.output_tfrecord_path))
         sess.run(tf.compat.v1.local_variables_initializer())
         tf.train.start_queue_runners()
         with tf.io.TFRecordWriter(FLAGS.output_tfrecord_path) as tf_record_writer:
             try:
                 for counter in itertools.count():
                     tf.compat.v1.logging.log_every_n(tf.compat.v1.logging.INFO,
-                                           'Processed %d images...',
-                                           10, counter)
+                                                     'Processed %d images...',
+                                                     10, counter)
                     start_time = time.time()
                     tf_example, image_filename = \
                         detection_inference. \
@@ -112,8 +114,8 @@ def main(_):
                             height, width, FLAGS.discard_image_pixels)
                     all_time.append(time.time()-start_time)
                     image_filename = image_filename.decode("utf-8")
-                    f.write(image_filename + ','
-                            + "{:.9f}".format(time.time()-start_time) + '\n')
+                    f.write(image_filename + ',' + "{:.9f}".format(
+                        time.time()-start_time) + '\n')
                     tf_record_writer.write(tf_example.SerializeToString())
             except tf.errors.OutOfRangeError:
                 tf.compat.v1.logging.info('Finished processing records')

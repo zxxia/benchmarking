@@ -1,26 +1,30 @@
 """Definition of videos."""
 import os
+import pdb
 import subprocess
 import cv2
-from utils.model_utils import load_full_model_detection, \
+from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections
-from utils.utils import load_metadata
-from constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
+from benchmarking.utils.utils import load_metadata
+from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
 
 
 class Video:
     """Base class of Video."""
 
     def __init__(self, name, frame_rate, resolution, detections, image_path,
-                 video_type):
+                 video_type, model):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
         self._resolution = resolution
         self._detections = detections
+        self._dropped_detections = None
         self._frame_count = len(detections)
         self._image_path = image_path
         self._video_type = video_type
+        self._model = model
+        self._quality_level = 23
 
     @property
     def video_name(self):
@@ -45,8 +49,7 @@ class Video:
     @property
     def quality_level(self):
         """Return quality level of the video."""
-        # TODO: finish quality level
-        return 0
+        return self.quality_level
 
     @property
     def start_frame_index(self):
@@ -64,20 +67,39 @@ class Video:
         return self._video_type
 
     @property
-    def get_video_duration(self):
+    def duration(self):
         """Return video duration in seconds."""
         return self._frame_count / self._frame_rate
 
+    @property
+    def model(self):
+        """Return detection model type."""
+        return self._model
+
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
+        return None
+
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
         return None
 
     def get_frame_detection(self, frame_index):
         """Return the object detections at frame index."""
         return self._detections[frame_index]
 
+    def get_dropped_frame_detection(self, frame_index):
+        """Return the object detections which are dropped at frame index."""
+        if self._dropped_detections is None:
+            return None
+        return self._dropped_detections[frame_index]
+
+    def get_dropped_video_detection(self):
+        """Return the dropped object detections of the video by filter."""
+        return self._dropped_detections
+
     def get_video_detection(self):
-        """Return the object detections at frame index."""
+        """Return the object detections of the video."""
         return self._detections
 
     def encode(self, output_video_name, target_frame_indices=None,
@@ -85,72 +107,89 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
-    # def compute_object_size():
-    #     # TODO: consider implementing the feature computation in video
-    #     return 0
-
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, name, resolution_name, metadata_file, detection_file,
-                 image_path, filter_flag=False):
+                 image_path, model='FasterRCNN', filter_flag=True):
         """Youtube Video Constructor."""
-        metadata = load_metadata(metadata_file)
-        frame_rate = metadata['frame rate']
+        if metadata_file is not None:
+            metadata = load_metadata(metadata_file)
+            frame_rate = metadata['frame rate']
+        else:
+            frame_rate = 30
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = RESOL_DICT[resolution_name]
 
         # TODO: handle overlapping boxes
         if name in CAMERA_TYPES['static']:
             camera_type = 'static'
-            if filter_flag:  # doing bboxes filtering
-                dets = filter_video_detections(
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
                     dets,
                     target_types={COCOLabels.CAR.value,
                                   COCOLabels.BUS.value,
                                   COCOLabels.TRUCK.value},
                     width_range=(0, resolution[0]/2),
                     height_range=(0, resolution[1] / 2))
+                self._dropped_detections = dropped_dets
+                # for frame_idx, boxes in dets.items():
+                #     for box_idx, _ in enumerate(boxes):
+                #         # Merge all cars and trucks into cars
+                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
+
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
-            if filter_flag:  # doing bboxes filtering
-                dets = filter_video_detections(
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
                     dets,
                     target_types={COCOLabels.CAR.value,
                                   COCOLabels.BUS.value,
                                   COCOLabels.TRUCK.value},
                     height_range=(resolution[1] // 20, resolution[1]))
-        # TODO: need to handle roadtrip
-        # if name == 'road_trip':
-        #     for frame_idx in dets:
-        #         tmp_boxes = []
-        #         for box in dets[frame_idx]:
-        #             xmin, ymin, xmax, ymax = box[:4]
-        #             if ymin >= 500 and ymax >= 500:
-        #                 continue
-        #             if (xmax - xmin) >= 2/3 * 1280:
-        #                 continue
-        #             tmp_boxes.append(box)
-        #         dets[frame_idx] = tmp_boxes
+                self._dropped_detections = dropped_dets
+                # for frame_idx, boxes in dets.items():
+                #     for box_idx, _ in enumerate(boxes):
+                #         # Merge all cars and trucks into cars
+                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
+            else:
+                self._dropped_detections = None
+
+        if name == 'road_trip':
+            for frame_idx in dets:
+                tmp_boxes = []
+                for box in dets[frame_idx]:
+                    xmin, ymin, xmax, ymax = box[:4]
+                    if ymin >= 500/720*resolution[1] \
+                            and ymax >= 500/720*resolution[1]:
+                        continue
+                    if (xmax - xmin) >= 2/3 * resolution[0]:
+                        continue
+                    tmp_boxes.append(box)
+                dets[frame_idx] = tmp_boxes
 
         super().__init__(name, frame_rate, resolution, dets,
-                         image_path, camera_type)
+                         image_path, camera_type, model)
 
-    def get_frame_image(self, frame_index, is_gray_scale=False):
+    def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img_name = format(frame_index, '06d') + '.jpg'
         img_file = os.path.join(self._image_path, img_name)
-        if is_gray_scale:
-            img = cv2.imread(img_file, 0)
-        else:
-            img = cv2.imread(img_file)
+        img = cv2.imread(img_file)
         return img
 
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
+        img_file = os.path.join(
+            self._image_path, '{:06d}.jpg'.format(frame_index))
+        return img_file
+
     def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None):
-        # TODO: need to test
-        """Encode the frames into a video."""
+               target_frame_rate=None, save_video=True):
+        """Encode the target frames into a video and return video size."""
         print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
         with open(tmp_list_file, 'w') as f_list:
@@ -165,12 +204,13 @@ class YoutubeVideo(Video):
         cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
                str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
                tmp_list_file, '-s', frame_size,
-               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
-               'yuv420p', '-hide_banner', output_video_name]
+               '-vcodec', 'libx264', '-crf', str(self._quality_level),
+               '-pix_fmt', 'yuv420p', '-hide_banner', output_video_name]
         subprocess.run(cmd, check=True)
         # get the video size
         video_size = os.path.getsize(output_video_name)
-        # os.remove(output_video)
+        if not save_video:
+            os.remove(output_video_name)
         os.remove(tmp_list_file)
         print('target fps={}, target resolution={}, video size={}'
               .format(target_frame_rate, self._resolution, video_size))
@@ -178,35 +218,119 @@ class YoutubeVideo(Video):
             output_video_name, video_size))
         return video_size
 
+    # a better way to create a video
+    def encode_ffmpeg(self, video, frame_range, every_n_frame, output_path):
+        """Create a video using ffmepg."""
+        # TODO: add path to original video
+        output_video_name = os.path.join(output_path, "{}.mp4".format(video))
+        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+        cmd = ["ffmpeg", "-y", "-i", video, '-an', '-vf',
+               'select=between(n\,{}\,{})*not(mod(n\,{})),'
+               'setpts=PTS-STARTPTS'.format(frame_range[0],
+                                            frame_range[1], every_n_frame),
+               '-vsync', 'vfr', '-s', frame_size, '-crf',
+               str(self._quality_level), output_video_name, "-hide_banner"]
+        print(cmd)
+        subprocess.run(cmd, check=True)
+
 
 class KittiVideo(Video):
     """Class of KittiVideo."""
 
-    def __init__(self, name, detection_file, image_path, filter_flag=False):
+    def __init__(self, name, detection_file, image_path,
+                 model='FasterRCNN', filter_flag=True):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = (1242, 375)
+        # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
-            dets = filter_video_detections(
+            dets, dropped_dets = filter_video_detections(
                 dets,
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
-        super().__init__(name, 10, resolution, dets, image_path, 'moving')
+            self._dropped_detections = dropped_dets
+        super().__init__(name, 10, resolution, dets, image_path, 'moving',
+                         model)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img_name = format(frame_index, '010d') + '.png'
         img_file = os.path.join(self._image_path, img_name)
         img = cv2.imread(img_file)
+        # img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
         return img
+
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
+        img_file = os.path.join(
+            self._image_path, '{:010d}.png'.format(frame_index))
+        return img_file
 
 
 class WaymoVideo(Video):
     """Class of WaymoVideo."""
 
-    def __init__(self, name, detection_file, image_path):
-        """Kitti Video Constructor."""
+    def __init__(self, name, resolution_name, detection_file, image_path,
+                 model='FasterRCNN', filter_flag=True):
+        """Waymo Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        super().__init__(name, 20, (1272, 375), dets, image_path, 'moving')
+        resolution = RESOL_DICT[resolution_name]
+        if filter_flag:
+            dets, dropped_dets = filter_video_detections(
+                dets,
+                target_types={COCOLabels.CAR.value,
+                              COCOLabels.BUS.value,
+                              COCOLabels.TRUCK.value},
+                height_range=(resolution[1] // 20, resolution[1]))
+            self._dropped_detections = dropped_dets
+        else:
+            self._dropped_detections = None
+        super().__init__(name, 10, resolution, dets, image_path, 'moving',
+                         model)
+
+    def get_frame_image(self, frame_index):
+        """Return the image at frame index."""
+        img_name = format(frame_index, '04d') + '.jpg'
+        img_file = os.path.join(self._image_path, img_name)
+        img = cv2.imread(img_file)
+        img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
+        return img
+
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
+        img_file = os.path.join(
+            self._image_path, '{:04d}.jpg'.format(frame_index))
+        return img_file
+
+    def encode(self, output_video_name, target_frame_indices=None,
+               target_frame_rate=None, save_video=True):
+        """Encode the target frames into a video and return video size."""
+        print("start generating "+output_video_name)
+        tmp_list_file = output_video_name + '_list.txt'
+        with open(tmp_list_file, 'w') as f_list:
+            for i in target_frame_indices:
+                # based on sample rate, decide whether this frame is sampled
+                line = 'file \'{}/{:04}.jpg\'\n'.format(self._image_path, i)
+                f_list.write(line)
+
+        # compress the sampled image into a video
+        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+
+        cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
+               str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+               tmp_list_file, '-s', frame_size,
+               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+               'yuv420p', '-hide_banner', output_video_name]
+        subprocess.run(cmd, check=True)
+        # get the video size
+        video_size = os.path.getsize(output_video_name)
+        if not save_video:
+            os.remove(output_video_name)
+        os.remove(tmp_list_file)
+        print('target fps={}, target resolution={}, video size={}'
+              .format(target_frame_rate, self._resolution, video_size))
+        print('finish generating {} and size={}'.format(
+            output_video_name, video_size))
+        return video_size

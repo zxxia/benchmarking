@@ -1,12 +1,12 @@
 """Glimpse Definition."""
 import csv
+import os
+import pdb
 from collections import defaultdict
 import numpy as np
 import cv2
-from glimpse.glimpse import compute_target_frame_rate
-from utils.model_utils import eval_single_image, filter_video_detections
-from utils.utils import compute_f1
-from constants import COCOLabels
+from benchmarking.utils.model_utils import eval_single_image
+from benchmarking.utils.utils import compute_f1, interpolation
 
 DEBUG = False
 # DEBUG = True
@@ -21,8 +21,9 @@ def debug_print(msg):
 class Glimpse():
     """Glimpse Pipeline."""
 
-    def __init__(self, para1_list, para2_list, profile_log, mode='default',
-                 target_f1=0.9):
+    def __init__(self, para1_list, para2_list, profile_log,
+                 profile_traces_save_path, mode='default', target_f1=0.9,
+                 mask_flag=True):
         """Load the configs.
 
         Args
@@ -40,23 +41,22 @@ class Glimpse():
         self.target_f1 = target_f1
         self.writer = csv.writer(open(profile_log, 'w', 1))
         self.writer.writerow(['video chunk', 'para1', 'para2', 'f1',
-                              'frame rate,' 'ideal frame rate', 'trigger f1'])
+                              'frame rate', 'ideal frame rate', 'trigger f1'])
         assert mode == 'default' or mode == 'frame select' or \
             mode == 'perfect tracking', 'wrong mode specified'
         self.mode = mode
+        self.profile_traces_save_path = profile_traces_save_path
+        self.mask_flag = mask_flag
 
     def profile(self, clip, video, profile_start, profile_end):
         """Profile video from profile start to profile end."""
-        f1_diff = 1
         # the minimum f1 score which is greater than
         # or equal to target f1(e.g. 0.9)
-        fps = video.frame_rate
         resolution = video.resolution
-        best_para1 = -1
-        best_para2 = -1
 
-        test_f1_list = []
-        test_fps_list = []
+        paras_list = []
+        f1_list = []
+        gpu_list = []
         for para1 in self.para1_list:
             for para2 in self.para2_list:
                 # larger para1, smaller thresh, easier to be triggered
@@ -64,37 +64,63 @@ class Glimpse():
                 tracking_error_th = para2
                 # images start from index 1
                 ideal_triggered_frame, f1, trigger_f1, pix_change_obj, \
-                    pix_change_bg, frames_triggered = \
-                    self.pipeline(video, profile_start, profile_end,
-                                  frame_diff_th, tracking_error_th,
-                                  view=False, mask_flag=True)
-                current_fps = len(frames_triggered) / \
-                    (profile_end - profile_start) * fps
-                ideal_fps = ideal_triggered_frame / \
-                    (profile_end - profile_start) * fps
-                print('para1={}, para2={}, '
-                      'Profiled f1={}, Profiled perf={}, Ideal perf={}'
-                      .format(para1, para2, f1, current_fps/fps,
-                              ideal_fps / fps))
-                self.writer.writerow([clip, para1, para2,
-                                      f1, current_fps/fps,
-                                      ideal_fps/fps,
-                                      trigger_f1,
-                                      pix_change_obj,
+                    pix_change_bg, frame_diff_triggered, tracking_triggered, \
+                    frames_log = self.pipeline(video, profile_start,
+                                               profile_end, frame_diff_th,
+                                               tracking_error_th)
+                frames_triggered = frame_diff_triggered.union(
+                    tracking_triggered)
+                real_gpu = len(frames_triggered) / \
+                    (profile_end - profile_start + 1)
+                ideal_gpu = ideal_triggered_frame / \
+                    (profile_end - profile_start + 1)
+                frame_diff_gpu = len(frame_diff_triggered) / \
+                    (profile_end - profile_start + 1)
+                tracking_gpu = len(tracking_triggered) / \
+                    (profile_end - profile_start + 1)
+                print('para1={}, para2={}, f1={:.2f}, perf={:.2f}, '
+                      'Ideal perf={:.2f}, frame diff perf={:.2f}, '
+                      'tracking perf={:.2f}'.format(para1, para2, f1, real_gpu,
+                                                    ideal_gpu, frame_diff_gpu,
+                                                    tracking_gpu))
+                self.writer.writerow([clip, para1, para2, f1, real_gpu,
+                                      frame_diff_gpu, tracking_gpu, ideal_gpu,
+                                      trigger_f1, pix_change_obj,
                                       pix_change_bg])
-                test_f1_list.append(f1)
-                test_fps_list.append(current_fps)
+                f1_list.append(f1)
+                gpu_list.append(real_gpu)
+                paras_list.append((para1, para2))
 
+                # log the frame details under para1 and para2
+                frames_log_file = os.path.join(
+                    self.profile_traces_save_path,
+                    clip + '_{}_{}_frames_log.csv'.format(para1, para2))
+                with open(frames_log_file, 'w') as f:
+                    frames_log_writer = csv.DictWriter(
+                        f, ['frame id', 'frame diff', 'frame diff thresh',
+                            'frame diff trigger', 'tracking error',
+                            'tracking error thresh', 'tracking trigger',
+                            'detection'])
+                    frames_log_writer.writeheader()
+                    frames_log_writer.writerows(frames_log)
+
+        best_para1 = None
+        best_para2 = None
+        min_gpu = 1.0
+        for paras, gpu, f1 in zip(paras_list, gpu_list, f1_list):
+            if self.target_f1 - 0.02 <= f1 <= self.target_f1 + 0.02 and \
+                    gpu <= min_gpu:
+                best_para1 = paras[0]
+                best_para2 = paras[1]
+                min_gpu = gpu
+        if best_para1 is None and best_para2 is None:
+            f1_diff = 1
+            for paras, gpu, f1 in zip(paras_list, gpu_list, f1_list):
                 if abs(f1 - self.target_f1) < f1_diff:
                     f1_diff = abs(f1-self.target_f1)
                     # record the best config
-                    best_para1 = para1
-                    best_para2 = para2
-
-        test_f1_list.append(1.0)
-        test_fps_list.append(fps)
-        final_fps, f1_left, f1_right, fps_left, fps_right =\
-            compute_target_frame_rate(test_fps_list, test_f1_list)
+                    best_para1 = paras[0]
+                    best_para2 = paras[1]
 
         print("best_para1={}, best_para2={}".format(best_para1, best_para2))
         return best_para1, best_para2
@@ -105,15 +131,15 @@ class Glimpse():
         frame_diff_th = resolution[0]*resolution[1]/para1
         tracking_error_th = para2
         ideal_triggered_frame, f1, trigger_f1, pix_change_obj, pix_change_bg, \
-            frames_triggered = self.pipeline(video, test_start, test_end,
-                                             frame_diff_th, tracking_error_th,
-                                             view=False, mask_flag=True)
+            frame_diff_triggered, tracking_triggered, frames_log = \
+            self.pipeline(video, test_start, test_end,
+                          frame_diff_th, tracking_error_th)
         return ideal_triggered_frame, f1, trigger_f1, \
-            pix_change_obj, pix_change_bg, frames_triggered
+            pix_change_obj, pix_change_bg, frame_diff_triggered, \
+            tracking_triggered, frames_log
 
     def pipeline(self, video, frame_start, frame_end,
-                 frame_difference_thresh, tracking_error_thresh,
-                 view=False, mask_flag=False):
+                 frame_difference_thresh, tracking_error_thresh):
         """Glimpse pipeline.
 
         Args
@@ -135,27 +161,9 @@ class Glimpse():
             frames_triggered - indices of frames triggered
 
         """
-        resolution = video.resolution
-
-        # get filtered groudtruth
-        if video.video_type == 'static':
-            filtered_gt = filter_video_detections(
-                video.get_video_detection(),
-                target_types={COCOLabels.CAR.value,
-                              COCOLabels.BUS.value,
-                              COCOLabels.TRUCK.value},
-                width_range=(0, resolution[0]/2),
-                height_range=(0, resolution[1] / 2))
-        elif video.video_type == 'moving':
-            filtered_gt = filter_video_detections(
-                video.get_video_detection(),
-                target_types={COCOLabels.CAR.value,
-                              COCOLabels.BUS.value,
-                              COCOLabels.TRUCK.value},
-                height_range=(resolution[1] // 20, resolution[1]))
-        obj_to_frame_range, frame_to_new_obj = object_appearance(frame_start,
-                                                                 frame_end,
-                                                                 filtered_gt)
+        frames_log = []
+        obj_to_frame_range, frame_to_new_obj = object_appearance(
+            frame_start, frame_end, video.get_video_detection())
         ideally_triggered_frames = set()
         for obj_id in obj_to_frame_range:
             frame_range = obj_to_frame_range[obj_id]
@@ -163,10 +171,13 @@ class Glimpse():
         ideal_nb_triggered = len(ideally_triggered_frames)
 
         dt_glimpse = defaultdict(list)
-        frames_triggered = set()
+        frame_diff_triggered = set()
+        tracking_triggered = set()
         # start from the first frame
         # The first frame has to be sent to server.
-        frame_gray = video.get_frame_image(frame_start, True)
+
+        frame_gray = cv2.cvtColor(video.get_frame_image(frame_start),
+                                  cv2.COLOR_BGR2GRAY)
         assert frame_gray is not None, 'cannot read image {}'.format(
             frame_start)
         lastTriggeredFrameGray = frame_gray.copy()
@@ -174,15 +185,20 @@ class Glimpse():
         last_triggered_frame_idx = frame_start
 
         # get detection from server
-        dt_glimpse[frame_start] = filtered_gt[frame_start]
-        # video.get_frame_detection(frame_start)
-        # if detection is obtained from server, set frame_flag to 1
-        pix_change = np.zeros_like(frame_gray)
-        # if view:
-        #     view = visualize(oldFrameGray, pix_change, gt, dt_glimpse,
-        # frame_start,
-        #                      frame_to_new_obj)
-        frames_triggered.add(frame_start)
+        dt_glimpse[frame_start] = video.get_frame_detection(frame_start)
+        frame_diff_triggered.add(frame_start)
+
+        frame_log = {
+            'frame id': frame_start,
+            'frame diff': 0,
+            'frame diff thresh': frame_difference_thresh,
+            'frame diff trigger': 1,
+            'tracking error': 0,
+            'tracking error thresh': tracking_error_thresh,
+            'tracking trigger': 0,
+            'detection': dt_glimpse[frame_start]
+        }
+        frames_log.append(frame_log)
         tp = 0
 
         pix_change_obj_list = list()
@@ -190,66 +206,67 @@ class Glimpse():
 
         # run the pipeline for the rest of the frames
         for i in range(frame_start + 1, frame_end + 1):
-            frame_gray = video.get_frame_image(i, True)
+            frame_log = {
+                'frame id': i,
+                'frame diff': 0,
+                'frame diff thresh': frame_difference_thresh,
+                'frame diff trigger': 0,
+                'tracking error': 0,
+                'tracking error thresh': tracking_error_thresh,
+                'tracking trigger': 0,
+                'detection': []
+            }
+            frame_bgr = video.get_frame_image(i)
+            frame_gray = cv2.cvtColor(frame_bgr,
+                                      cv2.COLOR_BGR2GRAY)
             assert frame_gray is not None, 'cannot read {}'.format(i)
 
-            pix_change = np.zeros_like(frame_gray)
+            # pix_change = np.zeros_like(frame_gray)
             # mask out bboxes
-            if mask_flag:
+            if self.mask_flag:
                 mask = np.ones_like(frame_gray)
-                # print('last trigger frame {} has boxes:'
-                #       .format(last_triggered_frame_idx))
-                for box in video.get_frame_detection(last_triggered_frame_idx):
-                    # print('\t', box)
+                for box in video.get_dropped_frame_detection(
+                        last_triggered_frame_idx):
                     xmin, ymin, xmax, ymax, t = box[:5]
-                    if t not in {COCOLabels.CAR.value, COCOLabels.BUS.value,
-                                 COCOLabels.TRUCK.value}:
-                        mask[ymin:ymax, xmin:xmax] = 0
-                # print('previous frame {} has boxes:'.format(i-1))
+                    mask[ymin:ymax, xmin:xmax] = 0
 
                 # mask off the non-viechle objects in current frame
-                # for box in gt[i]:
-                for box in video.get_frame_detection(i):
-                    # print('\t', box)
+                for box in video.get_dropped_frame_detection(i):
                     xmin, ymin, xmax, ymax, t = box[:5]
-                    if t not in {COCOLabels.CAR.value, COCOLabels.BUS.value,
-                                 COCOLabels.TRUCK.value}:
-                        mask[ymin:ymax, xmin:xmax] = 0
-                # for box in dt_glimpse[i-1]:
-                #     # print('\t', box)
-                #     xmin, ymin, xmax, ymax, t = box[:5]
-                #     if t not in [3, 8]:
-                #         mask[ymin:ymax, xmin:xmax] = 0
+                    mask[ymin:ymax, xmin:xmax] = 0
                 lastTriggeredFrameGray_masked = \
                     lastTriggeredFrameGray.copy() * mask
                 frame_gray_masked = frame_gray.copy() * mask
                 # compute frame difference
 
-                frame_diff, pix_change, pix_change_obj, pix_change_bg = \
+                frame_diff,  pix_change_obj, pix_change_bg = \
                     frame_difference(lastTriggeredFrameGray_masked,
                                      frame_gray_masked,
-                                     filtered_gt[last_triggered_frame_idx],
-                                     filtered_gt[i])
+                                     video.get_frame_detection(
+                                         last_triggered_frame_idx),
+                                     video.get_frame_detection(i))
                 pix_change_obj_list.append(pix_change_obj)
                 pix_change_bg_list.append(pix_change_bg)
             else:
                 # compute frame difference
-                frame_diff, pix_change, pix_change_obj, pix_change_bg = \
+                frame_diff, pix_change_obj, pix_change_bg = \
                     frame_difference(lastTriggeredFrameGray, frame_gray,
-                                     filtered_gt[last_triggered_frame_idx],
-                                     filtered_gt[i])
+                                     video.get_frame_detection(
+                                         last_triggered_frame_idx),
+                                     video.get_frame_detection(i))
+            frame_log['frame diff'] = frame_diff
             if frame_diff > frame_difference_thresh:
                 # triggered
                 # run inference to get the detection results
-                dt_glimpse[i] = filtered_gt[i]
-                # video.get_frame_detection(i).copy()
-                frames_triggered.add(i)
+                dt_glimpse[i] = video.get_frame_detection(i)
+                frame_diff_triggered.add(i)
                 lastTriggeredFrameGray = frame_gray.copy()
                 last_triggered_frame_idx = i
                 debug_print('frame diff {} > {}, trigger {}, last trigger {}'
                             .format(frame_diff, frame_difference_thresh, i,
                                     last_triggered_frame_idx))
 
+                frame_log['frame diff trigger'] = 1
                 if i in ideally_triggered_frames:
                     # print('frame diff {} > th {}, trigger frame {}, tp'
                     #       .format(frame_diff, frame_difference_thresh, i))
@@ -268,28 +285,9 @@ class Glimpse():
                     # print('frame diff {} > th {}, trigger extra frame {}, fp'
                     #       .format(frame_diff, frame_difference_thresh, i))
                     pass
-                # if view:
-                #     view = visualize(newFrameGray, pix_change, gt,
-                # dt_glimpse, i,
-                #                      frame_to_new_obj)
-                #     # mask *= 255
-                #     # view = visualize(newFrameGray, mask, gt, dt_glimpse, i,
-                #     #                  frame_to_new_obj)
 
             else:
-                # if view:
-                #     view = visualize(newFrameGray, pix_change, gt,
-                # dt_glimpse,
-                #                      i, frame_to_new_obj)
-                #     # mask *= 255
-                #     # view = visualize(newFrameGray, mask, gt, dt_glimpse,
-                #     #                  i, frame_to_new_obj)
                 if i in ideally_triggered_frames:
-                    # print('frame diff {} < th {}, miss triggering {}, fn'
-                    #       .format(frame_diff, frame_difference_thresh, i))
-                    # view = visualize(newFrameGray, pix_change, gt,
-                    # dt_glimpse,
-                    #                  i, frame_to_new_obj)
                     pass
 
                 if self.mode == 'frame select':
@@ -300,14 +298,14 @@ class Glimpse():
                     # assume perfect tracking, the boxes of all objects
                     # in previously detected frame will be get the boxes
                     # in current frame from the groundtruth
-                    dt_glimpse[i] = [box for box in filtered_gt[i]
+                    dt_glimpse[i] = [box for box in
+                                     video.get_frame_detection(i)
                                      if box[-1] in obj_id_in_perv_frame]
                 else:
-                    # TODO: need to test
                     # default mode do tracking
                     # prev frame is not empty, do tracking
-                    status, new_boxes = \
-                        tracking_boxes(frame_gray, prev_frame_gray, frame_gray,
+                    status, new_boxes, tracking_err = \
+                        tracking_boxes(frame_bgr, prev_frame_gray, frame_gray,
                                        i, dt_glimpse[i - 1],
                                        tracking_error_thresh)
                     if status:
@@ -315,26 +313,31 @@ class Glimpse():
                         dt_glimpse[i] = new_boxes
                     else:
                         # tracking failed and trigger a new frame
-                        dt_glimpse[i] = filtered_gt[i]
-                        frames_triggered.add(i)
+                        dt_glimpse[i] = video.get_frame_detection(i)
+                        tracking_triggered.add(i)
                         lastTriggeredFrameGray = frame_gray.copy()
+                        frame_log['tracking trigger'] = 1
+                        frame_log['tracking error'] = tracking_err
+            frame_log['detection'] = dt_glimpse[i]
+            frames_log.append(frame_log)
             prev_frame_gray = frame_gray.copy()
-        # cv2.destroyAllWindows()
 
-        f1 = eval_pipeline_accuracy(frame_start, frame_end, filtered_gt,
-                                    dt_glimpse)
+        f1 = eval_pipeline_accuracy(frame_start, frame_end,
+                                    video.get_video_detection(), dt_glimpse)
+        frames_triggered = frame_diff_triggered.union(tracking_triggered)
         fp = len(frames_triggered) - tp
         fn = len(ideally_triggered_frames)
         avg_pix_change_obj = np.mean(pix_change_obj_list)
         avg_pix_change_bg = np.mean(pix_change_bg_list)
-        print('tp={}, fp={}, fn={}, nb_triggered={}, nb_ideal={}, '
-              'pix_change_obj={}, pix_change_bg={}'
-              .format(tp, fp, fn, len(frames_triggered), ideal_nb_triggered,
-                      avg_pix_change_obj, avg_pix_change_bg))
+        # print('tp={}, fp={}, fn={}, nb_triggered={}, nb_ideal={}, '
+        #       'pix_change_obj={}, pix_change_bg={}'
+        #       .format(tp, fp, fn, len(frames_triggered), ideal_nb_triggered,
+        #               avg_pix_change_obj, avg_pix_change_bg))
 
         trigger_f1 = compute_f1(tp, fp, fn)
         return ideal_nb_triggered, f1, trigger_f1, avg_pix_change_obj, \
-            avg_pix_change_bg, frames_triggered
+            avg_pix_change_bg, frame_diff_triggered, tracking_triggered, \
+            frames_log
 
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
@@ -348,17 +351,14 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
     for box in bboxes_last_triggered:
         xmin, ymin, xmax, ymax = box[:4]
         obj_region[ymin:ymax, xmin:xmax] = 1
-        # pix_change_obj += np.sum(mask[ymin:ymax, xmin:xmax])
     for box in bboxes:
         xmin, ymin, xmax, ymax = box[:4]
         obj_region[ymin:ymax, xmin:xmax] = 1
-        # pix_change_obj += np.sum(mask[ymin:ymax, xmin:xmax])
     pix_change_obj += np.sum(mask * obj_region)
     pix_change = np.sum(mask)
     pix_change_bg = pix_change - pix_change_obj
 
-    return pix_change, (mask*255).astype(np.uint8), pix_change_obj, \
-        pix_change_bg
+    return pix_change, pix_change_obj, pix_change_bg
 
 
 def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
@@ -367,21 +367,26 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
     Tracking the bboxes between frames via optical flow.
 
     Arg
-        vis
-        oldFrameGray
-        newFrameGray
-        new_frame_id
-        old_boxes
-        tracking_error_thresh
+        vis(numpy array): an BGR image which helps visualization
+        oldFrameGray(numpy array): a grayscale image of previous frame
+        newFrameGray(numpy array): a grayscale image of current frame
+        new_frame_id(int): frame index
+        old_boxes(list): a list of boxes in previous frame
+        tracking_error_thresh(float): tracking error threshold
     Return
         tracking status(boolean) - tracking success or failure
         new bboxes tracked by optical flow
     """
-    # find corners
+    # define colors for visualization
+    yellow = (0, 255, 255)
+    black = (0, 0, 0)
+
+    # define optical flow parameters
     lk_params = dict(winSize=(15, 15), maxLevel=5,
                      criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
                                10, 0.03))
 
+    # define good feature compuration parameters
     feature_params = dict(maxCorners=50, qualityLevel=0.01,
                           minDistance=7, blockSize=7)
 
@@ -397,12 +402,8 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
             corners[:, 0, 1] = corners[:, 0, 1] + y
             old_corners.append(corners)
     if not old_corners:
-        # old_corners = np.concatenate(old_corners)
-        return True, []
-        # cv2.imshow(str('bad'), oldFrameGray)
-        # cv2.moveWindow(str('bad'), 0, 0)
-        # cv2.waitKey(0)
-        # cv2.destroyWindow(str('bad'))
+        # cannot find available corners and treat as objects disappears
+        return True, [], 0
     else:
         old_corners = np.concatenate(old_corners)
 
@@ -419,25 +420,24 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
     #                                                   **lk_params)
     # d = abs(old_corners-old_corners_r).reshape(-1, 2).max(-1)
     # good = d < 1
-    # pdb.set_trace()
     # new_corners_copy = new_corners.copy()
+    # pdb.set_trace()
     new_corners = new_corners[st == 1].reshape(-1, 1, 2)
     old_corners = old_corners[st == 1].reshape(-1, 1, 2)
     # new_corners = new_corners[good]
     # old_corners = old_corners[good]
 
     for new_c, old_c in zip(new_corners, old_corners):
-        cv2.circle(vis, (new_c[0][0], new_c[0][1]), 5, (0, 255, 255), -1)
-        cv2.circle(vis, (old_c[0][0], old_c[0][1]), 5, (0, 0, 0), -1)
+        # new corners in yellow circles
+        cv2.circle(vis, (new_c[0][0], new_c[0][1]), 5, yellow, -1)
+        # old corners in black circles
+        cv2.circle(vis, (old_c[0][0], old_c[0][1]), 5, black, -1)
 
     new_boxes = []
 
     for x, y, xmax, ymax, t, score, obj_id in old_boxes:
         indices = []
         for idx, (old_c, new_c) in enumerate(zip(old_corners, new_corners)):
-            # print(old_corner)
-            # cv2.circle(newFrameGray, (old_corner[0][0], old_corner[0][1]),
-            #            5, (255, 0, 0))
             if old_c[0][0] >= x and old_c[0][0] <= xmax and \
                old_c[0][1] >= y and old_c[0][1] <= ymax:
                 indices.append(idx)
@@ -447,17 +447,6 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
             continue
         indices = np.array(indices)
 
-        old_bbox = cv2.boundingRect(old_corners[indices])
-        new_bbox = cv2.boundingRect(new_corners[indices])
-        cv2.rectangle(vis, (old_bbox[0], old_bbox[1]),
-                      (old_bbox[0]+old_bbox[2], old_bbox[1]+old_bbox[3]),
-                      (0, 0, 0), 3)
-        cv2.rectangle(vis, (new_bbox[0], new_bbox[1]),
-                      (new_bbox[0]+new_bbox[2], new_bbox[1]+new_bbox[3]),
-                      (0, 255, 255), 3)
-
-        # TODO: corner cleaning
-
         # checking tracking error threshold condition
         displacement_vectors = []
         dist_list = []
@@ -466,6 +455,7 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
             dist_list.append(np.linalg.norm(new_corner-old_corner))
             displacement_vectors.append(new_corner-old_corner)
         tracking_err = np.std(dist_list)
+        # print('tracking error:', tracking_err)
         if tracking_err > tracking_error_thresh:
             # tracking failure, this is a trigger frame
             debug_print('frame {}: '
@@ -473,90 +463,65 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
                         'tracking fails'.format(new_frame_id, obj_id,
                                                 np.std(dist_list),
                                                 tracking_error_thresh))
-            return False, []
+            return False, [], tracking_err
 
-        # update bouding box translational movement
-        mean_displacement_vector = np.mean(displacement_vectors, axis=0)
-        # print(mean_displacement_vector)
+        # update bouding box translational movement and uniform scaling
+        # print('corner number:', old_corners[indices].shape)
+        affine_trans_mat, inliers = cv2.estimateAffinePartial2D(
+            old_corners[indices], new_corners[indices])
+        if affine_trans_mat is None or np.isnan(affine_trans_mat).any():
+            # the bbox is too small and not enough good features obtained to
+            # compute reliable affine transformation matrix.
+            # consider the object disappeared
+            continue
 
-        # update bouding box zooming movement
-        old_dists = []
-        new_dists = []
-        old_x_lengths = []
-        old_y_lengths = []
-        new_x_lengths = []
-        new_y_lengths = []
-        for i in range(len(old_corners[indices])):
-            for j in range(i+1, len(old_corners[indices])):
-                c_i = old_corners[indices][i]
-                c_j = old_corners[indices][j]
-                dist = np.linalg.norm(c_j-c_i)
-                old_dists.append(dist)
-                old_x_lengths.append(c_j[0][0]-c_i[0][0])
-                old_y_lengths.append(c_j[0][1]-c_i[0][1])
+        assert affine_trans_mat.shape == (2, 3)
+        # print('old box:', x, y, xmax, ymax)
+        # print(affine_trans_mat)
+        scaling = np.linalg.norm(affine_trans_mat[:, 0])
+        translation = affine_trans_mat[:, 2]
+        new_x = int(np.round(scaling * x + translation[0]))
+        new_y = int(np.round(scaling * y + translation[1]))
+        new_xmax = int(np.round(scaling * xmax + translation[0]))
+        new_ymax = int(np.round(scaling * ymax + translation[1]))
+        # print('new box:', new_x, new_y, new_xmax, new_ymax)
+        if new_x >= vis.shape[1] or new_xmax <= 0:
+            # object disappears from the right/left of the screen
+            continue
+        if new_y >= vis.shape[0] or new_ymax <= 0:
+            # object disappears from the bottom/top of the screen
+            continue
 
-                c_i = new_corners[indices][i]
-                c_j = new_corners[indices][j]
-                dist = np.linalg.norm(c_j-c_i)
-                new_dists.append(dist)
-                new_x_lengths.append(c_j[0][0]-c_i[0][0])
-                new_y_lengths.append(c_j[0][1]-c_i[0][1])
-
-        min_x_idx = np.argmin(old_corners[indices, 0, 0])
-        max_x_idx = np.argmax(old_corners[indices, 0, 0])
-        min_y_idx = np.argmin(old_corners[indices, 0, 1])
-        max_y_idx = np.argmax(old_corners[indices, 0, 1])
+        # The bbox are partially visible in the screen
+        if new_x < 0:
+            new_x = 0
+        if new_xmax > vis.shape[1]:
+            new_xmax = vis.shape[1]
+        if new_y < 0:
+            new_y = 0
+        if new_ymax > vis.shape[0]:
+            new_ymax = vis.shape[0]
+        assert 0 <= new_x <= vis.shape[1], "new_x {} is out of [0, {}]".format(
+            new_x, vis.shape[1])
+        assert 0 <= new_xmax <= vis.shape[1], "new_xmax {} is out of [0, {}]"\
+            .format(new_xmax, vis.shape[1])
+        assert 0 <= new_y <= vis.shape[0], "new_y {} is out of [0, {}]".format(
+            new_y, vis.shape[0])
+        assert 0 <= new_ymax <= vis.shape[0], "new_ymax {} is out of [0, {}]"\
+            .format(new_ymax, vis.shape[0])
         # pdb.set_trace()
-        old_x_len = old_corners[indices, 0, 0][max_x_idx] - \
-            old_corners[indices, 0, 0][min_x_idx]
-        old_y_len = old_corners[indices, 0, 1][max_y_idx] - \
-            old_corners[indices, 0, 1][min_y_idx]
-
-        new_x_len = new_corners[indices, 0, 0][max_x_idx] - \
-            new_corners[indices, 0, 0][min_x_idx]
-        new_y_len = new_corners[indices, 0, 1][max_y_idx] - \
-            new_corners[indices, 0, 1][min_y_idx]
-        # print(old_corners[min_x_idx, 0, 0], old_corners[min_y_idx, 0, 0])
-
-        # ratio = np.nanmean(np.array(new_dists)/np.array(old_dists))
-        w_ratio = new_x_len/old_x_len
-        h_ratio = new_y_len/old_y_len
-        # use bbox to compute ratio
-        w_ratio = new_bbox[2]/old_bbox[2]
-        h_ratio = new_bbox[3]/old_bbox[3]
-
-        if np.isnan(w_ratio):
-            w_ratio = 1
-        if np.isnan(h_ratio):
-            h_ratio = 1
-
-        old_center_x = (x + xmax)/2
-        old_center_y = (y + ymax)/2
-        new_center_x = old_center_x + mean_displacement_vector[0][0]
-        new_center_y = old_center_y + mean_displacement_vector[0][1]
-        # use bbox to compute displacement
-        # new_center_x = old_center_x + new_bbox[0]-old_bbox[0]
-        # new_center_y = old_center_y + new_bbox[1]-old_bbox[1]
-        new_w = (xmax-x) * w_ratio
-        new_h = (ymax-y) * h_ratio
-        # new_w = ((xmax-x) + new_w)/2
-        # new_h = ((ymax-y) + new_h)/2
-
-        new_x = int(new_center_x - new_w/2)
-        new_y = int(new_center_y - new_h/2)
-
-        new_xmax = int(new_x + int(new_w))
-        new_ymax = int(new_y + int(new_h))
-
-        # new_x = int(x+mean_displacement_vector[0][0])
-        # new_y = int(y+mean_displacement_vector[0][1])
-        # # new_xmax = xmax
-        # # new_ymax = ymax
-        # new_xmax = int(new_x + (xmax - x) * ratio)
-        # new_ymax = int(new_y + (ymax - y) * ratio)
         new_boxes.append([new_x, new_y, new_xmax, new_ymax, t, score, obj_id])
+        cv2.rectangle(vis, (x, y), (xmax, ymax), black, 2)
+        cv2.rectangle(vis, (new_x, new_y), (new_xmax, new_ymax), yellow, 2)
 
-    return True, new_boxes
+    # img_title = 'frame {}'.format(new_frame_id)
+    # cv2.imshow(img_title, vis)
+    # cv2.moveWindow(img_title, 0, 0)
+    # if cv2.waitKey(0) & 0xFF == ord('q'):
+    #     cv2.destroyAllWindows()
+    # else:
+    #     cv2.destroyWindow(img_title)
+    return True, new_boxes, 0
 
 
 def eval_pipeline_accuracy(frame_start, frame_end,
@@ -617,6 +582,30 @@ def object_appearance(start, end, gt):
     return obj_to_frame_range, frame_to_new_obj
 
 
+def compute_target_frame_rate(frame_rate_list, f1_list, target_f1=0.9):
+    '''Compute target frame rate when target f1 is achieved.'''
+    index = frame_rate_list.index(max(frame_rate_list))
+    f1_list_normalized = [x/f1_list[index] for x in f1_list]
+    result = [(y, x) for x, y in sorted(zip(f1_list_normalized,
+                                            frame_rate_list))]
+    # print(list(zip(frame_rate_list,f1_list_normalized)))
+    frame_rate_list_sorted = [x for (x, _) in result]
+    f1_list_sorted = [y for (_, y) in result]
+    index = next(x[0] for x in enumerate(f1_list_sorted) if x[1] > target_f1)
+    if index == 0:
+        target_frame_rate = frame_rate_list_sorted[0]
+        return target_frame_rate, -1, f1_list_sorted[index], -1,\
+            frame_rate_list_sorted[index]
+    else:
+        point_a = (f1_list_sorted[index-1], frame_rate_list_sorted[index-1])
+        point_b = (f1_list_sorted[index], frame_rate_list_sorted[index])
+
+        target_frame_rate = interpolation(point_a, point_b, target_f1)
+        return target_frame_rate, f1_list_sorted[index - 1], \
+            f1_list_sorted[index], frame_rate_list_sorted[index-1], \
+            frame_rate_list_sorted[index]
+
+
 def load_glimpse_profile(filename):
     """Load glimplse profile file."""
     videos = []
@@ -647,7 +636,7 @@ def load_glimpse_results(filename):
     with open(filename, 'r') as f_glimpse:
         f_glimpse.readline()
         for line in f_glimpse:
-            print(line)
+            # print(line)
             cols = line.strip().split(',')
             video_clips.append(cols[0])
             f1_score.append(float(cols[3]))
@@ -657,8 +646,8 @@ def load_glimpse_results(filename):
             if len(cols) == 7:
                 ideal_perf.append(float(cols[5]))
                 trigger_f1.append(float(cols[6]))
-    if len(cols) == 6:
-        return video_clips, perf, f1_score, ideal_perf
-    if len(cols) == 7:
-        return video_clips, perf, f1_score, ideal_perf, trigger_f1
+    # if len(cols) == 6:
+    #     return video_clips, perf, f1_score, ideal_perf
+    # if len(cols) == 7:
+    #     return video_clips, perf, f1_score, ideal_perf, trigger_f1
     return video_clips, perf, f1_score
