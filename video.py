@@ -5,8 +5,9 @@ import subprocess
 import cv2
 from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections
-from benchmarking.utils.utils import load_metadata
 from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
+from benchmarking.utils.utils import load_metadata
+from benchmarking.utils.model_utils import remove_overlappings
 
 
 class Video:
@@ -138,7 +139,7 @@ class YoutubeVideo(Video):
                 #     for box_idx, _ in enumerate(boxes):
                 #         # Merge all cars and trucks into cars
                 #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
-                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
+                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -154,7 +155,7 @@ class YoutubeVideo(Video):
                 #     for box_idx, _ in enumerate(boxes):
                 #         # Merge all cars and trucks into cars
                 #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
-                #     # dt_dict[resol][frame_idx] = remove_overlappings(boxes, 0.3)
+                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
             else:
                 self._dropped_detections = None
 

@@ -91,6 +91,26 @@ def load_ground_truth(ground_truth_file):
     return gt
 
 
+def load_groundtruth(ground_truth_file):
+    all_classes = ['car', 'person', 'truck',
+                   'bicycle', 'bus', 'motorcycle', 'no_object']
+    gt = {}
+    with open(ground_truth_file, 'r') as f:
+        frame_index = int(line_list[0])
+        for line in f:
+            line_list = line.strip().split(',')
+            if len(line_list) > 2:
+                # label = line_list[1]
+                assert label in all_classes, print(label, line)
+                gt[frame_index] = [label]
+                area = float(line_list[2])
+                confidence = float(line_list[3])
+                gt[frame_index] = [label, area, confidence]
+            else:
+                gt[frame_index] = []
+    return gt
+
+
 def load_noscope_results(filename):
     """Load videostorm result file."""
     videos = []
