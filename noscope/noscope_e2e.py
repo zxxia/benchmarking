@@ -1,11 +1,11 @@
 """VideoStorm Overfitting Script."""
-import pdb
 import argparse
 import csv
+import pdb
 # from video import YoutubeVideo
 import numpy as np
-from noscope.Noscope import Noscope
-from noscope.Noscope import load_simple_model_classification, load_ground_truth
+from benchmarking.noscope.NoScope import NoScope, load_ground_truth, \
+    load_simple_model_classification
 
 THRESH_LIST = np.arange(0.7, 1, 0.1)
 
@@ -54,11 +54,11 @@ def main():
         '../model_pruning/label/noscope_small_model_predicted_{}{}.csv'.format(args.video, filename))
     frame_count = len(small_model_result)  # video.frame_count
 
-    system = Noscope(
+    system = NoScope(
         THRESH_LIST, 'noscope_profile_{}.csv'.format(args.video))
 
     with open('noscope_result_{}.csv'.format(args.video), 'w', 1) as f_out:
-        f_out.write("video_name,gpu,f1\n")
+        f_out.write("video_name,best_thresh,gpu,f1\n")
 
         # Chop long videos into small chunks
         # Floor division drops the last sequence of frames which is not as

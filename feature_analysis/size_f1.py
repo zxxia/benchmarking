@@ -4,12 +4,12 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
-from constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
-from utils.utils import IoU, compute_f1, load_metadata
-from utils.model_utils import load_full_model_detection, \
+from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
+from benchmarking.utils.utils import IoU, compute_f1, load_metadata
+from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections, remove_overlappings
-from awstream.profiler import scale_boxes
-from feature_analysis.helpers import load_awstream_profile, sample_frames, \
+from benchmarking.awstream.Awstream import scale_boxes
+from benchmarking.feature_analysis.helpers import load_awstream_profile, sample_frames, \
     get_areas, plot_cdf
 
 ROOT = '/data/zxxia/benchmarking/results/videos'
@@ -88,8 +88,8 @@ def main():
     # plt.ylabel('f1', fontsize=15)
     # plt.savefig('f1_vs_obj_sizes/f1_vs_obj_size_log.png'.format(video, resol2))
 
-    video_list = ['driving1']
-    # video_list = ['driving_downtown']
+    # video_list = ['driving1']
+    video_list = ['driving_downtown']
     # video_list = ['park']
     for video in video_list:
         metadata_file = '/data/zxxia/videos/{}/metadata.json'.format(video)
@@ -152,7 +152,7 @@ def main():
 
 
 def binwise_f1(tp_list, fp_list, fn_list):
-    """ compute f1 score within bins """
+    """Compute f1 score within bins."""
     assert len(tp_list) == len(fp_list)
     assert len(fp_list) == len(fn_list)
     f1_scores = []
@@ -171,25 +171,26 @@ def load_detections(video, dt_file, resol):
     """ load and filter detections """
     dts, nb_frame = load_full_model_detection(dt_file)
     if video in CAMERA_TYPES['moving']:
-        dts = filter_video_detections(dts,
-                                      target_types={COCOLabels.CAR.value,
-                                                    COCOLabels.BUS.value,
-                                                    # COCOLabels.TRAIN.value,
-                                                    COCOLabels.TRUCK.value
-                                                    },
-                                      height_range=(RESOL_DICT[resol][1]//20,
-                                                    RESOL_DICT[resol][1]),
-                                      )  # score_range=(0.5, 1)
+        dts, _ = filter_video_detections(dts,
+                                         target_types={COCOLabels.CAR.value,
+                                                       COCOLabels.BUS.value,
+                                                       # COCOLabels.TRAIN.value,
+                                                       COCOLabels.TRUCK.value
+                                                       },
+                                         height_range=(RESOL_DICT[resol][1]//20,
+                                                       RESOL_DICT[resol][1]),
+                                         )  # score_range=(0.5, 1)
     else:
-        dts = filter_video_detections(dts,
-                                      target_types={COCOLabels.CAR.value,
-                                                    COCOLabels.BUS.value,
-                                                    # COCOLabels.TRAIN.value,
-                                                    COCOLabels.TRUCK.value
-                                                    },
-                                      width_range=(0, RESOL_DICT[resol][0]/2),
-                                      height_range=(RESOL_DICT[resol][0]//20,
-                                                    RESOL_DICT[resol][0]/2))
+        dts, _ = filter_video_detections(dts,
+                                         target_types={COCOLabels.CAR.value,
+                                                       COCOLabels.BUS.value,
+                                                       # COCOLabels.TRAIN.value,
+                                                       COCOLabels.TRUCK.value
+                                                       },
+                                         width_range=(
+                                             0, RESOL_DICT[resol][0]/2),
+                                         height_range=(RESOL_DICT[resol][0]//20,
+                                                       RESOL_DICT[resol][0]/2))
     if video == 'road_trip':
         for frame_idx in dts:
             tmp_boxes = []
@@ -249,7 +250,7 @@ def change_cnt(box, area_bins, cnt):
 
 
 def profile(video, resol2, area_bins, iou_thresh=0.5):
-    """ plot figure """
+    """plot figure."""
     resol1 = '720p'
     dt_file = os.path.join(ROOT, video, resol1, 'profile',
                            'updated_gt_FasterRCNN_COCO_no_filter.csv')
