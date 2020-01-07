@@ -20,7 +20,7 @@ class Awstream():
         self.quantizer_list = quantizer_list
         self.profile_writer = csv.writer(open(profile_log, 'w', 1))
         self.profile_writer.writerow(
-            ["video_name", "frame_rate", "f1", "tp", "fp", "fn"])
+            ["video_name", "resolution", "frame_rate", "f1", "tp", "fp", "fn"])
 
     def profile(self, video_name, video_dict, original_video, frame_range):
         """Profile the combinations of fps and resolution.
