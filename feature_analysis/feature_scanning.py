@@ -3,9 +3,10 @@ import argparse
 # from collections import defaultdict
 import numpy as np
 import matplotlib.pyplot as plt
-from utils.utils import load_metadata
-from feature_analysis.helpers import load_video_features, nonzero, nonan, \
-    load_videostorm_profile, sample_video_features, plot_cdf
+from benchmarking.utils.utils import load_metadata
+from benchmarking.feature_analysis.helpers import load_video_features, \
+        nonzero, nonan, load_videostorm_profile, sample_video_features, \
+        plot_cdf
 
 
 # DATASET = 't_crossroad'
@@ -119,7 +120,7 @@ def main():
         if PLOT_FLAG:
             plt.figure(1)
             # plt.xlim([1, 6])
-            plt.xlim([0, 0.1])
+            # plt.xlim([0, 0.1])
             plot_cdf(sampled_vals, 10000,
                      '{}: {} in 30s'.format(args.video, feature_name),
                      'every {} frames'.format(n_frame), feature_name)
@@ -131,7 +132,7 @@ def main():
             # plt.savefig('{}: {} in 30s.png'.format(dataset, feature_name))
             plt.figure(2)
             # plt.xlim([1, 6])
-            plt.xlim([0, 0.1])
+            # plt.xlim([0, 0.1])
             plot_cdf(nonan(sampled_medians.values()), 10000,
                      '{}: {} in 30s (median)'.format(args.video, feature_name),
                      'every {} frames'.format(n_frame), feature_name)
@@ -145,7 +146,7 @@ def main():
             #                                               feature_name))
             plt.figure(3)
             # plt.xlim([1, 6])
-            plt.xlim([0, 0.1])
+            # plt.xlim([0, 0.1])
             plot_cdf(nonan(sampled_means.values()), 10000,
                      '{}: {} in 30s (mean)'.format(args.video, feature_name),
                      'every {} frames'.format(n_frame), feature_name)
@@ -159,7 +160,7 @@ def main():
             # feature_name))
             plt.figure(4)
             # plt.xlim([1, 6])
-            plt.xlim([0, 0.1])
+            # plt.xlim([0, 0.1])
             plot_cdf(nonan(sampled_75_percent.values()), 10000,
                      '{}: {} in 30s (75 percentile)'
                      .format(args.video, feature_name),
@@ -173,7 +174,7 @@ def main():
             # plt.savefig('{}: {} in 30s 75.png'.format(dataset, feature_name))
             plt.figure(5)
             # plt.xlim([1, 6])
-            plt.xlim([0, 0.1])
+            # plt.xlim([0, 0.1])
             plot_cdf(nonan(sampled_25_percent.values()), 10000,
                      '{}: {} in 30s (25 percentile)'
                      .format(args.video, feature_name),
@@ -256,91 +257,94 @@ def compute_acc(original_features, sampled_features, video, profile_file,
             if 0.8 <= perf <= 0.9:
                 acc_8.append(acc)
 
-    # plt.plot(np.arange(len(vids)), acc_1, '.', c='k', label='fps=0.1')
+    plt.figure()
+    plt.plot(np.arange(len(vids)), acc_1, '.-', c='k', label='fps=0.1')
     plt.plot(np.arange(len(vids)), acc_2, '.-', c='r', label='fps=0.2')
-    # plt.plot(np.arange(len(vids)), acc_4, '.', c='b', label='fps=0.4')
-    # plt.plot(np.arange(len(vids)), acc_8, '.', c='g', label='fps=0.833')
+    plt.plot(np.arange(len(vids)), acc_4, '.-', c='b', label='fps=0.4')
+    plt.plot(np.arange(len(vids)), acc_8, '.-', c='g', label='fps=0.833')
     plt.title(video)
     plt.legend()
     plt.ylim([0, 1])
-    target_perf = 0.20
-    acc_at_target_perf = []
-    for key in vids:
-        for perf, acc in zip(perf_dict[key], acc_dict[key]):
-            if perf == target_perf:
-                acc_at_target_perf.append(acc)
-    nb_good = 0
-    nb_bad = 0
-    for acc in acc_at_target_perf:
-        # if acc >= 0.80:
-        if acc >= 0.85:
-            nb_good += 1
-        # if acc <= 0.75:
-        if acc <= 0.50:
-            nb_bad += 1
-    original_good_percent = nb_good/len(acc_at_target_perf)
-    original_bad_percent = nb_bad/len(acc_at_target_perf)
-    print('num of original acc={}'.format(len(acc_at_target_perf)))
-    print("original good percent={}, bad percent={}"
-          .format(original_good_percent, original_bad_percent))
-
-    nb_good = 0
-    nb_bad = 0
-    for i in sorted(sampled_features.keys()):
-        # if sampled_features[i] <= 1.75:
-        if sampled_features[i] <= 1.4:
-            nb_good += 1
-        if sampled_features[i] >= 2.5:
-            nb_bad += 1
-        # print(i, original_features[i], sampled_features[i])
-
-    cnt = len([x for x in sampled_features if not np.isnan(x)])
-    scan_good_percent = nb_good/cnt
-    scan_bad_percent = nb_bad/cnt
-    print('num of sampled features={}'.format(cnt))
-    print("scanned good percent={}, bad percent={}"
-          .format(scan_good_percent, scan_bad_percent))
-
-    nb_good = 0
-    nb_bad = 0
-
-    for i in sorted(original_features.keys()):
-        # if original_features[i] <= 1.75:
-        if original_features[i] <= 1.4:
-            nb_good += 1
-        if original_features[i] >= 2.5:
-            nb_bad += 1
-        # print(original_features[i], sampled_features[i])
-
-    cnt = len([x for x in original_features if not np.isnan(x)])
-    # cnt = len(original_features)
-    original_ft_good_percent = nb_good/cnt
-    original_ft_bad_percent = nb_bad/cnt
-    print('num of original features={}'.format(cnt))
-    print("original good percent={}, bad percent={}"
-          .format(original_ft_good_percent, original_ft_bad_percent))
-
-    # acc_at_target_perf = []
-    # vids, perf_dict, acc_dict = load_videostorm_profile(baseline_file)
+    # target_perf = 0.20
     # for key in vids:
     #     for perf, acc in zip(perf_dict[key], acc_dict[key]):
     #         if perf == target_perf:
     #             acc_at_target_perf.append(acc)
-    offset = 445
-    nb_good = 0
-    nb_bad = 0
-    for acc in acc_at_target_perf[offset:offset+57]:
-        if acc >= 0.85:
-            nb_good += 1
-        if acc <= 0.50:
-            nb_bad += 1
-    baseline_good_percent = nb_good/len(acc_at_target_perf[offset:offset+57])
-    baseline_bad_percent = nb_bad/len(acc_at_target_perf[offset:offset+57])
-    print('num of baseline acc={}'.format(
-        len(acc_at_target_perf[offset:offset+57])))
-    print('num of good cases={}'.format(nb_good))
-    print("baseline good percent={}, bad percent={}"
-          .format(baseline_good_percent, baseline_bad_percent))
+    for acc_at_target_perf, target_perf in zip([acc_1, acc_2, acc_4, acc_8], [0.1, 0.2, 0.4, 0.83]):
+        print(target_perf, '...................')
+        nb_good = 0
+        nb_bad = 0
+        for acc in acc_at_target_perf:
+            # if acc >= 0.80:
+            if acc >= 0.85:
+                nb_good += 1
+            # if acc <= 0.75:
+            if acc <= 0.50:
+                nb_bad += 1
+        original_good_percent = nb_good/len(acc_at_target_perf)
+        original_bad_percent = nb_bad/len(acc_at_target_perf)
+        print('num of original acc={}'.format(len(acc_at_target_perf)))
+        print("original good percent={}, bad percent={}"
+              .format(original_good_percent, original_bad_percent))
+
+        nb_good = 0
+        nb_bad = 0
+        for i in sorted(sampled_features.keys()):
+            # if sampled_features[i] <= 1.75:
+            if sampled_features[i] <= 1.4:
+                nb_good += 1
+            if sampled_features[i] >= 2.5:
+                nb_bad += 1
+            # print(i, original_features[i], sampled_features[i])
+
+        cnt = len([x for x in sampled_features if not np.isnan(x)])
+        scan_good_percent = nb_good/cnt
+        scan_bad_percent = nb_bad/cnt
+        print('num of sampled features={}'.format(cnt))
+        print("scanned good percent={}, bad percent={}"
+              .format(scan_good_percent, scan_bad_percent))
+
+        nb_good = 0
+        nb_bad = 0
+
+        for i in sorted(original_features.keys()):
+            # if original_features[i] <= 1.75:
+            if original_features[i] <= 1.4:
+                nb_good += 1
+            if original_features[i] >= 2.5:
+                nb_bad += 1
+            # print(original_features[i], sampled_features[i])
+
+        cnt = len([x for x in original_features if not np.isnan(x)])
+        # cnt = len(original_features)
+        original_ft_good_percent = nb_good/cnt
+        original_ft_bad_percent = nb_bad/cnt
+        print('num of original features={}'.format(cnt))
+        print("original good percent={}, bad percent={}"
+              .format(original_ft_good_percent, original_ft_bad_percent))
+
+        # acc_at_target_perf = []
+        # vids, perf_dict, acc_dict = load_videostorm_profile(baseline_file)
+        # for key in vids:
+        #     for perf, acc in zip(perf_dict[key], acc_dict[key]):
+        #         if perf == target_perf:
+        #             acc_at_target_perf.append(acc)
+        offset = 445
+        nb_good = 0
+        nb_bad = 0
+        for acc in acc_at_target_perf[offset:offset+57]:
+            if acc >= 0.85:
+                nb_good += 1
+            if acc <= 0.50:
+                nb_bad += 1
+        baseline_good_percent = nb_good / \
+            len(acc_at_target_perf[offset:offset+57])
+        baseline_bad_percent = nb_bad/len(acc_at_target_perf[offset:offset+57])
+        print('num of baseline acc={}'.format(
+            len(acc_at_target_perf[offset:offset+57])))
+        print('num of good cases={}'.format(nb_good))
+        print("baseline good percent={}, bad percent={}"
+              .format(baseline_good_percent, baseline_bad_percent))
 
     return original_good_percent, original_bad_percent, \
         scan_good_percent, scan_bad_percent, baseline_good_percent, \
