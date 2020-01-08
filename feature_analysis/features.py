@@ -43,8 +43,8 @@ def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
                     # IoU will be
                     iou = IoU(box[0:4], past_obj_map[obj_id])
                     if iou < 0.1:
-                        print('object {} iou={} too fast from frame {} to frame {}'
-                              .format(obj_id, iou, i, past_frame_idx))
+                        # print('object {} iou={} too fast from frame {} to frame {}'
+                        #       .format(obj_id, iou, i, past_frame_idx))
                         iou = 0.1
                     # remove the influence of frame rate
                     all_velo.append(1/iou)
@@ -233,7 +233,7 @@ def count_classification_unique_class(video_dets, start, end, sample_step=1):
             continue
         for box in video_dets[i]:
             unique_classes.add(box[4])
-        print(unique_classes)
+        # print(unique_classes)
     return len(unique_classes)
 
 
