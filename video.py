@@ -113,7 +113,8 @@ class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, name, resolution_name, metadata_file, detection_file,
-                 image_path, model='FasterRCNN', filter_flag=True):
+                 image_path, model='FasterRCNN', filter_flag=True,
+                 merge_label_flag=False):
         """Youtube Video Constructor."""
         if metadata_file is not None:
             metadata = load_metadata(metadata_file)
@@ -135,11 +136,12 @@ class YoutubeVideo(Video):
                     width_range=(resolution[0] // 20, resolution[0]/2),
                     height_range=(resolution[1] // 20, resolution[1]/2))
                 self._dropped_detections = dropped_dets
-                # for frame_idx, boxes in dets.items():
-                #     for box_idx, _ in enumerate(boxes):
-                #         # Merge all cars and trucks into cars
-                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
-                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+                if merge_label_flag:
+                    for frame_idx, boxes in dets.items():
+                        for box_idx, _ in enumerate(boxes):
+                            # Merge all cars and trucks into cars
+                            dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                    #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -151,10 +153,11 @@ class YoutubeVideo(Video):
                                   COCOLabels.TRUCK.value},
                     height_range=(resolution[1] // 20, resolution[1]))
                 self._dropped_detections = dropped_dets
-                # for frame_idx, boxes in dets.items():
-                #     for box_idx, _ in enumerate(boxes):
-                #         # Merge all cars and trucks into cars
-                #         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                if merge_label_flag:
+                    for frame_idx, boxes in dets.items():
+                        for box_idx, _ in enumerate(boxes):
+                            # Merge all cars and trucks into cars
+                            dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                 #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
             else:
                 self._dropped_detections = None
