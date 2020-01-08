@@ -10,11 +10,15 @@ def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
     velocity = 1/IoU(current_box, next_box).
 
     Args
-        video_dets(dict)
+        video_dets(dict): a dict mapping frame index to a list of bboxes
+        start(int): start frame index
+        end(int): end frame index
+        step(float): the time step which are used to compute velocity
+        sample_step(int): sample a frame every sample_step frames
 
     Return
         velocity(dict): a dict mapping frame index to a list of object
-                        velcoties
+                        velocities
 
     """
     velocity = {}
@@ -272,12 +276,11 @@ def compute_percentage_frame_with_new_object(video_dets, start, end):
     """
     object_first_frame = {}
     for i in range(start, end+1):
-        boxes = video_dets[i] 
+        boxes = video_dets[i]
         for box in boxes:
             _id = box[6]
             # if this object not exist before, this frame is its first frame
             if _id not in object_first_frame:
                 object_first_frame[_id] = i
-    
 
     return len(set(object_first_frame.values())) / (end-start+1)
