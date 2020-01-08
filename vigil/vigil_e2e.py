@@ -44,10 +44,11 @@ def main():
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
     video = YoutubeVideo(args.video, '720p', args.metadata,
                          dt_file, img_path, filter_flag=True)
-    mask_video_ffmpeg(
-        video, 0.2, 0.2,
-        save_path='/data/zxxia/benchmarking/Vigil/test_bg_ffmpeg')
-    return
+    output_path = '/data/zxxia/benchmarking/Vigil/masked_images/'+args.video
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
+    # mask_video_ffmpeg(video, 0.2, 0.2, save_path=output_path)
+    # return
     # mask_video(video, 0.2, 0.2,
     #            save_path='/data/zxxia/benchmarking/Vigil/test_bg')
 
@@ -69,7 +70,7 @@ def main():
         DT_ROOT, args.video, '720p',
         'profile/updated_gt_Inception_COCO_no_filter.csv')
     # img_path = '/data/zxxia/blackbg/'+args.video+'/'
-    img_path = '/data/zxxia/benchmarking/Vigil/test_bg_ffmpeg'
+    img_path = '/data/zxxia/benchmarking/Vigil/masked_images/' + args.video
     video = YoutubeVideo(args.video, '720p',
                          args.metadata, dt_file, img_path, filter_flag=True)
 

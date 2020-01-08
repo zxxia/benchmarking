@@ -1,8 +1,8 @@
 """ Some helper functions needed in feature scanning """
 from collections import defaultdict
 import numpy as np
-from constants import RESOL_DICT
-from utils.model_utils import compute_area
+from benchmarking.constants import RESOL_DICT
+from benchmarking.utils.model_utils import compute_area
 import matplotlib.pyplot as plt
 import pdb
 
@@ -316,7 +316,7 @@ def sample_video_features(video_features, metadata, short_video_length,
                                               'Object Velocity': []})
     short_vid_to_frame_id = defaultdict(list)
     # sampled_velos = []
-    print("vidoe frame count={}, features frame count={}"
+    print("video frame count={}, features frame count={}"
           .format(frame_cnt, len(video_features.keys())))
     for fid in range(1, frame_cnt+1):
         short_vid = (fid-1)//(fps * short_video_length)
@@ -373,7 +373,7 @@ def get_areas(dets, start, end, resol):
 #     plt.ylim([0, 1.1])
 #     plt.legend()
 
-def plot_cdf(data, num_bins, legend):
+def plot_cdf(data, num_bins, title, legend, xlabel):
     """ Use the histogram function to bin the data """
     counts, bin_edges = np.histogram(data, bins=num_bins, density=True)
     d_x = bin_edges[1] - bin_edges[0]
@@ -381,8 +381,8 @@ def plot_cdf(data, num_bins, legend):
     cdf = np.cumsum(counts) * d_x
     # And finally plot the cdf
     plt.plot(bin_edges[1:], cdf, label=legend)
-    # plt.title(title)
-    # plt.xlabel(xlabel)
-    # plt.ylabel('CDF')
-    # plt.ylim([0, 1.1])
-    # plt.legend()
+    plt.title(title)
+    plt.xlabel(xlabel)
+    plt.ylabel('CDF')
+    plt.ylim([0, 1.1])
+    plt.legend()
