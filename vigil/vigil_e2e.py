@@ -4,7 +4,8 @@ import csv
 import pdb
 import os
 from benchmarking.video import YoutubeVideo
-from benchmarking.vigil.Vigil import Vigil, mask_video, mask_video_ffmpeg
+from benchmarking.vigil.Vigil import Vigil, mask_video_ffmpeg
+# mask_video,
 
 PATH = '/data/zxxia/videos/'
 
@@ -17,20 +18,20 @@ DATA_ROOT = '/data/zxxia/videos'
 def parse_args():
     """Parse input arguments."""
     parser = argparse.ArgumentParser(description="vigil")
-    # parser.add_argument("--path", type=str, help="path contains all datasets")
-    parser.add_argument("--video", type=str, help="video name")
+    parser.add_argument("--video", type=str, required=True, help="video name")
     parser.add_argument("--metadata", type=str, default='',
                         help="metadata file in Json")
     parser.add_argument("--output", type=str, help="output result file")
-    # parser.add_argument("--log", type=str, help="log middle file")
-    parser.add_argument("--profile_length", type=int,
+    parser.add_argument("--profile_length", type=int, required=True,
                         help="profile video length in seconds")
-    parser.add_argument("--short_video_length", type=int,
+    parser.add_argument("--short_video_length", type=int, required=True,
                         help="short video length in seconds")
-    parser.add_argument("--offset", type=int,
-                        help="offset from beginning of the video in seconds")
-    parser.add_argument("--save_path", type=str,
+    # parser.add_argument("--offset", type=int,
+    #                     help="offset from beginning of the video in seconds")
+    parser.add_argument("--save_path", type=str, required=True,
                         help="output video saving path")
+    parser.add_argument("--mask_frames", action='store_true',
+                        help="generate blacked background images")
     args = parser.parse_args()
     return args
 
@@ -38,26 +39,26 @@ def parse_args():
 def main():
     """Vigil end-to-end."""
     args = parse_args()
-    dt_file = os.path.join(
-        DT_ROOT, args.video, '720p',
-        'profile/updated_gt_Inception_COCO_no_filter.csv')
+    dt_file = os.path.join(DT_ROOT, args.video, '720p', 'profile',
+                           'updated_gt_Inception_COCO_no_filter.csv')
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
-    video = YoutubeVideo(args.video, '720p', args.metadata,
-                         dt_file, img_path, filter_flag=True)
-    output_path = '/data/zxxia/benchmarking/Vigil/masked_images/'+args.video
+    output_path = os.path.join(args.save_path, args.video)
     if not os.path.exists(output_path):
         os.mkdir(output_path)
-    # mask_video_ffmpeg(video, 0.2, 0.2, save_path=output_path)
-    # return
-    # mask_video(video, 0.2, 0.2,
-    #            save_path='/data/zxxia/benchmarking/Vigil/test_bg')
+
+    if args.mask_frames:
+        video = YoutubeVideo(args.video, '720p', args.metadata, dt_file,
+                             img_path, filter_flag=False)
+        mask_video_ffmpeg(video, 0.1, 0.1, save_path=output_path)
+        # mask_video(video, 0.2, 0.2,
+        #            save_path='/data/zxxia/benchmarking/Vigil/test_bg')
+        return
 
     # load pipeline
     pipeline = Vigil()
     # Load groud truth
-    dt_file = os.path.join(
-        DT_ROOT, args.video, '720p',
-        'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
+    dt_file = os.path.join(DT_ROOT, args.video, '720p', 'profile',
+                           'updated_gt_FasterRCNN_COCO_no_filter.csv')
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
     original_video = YoutubeVideo(args.video, '720p', args.metadata,
                                   dt_file, img_path, filter_flag=True)
@@ -66,13 +67,13 @@ def main():
     # dt_file = '/data/zxxia/blackbg/'+args.video+'/' + \
     #     'profile/updated_gt_FasterRCNN_COCO_no_filter.csv'
 
-    dt_file = os.path.join(
-        DT_ROOT, args.video, '720p',
-        'profile/updated_gt_Inception_COCO_no_filter.csv')
+    dt_file = os.path.join(DT_ROOT, args.video, '720p', 'profile',
+                           'updated_gt_Inception_COCO_no_filter.csv')
     # img_path = '/data/zxxia/blackbg/'+args.video+'/'
-    img_path = '/data/zxxia/benchmarking/Vigil/masked_images/' + args.video
-    video = YoutubeVideo(args.video, '720p',
-                         args.metadata, dt_file, img_path, filter_flag=True)
+    img_path = os.path.join(
+        '/data/zxxia/benchmarking/Vigil/masked_images', args.video)
+    video = YoutubeVideo(args.video, '720p', args.metadata, dt_file,
+                         img_path, filter_flag=True)
 
     # Load haar detection results
     # haar_dt_file = 'haar_detections_new/haar_{}.csv'.format(dataset)
@@ -90,7 +91,8 @@ def main():
             ['video', 'bw', 'f1'])
         for i in range(nb_short_videos):
             clip = args.video + '_' + str(i)
-            start_frame = i*args.short_video_length*original_video.frame_rate+1
+            start_frame = i*args.short_video_length * \
+                original_video.frame_rate+original_video.start_frame_index
             end_frame = (i+1) * args.short_video_length * \
                 original_video.frame_rate
             profile_start_frame = start_frame

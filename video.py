@@ -14,13 +14,13 @@ class Video:
     """Base class of Video."""
 
     def __init__(self, name, frame_rate, resolution, detections, image_path,
-                 video_type, model):
+                 video_type, model, dropped_detections=None):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
         self._resolution = resolution
         self._detections = detections
-        self._dropped_detections = None
+        self._dropped_detections = dropped_detections
         self._frame_count = len(detections)
         self._image_path = image_path
         self._video_type = video_type
@@ -135,13 +135,15 @@ class YoutubeVideo(Video):
                                   COCOLabels.TRUCK.value},
                     width_range=(resolution[0] // 20, resolution[0]/2),
                     height_range=(resolution[1] // 20, resolution[1]/2))
-                self._dropped_detections = dropped_dets
+                # self._dropped_detections = dropped_dets
                 if merge_label_flag:
                     for frame_idx, boxes in dets.items():
                         for box_idx, _ in enumerate(boxes):
                             # Merge all cars and trucks into cars
                             dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                     #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+            else:
+                dropped_dets = None
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -152,7 +154,6 @@ class YoutubeVideo(Video):
                                   COCOLabels.BUS.value,
                                   COCOLabels.TRUCK.value},
                     height_range=(resolution[1] // 20, resolution[1]))
-                self._dropped_detections = dropped_dets
                 if merge_label_flag:
                     for frame_idx, boxes in dets.items():
                         for box_idx, _ in enumerate(boxes):
@@ -160,7 +161,7 @@ class YoutubeVideo(Video):
                             dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                 #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
             else:
-                self._dropped_detections = None
+                dropped_dets = None
 
         if name == 'road_trip':
             for frame_idx in dets:
@@ -176,7 +177,7 @@ class YoutubeVideo(Video):
                 dets[frame_idx] = tmp_boxes
 
         super().__init__(name, frame_rate, resolution, dets,
-                         image_path, camera_type, model)
+                         image_path, camera_type, model, dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
