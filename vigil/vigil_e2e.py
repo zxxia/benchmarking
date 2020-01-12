@@ -47,9 +47,11 @@ def main():
         os.mkdir(output_path)
 
     if args.mask_frames:
+        print('start masking out background of', args.video)
         video = YoutubeVideo(args.video, '720p', args.metadata, dt_file,
-                             img_path, filter_flag=False)
+                             img_path, filter_flag=True)
         mask_video_ffmpeg(video, 0.1, 0.1, save_path=output_path)
+        print('finish masking out background of', args.video)
         # mask_video(video, 0.2, 0.2,
         #            save_path='/data/zxxia/benchmarking/Vigil/test_bg')
         return
