@@ -63,7 +63,8 @@ def main():
                            'updated_gt_FasterRCNN_COCO_no_filter.csv')
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
     original_video = YoutubeVideo(args.video, '720p', args.metadata,
-                                  dt_file, img_path, filter_flag=True)
+                                  dt_file, img_path, filter_flag=True,
+                                  merge_label_flag=True)
 
     # # Load fastercnn detections on blacked background images
     # dt_file = '/data/zxxia/blackbg/'+args.video+'/' + \
@@ -75,7 +76,7 @@ def main():
     img_path = os.path.join(
         '/data/zxxia/benchmarking/Vigil/masked_images', args.video)
     video = YoutubeVideo(args.video, '720p', args.metadata, dt_file,
-                         img_path, filter_flag=True)
+                         img_path, filter_flag=True, merge_label_flag=True)
 
     # Load haar detection results
     # haar_dt_file = 'haar_detections_new/haar_{}.csv'.format(dataset)
