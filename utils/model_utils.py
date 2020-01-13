@@ -1,6 +1,7 @@
 from collections import defaultdict
 import numpy as np
 from benchmarking.utils.utils import IoU
+from benchmarking.constants import load_COCOlabelmap
 
 
 def nonnegative(num):
@@ -251,3 +252,76 @@ def eval_single_image(gt_boxes, dt_boxes, iou_thresh=0.5):
         fp += len(dt[t])
     # print(tp, fp, fn)
     return tp, fp, fn
+
+
+def convert_detection_to_classification(video_detections, 
+                                        resolution,
+                                        size_thresh=0.005,
+                                        confidence_thresh=0.85):
+    """Convert detection boxes to per-frame classification label. 
+        (1) Find the largest box. 
+        (2) Use the label for that box as the label for this frame.
+    """
+    cocomap_file = '../ground_truth/mscoco_label_map.pbtxt'
+    COCO_map = load_COCOlabelmap(cocomap_file)
+    video_classification_label = {}
+    for frame_idx in video_detections:
+        frame_label = convert_frame_label(video_detections[frame_idx], COCO_map, resolution, 
+                                          size_thresh, confidence_thresh)
+        video_classification_label[frame_idx] = frame_label
+
+    return video_classification_label
+
+
+def convert_frame_label(boxes, COCO_map, resolution, size_thresh, confidence_thresh):
+    """Return the label of largest box.
+    Arguments:
+        boxes {[dict]} -- detection boxes for current frame. 
+        Each box is a list, [x1, y1, x2, y2, t, score, obj_id]
+    """
+    area = []
+    label = []
+    for box in boxes:
+
+        confidence = box[5]
+        size = (box[2] - box[0]) * (box[3] - box[1])/ (resolution[0] * resolution[1])
+        if confidence < confidence_thresh or size < size_thresh:
+            continue
+        else:
+            assert box[2] > box[0], print('wrong box', box)
+            area.append(size)
+            label.append(COCO_map[box[4]])
+    
+    if area == []:
+        final_label = ['no_object', 1.0]
+    else:
+        index = area.index(max(area))
+        final_label = [label[index], max(area)]
+    return final_label
+
+def smooth_classification(labels):
+    smoothed_labels = {}
+    # current we are using traffic videos
+    all_classes = ['car','person','truck','bicycle','bus','motorcycle','no_object']
+	# if those labels appear, map them to 'car'
+    label_to_car = ['bed']
+	# if those labels appear, map them to 'truck'
+    label_to_truck = ['airplane','boat', 'train', 
+					  'suitcase', 'bus', 'bench', 'book']
+    for frame_idx in labels:
+        if labels[frame_idx][0] in label_to_car:
+            smoothed_labels[frame_idx] = ['car', labels[frame_idx][1]]
+        elif labels[frame_idx][0] in label_to_truck:
+            smoothed_labels[frame_idx] = ['truck', labels[frame_idx][1]]
+        elif labels[frame_idx][0] not in all_classes:
+            smoothed_labels[frame_idx] = ['no_object', 1.0]
+        else:
+            smoothed_labels[frame_idx] = labels[frame_idx]
+        
+    for frame_idx in range(min(smoothed_labels) + 1, max(smoothed_labels)):
+        if smoothed_labels[frame_idx - 1][0] == smoothed_labels[frame_idx + 1][0]:
+            if smoothed_labels[frame_idx][0] != smoothed_labels[frame_idx - 1][0]:
+                smoothed_labels[frame_idx] = smoothed_labels[frame_idx - 1] 
+
+    return smoothed_labels
+

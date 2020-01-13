@@ -1,10 +1,11 @@
 """Definition of videos."""
+import copy
 import os
 import pdb
 import subprocess
 import cv2
 from benchmarking.utils.model_utils import load_full_model_detection, \
-    filter_video_detections
+    filter_video_detections, convert_detection_to_classification, smooth_classification
 from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
 from benchmarking.utils.utils import load_metadata
 from benchmarking.utils.model_utils import remove_overlappings
@@ -13,12 +14,13 @@ from benchmarking.utils.model_utils import remove_overlappings
 class Video:
     """Base class of Video."""
 
-    def __init__(self, name, frame_rate, resolution, detections, image_path,
+    def __init__(self, name, frame_rate, resolution, detections, detections_nofilter, image_path,
                  video_type, model):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
         self._resolution = resolution
+        self._detections_nofilter = detections_nofilter
         self._detections = detections
         self._dropped_detections = None
         self._frame_count = len(detections)
@@ -108,6 +110,11 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
+    def get_video_classification_label(self):
+        """Return the classification label for each video frame."""
+        classification_labels = convert_detection_to_classification(self._detections_nofilter, self._resolution)
+        smoothed_classification_labels = smooth_classification(classification_labels)
+        return smoothed_classification_labels
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
@@ -122,6 +129,7 @@ class YoutubeVideo(Video):
         else:
             frame_rate = 30
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)
         resolution = RESOL_DICT[resolution_name]
 
         # TODO: handle overlapping boxes
@@ -175,7 +183,7 @@ class YoutubeVideo(Video):
                     tmp_boxes.append(box)
                 dets[frame_idx] = tmp_boxes
 
-        super().__init__(name, frame_rate, resolution, dets,
+        super().__init__(name, frame_rate, resolution, dets, dets_nofilter, 
                          image_path, camera_type, model)
 
     def get_frame_image(self, frame_index):
@@ -245,6 +253,7 @@ class KittiVideo(Video):
                  model='FasterRCNN', filter_flag=True):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)        
         resolution = (1242, 375)
         # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
@@ -255,7 +264,7 @@ class KittiVideo(Video):
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
             self._dropped_detections = dropped_dets
-        super().__init__(name, 10, resolution, dets, image_path, 'moving',
+        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path, 'moving',
                          model)
 
     def get_frame_image(self, frame_index):
@@ -280,6 +289,7 @@ class WaymoVideo(Video):
                  model='FasterRCNN', filter_flag=True):
         """Waymo Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)        
         resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets, dropped_dets = filter_video_detections(
@@ -291,7 +301,7 @@ class WaymoVideo(Video):
             self._dropped_detections = dropped_dets
         else:
             self._dropped_detections = None
-        super().__init__(name, 10, resolution, dets, image_path, 'moving',
+        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path, 'moving',
                          model)
 
     def get_frame_image(self, frame_index):

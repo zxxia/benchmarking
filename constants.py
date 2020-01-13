@@ -18,9 +18,10 @@ CAMERA_TYPES = {
                'crossroad4', 'drift', 'highway', 'highway_normal_traffic',
                'jp', 'jp_hw', 'motorway', 'nyc', 'russia',
                'russia1', 'traffic', 'tw', 'tw1', 'tw_road',
-               'tw_under_bridge', 't_crossroad', 'canada_crossroad'],
+               'tw_under_bridge', 't_crossroad', 'canada_crossroad',
+                'cropped_crossroad4', 'cropped_crossroad4_2', 'cropped_crossroad5'],
     'moving': ['driving1', 'driving2', 'driving_downtown', 'park',
-               'lane_split', 'road_trip']
+               'lane_split', 'road_trip','cropped_driving2']
 }
 
 
@@ -31,9 +32,30 @@ class COCOLabels(Enum):
     BUS = 6
     TRAIN = 7
     TRUCK = 8
+    
 
 
 MODEL_COST = {'mobilenet': 31,
               'inception': 58,
               'resnet50': 89,
+              'Resnet50': 89,
+              'FasterRCNN50': 89,
               'FasterRCNN': 106}
+
+
+
+def load_COCOlabelmap(label_map_path):
+    COCO_Labelmap = {}
+    with open(label_map_path,'r') as f:
+        line = f.readline()
+        while line:
+            if 'id' in line:
+                ID = int(line.strip().split(':')[1].strip())
+                line = f.readline()
+                label = line.strip().split(':')[1]
+                COCO_Labelmap[ID] = label.strip().replace('"','')
+                line = f.readline()
+            else:
+                line = f.readline()
+    
+    return COCO_Labelmap
