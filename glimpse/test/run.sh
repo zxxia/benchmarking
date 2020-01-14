@@ -6,11 +6,11 @@ TARGET_F1=0.9
 
 # YouTube Videos
 DATA_PATH=/data/zxxia/videos/
-# VIDEOS="crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
-#         driving_downtown traffic highway highway_normal_traffic jp
-#          motorway nyc park russia1 traffic tw tw1
-#         tw_under_bridge lane_split russia"
-VIDEOS="park"
+VIDEOS="crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
+        driving_downtown traffic highway highway_normal_traffic jp
+         motorway nyc park russia1 traffic tw tw1
+        tw_under_bridge lane_split russia"
+VIDEOS="highway"
 
 # for VIDEO in $VIDEOS
 # do
@@ -28,15 +28,16 @@ VIDEOS="park"
 
 for VIDEO in $VIDEOS
 do
-    python test_glimpse_frame_select.py \
+    python glimpse_e2e.py \
         --video $VIDEO \
         --metadata $DATA_PATH$VIDEO/metadata.json \
-        --output test_results/glimpse_tracking_${VIDEO}.csv \
-        --log test_profile/profile_${VIDEO}.csv \
+        --output delete_this/glimpse_tracking_${VIDEO}.csv \
+        --log delete_this/profile_${VIDEO}.csv \
         --short_video_length $SHORT_VIDEO_LENGTH \
         --profile_length $PROFILE_LENGTH \
         --offset $OFFSET \
-        --trace_path test_tracking_traces
+        --trace_path delete_this \
+        --profile_trace_path delete_this
         # --target_f1 $TARGET_F1 &
 done
 
