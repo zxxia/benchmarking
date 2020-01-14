@@ -3,6 +3,7 @@ import os
 import pdb
 import subprocess
 import cv2
+import pandas as pd
 from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections
 from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
@@ -243,7 +244,7 @@ class KittiVideo(Video):
     """Class of KittiVideo."""
 
     def __init__(self, name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True):
+                 model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = (1242, 375)
@@ -256,6 +257,12 @@ class KittiVideo(Video):
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
             self._dropped_detections = dropped_dets
+            if merge_label_flag:
+                for frame_idx, boxes in dets.items():
+                    for box_idx, _ in enumerate(boxes):
+                        # Merge all cars and trucks into cars
+                        dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
         super().__init__(name, 10, resolution, dets, image_path, 'moving',
                          model)
 
@@ -278,7 +285,7 @@ class WaymoVideo(Video):
     """Class of WaymoVideo."""
 
     def __init__(self, name, resolution_name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True):
+                 model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Waymo Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = RESOL_DICT[resolution_name]
@@ -289,11 +296,18 @@ class WaymoVideo(Video):
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
-            self._dropped_detections = dropped_dets
+            # self._dropped_detections = dropped_dets
+            if merge_label_flag:
+                for frame_idx, boxes in dets.items():
+                    for box_idx, _ in enumerate(boxes):
+                        # Merge all cars and trucks into cars
+                        dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+            #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
         else:
-            self._dropped_detections = None
+            dropped_dets = None
+            # self._dropped_detections = None
         super().__init__(name, 10, resolution, dets, image_path, 'moving',
-                         model)
+                         model, dropped_detections=dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -339,3 +353,12 @@ class WaymoVideo(Video):
         print('finish generating {} and size={}'.format(
             output_video_name, video_size))
         return video_size
+
+
+class MOT16Video(Video):
+    @staticmethod
+    def convert_grondtruth(gt_file):
+        gt = pd.read_csv(gt_file)
+        return None
+    # TODO: finish MOT16 dataset abstraction
+
