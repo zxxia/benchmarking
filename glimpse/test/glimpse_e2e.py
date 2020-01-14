@@ -31,6 +31,8 @@ PARA1_LIST_DICT = {
     'tw_under_bridge': np.arange(350, 450, 10),
 }
 PARA2_LIST = [10, 8, 5, 3, 2, 1]
+DET_ROOT = '/data/zxxia/benchmarking/results/videos'
+IMG_ROOT = '/data/zxxia/videos'
 
 
 def parse_args():
@@ -63,23 +65,16 @@ def parse_args():
 
 def main():
     args = parse_args()
-    # path = args.path
-    # video_name = args.video
-    # output_file = args.output
-    # log_file = args.log
-    # metadata_file = args.metadata
-    # short_video_length = args.short_video_length
-    # profile_length = args.profile_length
-    # offset = args.offset
 
     f_trace = open(args.trace_path+'/{}_trace.csv'.format(args.video), 'w')
     f_trace.write('frame id,timestamp,trigger\n')
     tstamp = 0
 
-    det_file = '/data/zxxia/benchmarking/results/videos/{}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv'.format(
-        args.video)
-    img_path = '/data/zxxia/videos/{}/720p'.format(args.video)
-    video = YoutubeVideo(args.video, '720p', args.metadata, det_file, img_path)
+    det_file = os.path.join(DET_ROOT, args.video, '720p',
+                            'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
+    img_path = os.path.join(IMG_ROOT, args.video, '720p')
+    video = YoutubeVideo(args.video, '720p', args.metadata, det_file, img_path,
+                         filter_flag=True, merge_label_flag=True)
 
     pipeline = Glimpse(PARA1_LIST_DICT[args.video], PARA2_LIST, args.log,
                        args.profile_trace_path)  # mode='tracking'
@@ -99,16 +94,15 @@ def main():
                                                  video.frame_rate)
 
         for i in range(nb_short_videos):
-            start = i * args.short_video_length * video.frame_rate + 1 + \
-                args.offset*video.frame_rate
+            start = i * args.short_video_length * video.frame_rate + \
+                video.start_frame_index + args.offset*video.frame_rate
             end = (i+1)*args.short_video_length * \
                 video.frame_rate+args.offset*video.frame_rate
 
             clip = args.video + '_' + str(i)
 
             profile_start = start
-            profile_end = min(start+args.profile_length *
-                              video.frame_rate-1, end)
+            profile_end = start+args.profile_length * video.frame_rate-1
             test_start = profile_end + 1
             test_end = end
             print("{} {} start={}, end={}".format(clip, img_path, start, end))
