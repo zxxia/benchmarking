@@ -14,7 +14,6 @@ from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 from skimage.io import imread
 from skimage.transform import resize
-# from identify_dominant_class import dominant_classes
 from keras.applications.vgg16 import VGG16
 from keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 from keras.preprocessing import image

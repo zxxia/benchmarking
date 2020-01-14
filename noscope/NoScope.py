@@ -173,8 +173,8 @@ def train_small_model(dataset, gpu_num, model_save_path, video,
     # filename is the suffix of label file. Currently, car and truck are
     # considered as two separate labels.
     train_gen, val_gen, train_class_weight, train_distribution, all_classes = \
-        build_train_val(dim, dataset, video,batch_size)
-    model = build_model(dim, model_arch, all_classes)
+        build_train_val(dim, dataset, video, batch_size)
+    model = build_model(dim, model_arch, len(all_classes))
 
 
     # create temp log file
@@ -218,7 +218,7 @@ def build_train_val(dim, dataset, video, batch_size):
     # so later the label
     # can be mapped to label indices
     labels = video.get_video_classification_label()
-    all_classes = list(set([x[0] for x in labels.values()]))
+    all_classes = sorted(list(set([x[0] for x in labels.values()])))
     print(all_classes)
 
     # get train images path
@@ -229,7 +229,7 @@ def build_train_val(dim, dataset, video, batch_size):
         train_images.append(image_name)
         basename = os.path.basename(image_name)
         train_labels[basename] = all_classes.index(label)
-
+    print(train_labels)
     # to address training data imbalance problem, reweight those classes
     train_class_weight = {}
     for key, value in train_test.items():
@@ -251,7 +251,6 @@ def build_train_val(dim, dataset, video, batch_size):
     print('Val data', len(val_images))
     print(val_test)
     nb_classes = len(all_classes)
-    print(nb_classes)
     train_gen = DataGenerator(train_images, train_labels, batch_size, dim,
                               n_classes=nb_classes, shuffle=True)
     val_gen = DataGenerator(val_images, val_labels, batch_size, dim,
