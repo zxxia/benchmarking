@@ -1,11 +1,12 @@
 """Definition of videos."""
+import copy
 import os
 import pdb
 import subprocess
 import cv2
 import pandas as pd
 from benchmarking.utils.model_utils import load_full_model_detection, \
-    filter_video_detections
+    filter_video_detections, convert_detection_to_classification, smooth_classification
 from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
 from benchmarking.utils.utils import load_metadata
 from benchmarking.utils.model_utils import remove_overlappings
@@ -14,12 +15,14 @@ from benchmarking.utils.model_utils import remove_overlappings
 class Video:
     """Base class of Video."""
 
-    def __init__(self, name, frame_rate, resolution, detections, image_path,
+    def __init__(self, name, frame_rate, resolution, detections,
+                 detections_nofilter, image_path,
                  video_type, model, dropped_detections=None):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
         self._resolution = resolution
+        self._detections_nofilter = detections_nofilter
         self._detections = detections
         self._dropped_detections = dropped_detections
         self._frame_count = len(detections)
@@ -109,6 +112,14 @@ class Video:
         """Encode the frames into a video and return output video size."""
         return 0
 
+    def get_video_classification_label(self):
+        """Return the classification label for each video frame."""
+        classification_labels = convert_detection_to_classification(
+            self._detections_nofilter, self._resolution)
+        smoothed_classification_labels = smooth_classification(
+            classification_labels)
+        return smoothed_classification_labels
+
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
@@ -123,6 +134,7 @@ class YoutubeVideo(Video):
         else:
             frame_rate = 30
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)
         resolution = RESOL_DICT[resolution_name]
 
         # TODO: handle overlapping boxes
@@ -177,7 +189,7 @@ class YoutubeVideo(Video):
                     tmp_boxes.append(box)
                 dets[frame_idx] = tmp_boxes
 
-        super().__init__(name, frame_rate, resolution, dets,
+        super().__init__(name, frame_rate, resolution, dets, dets_nofilter,
                          image_path, camera_type, model, dropped_dets)
 
     def get_frame_image(self, frame_index):
@@ -247,6 +259,7 @@ class KittiVideo(Video):
                  model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)
         resolution = (1242, 375)
         # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
@@ -263,8 +276,10 @@ class KittiVideo(Video):
                         # Merge all cars and trucks into cars
                         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                 #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
-        super().__init__(name, 10, resolution, dets, image_path, 'moving',
-                         model)
+        else:
+            dropped_dets = None
+        super().__init__(name, 10, resolution, dets, dets_nofilter,
+                         image_path, 'moving', model, dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -288,6 +303,7 @@ class WaymoVideo(Video):
                  model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Waymo Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)
         resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets, dropped_dets = filter_video_detections(
@@ -305,9 +321,9 @@ class WaymoVideo(Video):
             #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
         else:
             dropped_dets = None
-            # self._dropped_detections = None
-        super().__init__(name, 10, resolution, dets, image_path, 'moving',
-                         model, dropped_detections=dropped_dets)
+
+        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path,
+                         'moving', model, dropped_detections=dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -361,4 +377,3 @@ class MOT16Video(Video):
         gt = pd.read_csv(gt_file)
         return None
     # TODO: finish MOT16 dataset abstraction
-
