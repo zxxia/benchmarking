@@ -10,6 +10,8 @@ from benchmarking.utils.utils import compute_f1, interpolation
 
 DEBUG = False
 # DEBUG = True
+YELLOW = (0, 255, 255)
+BLACK = (0, 0, 0)
 
 
 def debug_print(msg):
@@ -223,6 +225,8 @@ class Glimpse():
 
             # pix_change = np.zeros_like(frame_gray)
             # mask out bboxes
+            debug_print('last trigger {}, curret {}'.format(
+                last_triggered_frame_idx, i))
             if self.mask_flag:
                 mask = np.ones_like(frame_gray)
                 for box in video.get_dropped_frame_detection(
@@ -308,7 +312,14 @@ class Glimpse():
                         tracking_boxes(frame_bgr, prev_frame_gray, frame_gray,
                                        i, dt_glimpse[i - 1],
                                        tracking_error_thresh)
-                    if status:
+                    # w_h_ratio_trigger = False
+                    # for box in new_boxes:
+                    #     xmin, ymin, xmax, ymax = box[:4]
+                    #     if (ymax - ymin) < 0.5 * (xmax - xmin):
+                    #         w_h_ratio_trigger = True
+                    #         print('wrong ratio')
+
+                    if status:  # and not w_h_ratio_trigger:
                         # tracking is successful
                         dt_glimpse[i] = new_boxes
                     else:
@@ -316,11 +327,35 @@ class Glimpse():
                         dt_glimpse[i] = video.get_frame_detection(i)
                         tracking_triggered.add(i)
                         lastTriggeredFrameGray = frame_gray.copy()
+                        last_triggered_frame_idx = i
                         frame_log['tracking trigger'] = 1
                         frame_log['tracking error'] = tracking_err
+            for box in dt_glimpse[i-1]:
+                xmin, ymin, xmax, ymax = box[:4]
+                cv2.rectangle(frame_bgr, (xmin, ymin),
+                              (xmax, ymax), BLACK, 2)
+            for box in dt_glimpse[i]:
+                xmin, ymin, xmax, ymax = box[:4]
+                cv2.rectangle(frame_bgr, (xmin, ymin),
+                              (xmax, ymax), YELLOW, 2)
             frame_log['detection'] = dt_glimpse[i]
             frames_log.append(frame_log)
             prev_frame_gray = frame_gray.copy()
+            # visualize the detection
+            # color = (255, 0, 0)
+            # for box in video.get_frame_detection(i):
+            #     [xmin, ymin, xmax, ymax] = box[:4]
+            #     cv2.rectangle(frame_bgr, (xmin, ymin), (xmax, ymax), color, 1)
+            # cv2.imshow(str(i), frame_bgr)
+            # cv2.imshow(str(i)+'gray', frame_gray_masked)
+            # print(frame_bgr.shape)
+            # cv2.moveWindow(str(i), 0, 0)
+            # cv2.moveWindow(str(i)+'gray', 0, 800)
+            # if cv2.waitKey(0) & 0xFF == ord('q'):
+            #     cv2.destroyAllWindows()
+            # cv2.destroyWindow(str(i))
+            # cv2.destroyWindow(str(i)+'gray')
+            # cv2.destroyWindow('frame diff')
 
         f1 = eval_pipeline_accuracy(frame_start, frame_end,
                                     video.get_video_detection(), dt_glimpse)
@@ -357,6 +392,12 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
     pix_change_obj += np.sum(mask * obj_region)
     pix_change = np.sum(mask)
     pix_change_bg = pix_change - pix_change_obj
+    # cv2.imshow('frame diff', np.repeat(
+    #     mask[:, :, np.newaxis], 3, axis=2).astype(np.uint8))
+    # cv2.moveWindow('frame diff', 1280, 0)
+    # if cv2.waitKey(0) & 0xFF == ord('q'):
+    #     cv2.destroyAllWindows()
+    # cv2.destroyWindow('frame diff')
 
     return pix_change, pix_change_obj, pix_change_bg
 
@@ -511,8 +552,8 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
             .format(new_ymax, vis.shape[0])
         # pdb.set_trace()
         new_boxes.append([new_x, new_y, new_xmax, new_ymax, t, score, obj_id])
-        cv2.rectangle(vis, (x, y), (xmax, ymax), black, 2)
-        cv2.rectangle(vis, (new_x, new_y), (new_xmax, new_ymax), yellow, 2)
+        # cv2.rectangle(vis, (x, y), (xmax, ymax), black, 2)
+        # cv2.rectangle(vis, (new_x, new_y), (new_xmax, new_ymax), yellow, 2)
 
     # img_title = 'frame {}'.format(new_frame_id)
     # cv2.imshow(img_title, vis)

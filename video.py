@@ -4,6 +4,7 @@ import os
 import pdb
 import subprocess
 import cv2
+import pandas as pd
 from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections, convert_detection_to_classification, smooth_classification
 from benchmarking.constants import CAMERA_TYPES, COCOLabels, RESOL_DICT
@@ -14,15 +15,16 @@ from benchmarking.utils.model_utils import remove_overlappings
 class Video:
     """Base class of Video."""
 
-    def __init__(self, name, frame_rate, resolution, detections, detections_nofilter, image_path,
-                 video_type, model):
+    def __init__(self, name, frame_rate, resolution, detections,
+                 detections_nofilter, image_path,
+                 video_type, model, dropped_detections=None):
         """Constructor."""
         self._name = name
         self._frame_rate = frame_rate
         self._resolution = resolution
         self._detections_nofilter = detections_nofilter
         self._detections = detections
-        self._dropped_detections = None
+        self._dropped_detections = dropped_detections
         self._frame_count = len(detections)
         self._image_path = image_path
         self._video_type = video_type
@@ -112,9 +114,12 @@ class Video:
 
     def get_video_classification_label(self):
         """Return the classification label for each video frame."""
-        classification_labels = convert_detection_to_classification(self._detections_nofilter, self._resolution)
-        smoothed_classification_labels = smooth_classification(classification_labels)
+        classification_labels = convert_detection_to_classification(
+            self._detections_nofilter, self._resolution)
+        smoothed_classification_labels = smooth_classification(
+            classification_labels)
         return smoothed_classification_labels
+
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
@@ -143,13 +148,15 @@ class YoutubeVideo(Video):
                                   COCOLabels.TRUCK.value},
                     width_range=(resolution[0] // 20, resolution[0]/2),
                     height_range=(resolution[1] // 20, resolution[1]/2))
-                self._dropped_detections = dropped_dets
+                # self._dropped_detections = dropped_dets
                 if merge_label_flag:
                     for frame_idx, boxes in dets.items():
                         for box_idx, _ in enumerate(boxes):
                             # Merge all cars and trucks into cars
                             dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                     #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+            else:
+                dropped_dets = None
 
         elif name in CAMERA_TYPES['moving']:
             camera_type = 'moving'
@@ -160,7 +167,6 @@ class YoutubeVideo(Video):
                                   COCOLabels.BUS.value,
                                   COCOLabels.TRUCK.value},
                     height_range=(resolution[1] // 20, resolution[1]))
-                self._dropped_detections = dropped_dets
                 if merge_label_flag:
                     for frame_idx, boxes in dets.items():
                         for box_idx, _ in enumerate(boxes):
@@ -168,7 +174,7 @@ class YoutubeVideo(Video):
                             dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
                 #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
             else:
-                self._dropped_detections = None
+                dropped_dets = None
 
         if name == 'road_trip':
             for frame_idx in dets:
@@ -183,8 +189,8 @@ class YoutubeVideo(Video):
                     tmp_boxes.append(box)
                 dets[frame_idx] = tmp_boxes
 
-        super().__init__(name, frame_rate, resolution, dets, dets_nofilter, 
-                         image_path, camera_type, model)
+        super().__init__(name, frame_rate, resolution, dets, dets_nofilter,
+                         image_path, camera_type, model, dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -250,10 +256,10 @@ class KittiVideo(Video):
     """Class of KittiVideo."""
 
     def __init__(self, name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True):
+                 model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        dets_nofilter = copy.deepcopy(dets)        
+        dets_nofilter = copy.deepcopy(dets)
         resolution = (1242, 375)
         # resolution = RESOL_DICT[resolution_name]
         if filter_flag:
@@ -264,8 +270,16 @@ class KittiVideo(Video):
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
             self._dropped_detections = dropped_dets
-        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path, 'moving',
-                         model)
+            if merge_label_flag:
+                for frame_idx, boxes in dets.items():
+                    for box_idx, _ in enumerate(boxes):
+                        # Merge all cars and trucks into cars
+                        dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+        else:
+            dropped_dets = None
+        super().__init__(name, 10, resolution, dets, dets_nofilter,
+                         image_path, 'moving', model, dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -286,10 +300,10 @@ class WaymoVideo(Video):
     """Class of WaymoVideo."""
 
     def __init__(self, name, resolution_name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True):
+                 model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Waymo Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
-        dets_nofilter = copy.deepcopy(dets)        
+        dets_nofilter = copy.deepcopy(dets)
         resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets, dropped_dets = filter_video_detections(
@@ -298,11 +312,18 @@ class WaymoVideo(Video):
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
                 height_range=(resolution[1] // 20, resolution[1]))
-            self._dropped_detections = dropped_dets
+            # self._dropped_detections = dropped_dets
+            if merge_label_flag:
+                for frame_idx, boxes in dets.items():
+                    for box_idx, _ in enumerate(boxes):
+                        # Merge all cars and trucks into cars
+                        dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+            #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
         else:
-            self._dropped_detections = None
-        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path, 'moving',
-                         model)
+            dropped_dets = None
+
+        super().__init__(name, 10, resolution, dets, dets_nofilter, image_path,
+                         'moving', model, dropped_detections=dropped_dets)
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
@@ -348,3 +369,11 @@ class WaymoVideo(Video):
         print('finish generating {} and size={}'.format(
             output_video_name, video_size))
         return video_size
+
+
+class MOT16Video(Video):
+    @staticmethod
+    def convert_grondtruth(gt_file):
+        gt = pd.read_csv(gt_file)
+        return None
+    # TODO: finish MOT16 dataset abstraction
