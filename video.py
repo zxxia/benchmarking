@@ -82,9 +82,13 @@ class Video:
         """Return detection model type."""
         return self._model
 
+    # def get_frame_image(self, frame_index):
+    #     """Return the image at frame index."""
+    #     return None
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
-        return None
+        img = cv2.imread(self.get_frame_image_name(frame_index))
+        return img
 
     def get_frame_image_name(self, frame_index):
         """Return the image file name at frame index."""
@@ -108,10 +112,10 @@ class Video:
         """Return the object detections of the video."""
         return self._detections
 
-    def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None):
-        """Encode the frames into a video and return output video size."""
-        return 0
+    # def encode(self, output_video_name, target_frame_indices=None,
+    #            target_frame_rate=None):
+    #     """Encode the frames into a video and return output video size."""
+    #     return 0
 
     def get_video_classification_label(self):
         """Return the classification label for each video frame."""
@@ -120,6 +124,37 @@ class Video:
         smoothed_classification_labels = smooth_classification(
             classification_labels)
         return smoothed_classification_labels
+
+    def encode(self, output_video_name, target_frame_indices=None,
+               target_frame_rate=None, save_video=True):
+        """Encode the target frames into a video and return video size."""
+        print("start generating "+output_video_name)
+        tmp_list_file = output_video_name + '_list.txt'
+        with open(tmp_list_file, 'w') as f_list:
+            for i in target_frame_indices:
+                # based on sample rate, decide whether this frame is sampled
+                line = 'file \'{}\'\n'.format(self.get_frame_image_name(i))
+                f_list.write(line)
+
+        # compress the sampled image into a video
+        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+
+        cmd = ['ffmpeg', '-y',  '-r',
+               str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+               tmp_list_file, '-s', frame_size,
+               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+               'yuv420p', '-hide_banner', output_video_name]
+        subprocess.run(cmd, check=True)
+        # get the video size
+        video_size = os.path.getsize(output_video_name)
+        if not save_video:
+            os.remove(output_video_name)
+        os.remove(tmp_list_file)
+        print('target fps={}, target resolution={}, video size={}'
+              .format(target_frame_rate, self._resolution, video_size))
+        print('finish generating {} and size={}'.format(
+            output_video_name, video_size))
+        return video_size
 
 
 class YoutubeVideo(Video):
@@ -193,12 +228,10 @@ class YoutubeVideo(Video):
         super().__init__(name, frame_rate, resolution, dets, dets_nofilter,
                          image_path, camera_type, model, dropped_dets)
 
-    def get_frame_image(self, frame_index):
-        """Return the image at frame index."""
-        img_name = format(frame_index, '06d') + '.jpg'
-        img_file = os.path.join(self._image_path, img_name)
-        img = cv2.imread(img_file)
-        return img
+    # def get_frame_image(self, frame_index):
+    #     """Return the image at frame index."""
+    #     img = cv2.imread(self.get_frame_image_name(frame_index))
+    #     return img
 
     def get_frame_image_name(self, frame_index):
         """Return the image file name at frame index."""
@@ -206,8 +239,40 @@ class YoutubeVideo(Video):
             self._image_path, '{:06d}.jpg'.format(frame_index))
         return img_file
 
-    def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None, save_video=True):
+    # def encode(self, output_video_name, target_frame_indices=None,
+    #            target_frame_rate=None, save_video=True):
+    #     """Encode the target frames into a video and return video size."""
+    #     print("start generating "+output_video_name)
+    #     tmp_list_file = output_video_name + '_list.txt'
+    #     with open(tmp_list_file, 'w') as f_list:
+    #         for i in target_frame_indices:
+    #             # based on sample rate, decide whether this frame is sampled
+    #             line = 'file \'{}/{:06}.jpg\'\n'.format(self._image_path, i)
+    #             f_list.write(line)
+    #
+    #     # compress the sampled image into a video
+    #     frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+    #
+    #     cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
+    #            str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+    #            tmp_list_file, '-s', frame_size,
+    #            '-vcodec', 'libx264', '-crf', str(self._quality_level),
+    #            '-pix_fmt', 'yuv420p', '-hide_banner', output_video_name]
+    #     subprocess.run(cmd, check=True)
+    #     # get the video size
+    #     video_size = os.path.getsize(output_video_name)
+    #     if not save_video:
+    #         os.remove(output_video_name)
+    #     os.remove(tmp_list_file)
+    #     print('target fps={}, target resolution={}, video size={}'
+    #           .format(target_frame_rate, self._resolution, video_size))
+    #     print('finish generating {} and size={}'.format(
+    #         output_video_name, video_size))
+    #     return video_size
+
+    def encode_iframe_control(self, output_video_name,
+                              target_frame_indices=None,
+                              target_frame_rate=None, save_video=True):
         """Encode the target frames into a video and return video size."""
         print("start generating "+output_video_name)
         tmp_list_file = output_video_name + '_list.txt'
@@ -224,7 +289,9 @@ class YoutubeVideo(Video):
                str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
                tmp_list_file, '-s', frame_size,
                '-vcodec', 'libx264', '-crf', str(self._quality_level),
-               '-pix_fmt', 'yuv420p', '-hide_banner', output_video_name]
+               '-pix_fmt', 'yuv420p', '-force_key_frames',
+               "expr:gte(t,n_forced*2)",
+               '-hide_banner', output_video_name]
         subprocess.run(cmd, check=True)
         # get the video size
         video_size = os.path.getsize(output_video_name)
@@ -256,13 +323,15 @@ class YoutubeVideo(Video):
 class KittiVideo(Video):
     """Class of KittiVideo."""
 
-    def __init__(self, name, detection_file, image_path,
+    def __init__(self, name, resolution_name, detection_file, image_path,
                  model='FasterRCNN', filter_flag=True, merge_label_flag=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         dets_nofilter = copy.deepcopy(dets)
-        resolution = (1242, 375)
-        # resolution = RESOL_DICT[resolution_name]
+        if resolution_name is None:
+            resolution = (1242, 375)
+        else:
+            resolution = RESOL_DICT[resolution_name]
         if filter_flag:
             dets, dropped_dets = filter_video_detections(
                 dets,
@@ -282,19 +351,50 @@ class KittiVideo(Video):
         super().__init__(name, 10, resolution, dets, dets_nofilter,
                          image_path, 'moving', model, dropped_dets)
 
-    def get_frame_image(self, frame_index):
-        """Return the image at frame index."""
-        img_name = format(frame_index, '010d') + '.png'
-        img_file = os.path.join(self._image_path, img_name)
-        img = cv2.imread(img_file)
-        # img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
-        return img
+    # def get_frame_image(self, frame_index):
+    #     """Return the image at frame index."""
+    #     img_name = format(frame_index, '010d') + '.png'
+    #     img_file = os.path.join(self._image_path, img_name)
+    #     img = cv2.imread(img_file)
+    #     # img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
+    #     return img
 
     def get_frame_image_name(self, frame_index):
         """Return the image file name at frame index."""
         img_file = os.path.join(
             self._image_path, '{:010d}.png'.format(frame_index))
         return img_file
+
+    # def encode(self, output_video_name, target_frame_indices=None,
+    #            target_frame_rate=None, save_video=True):
+    #     """Encode the target frames into a video and return video size."""
+    #     print("start generating "+output_video_name)
+    #     tmp_list_file = output_video_name + '_list.txt'
+    #     with open(tmp_list_file, 'w') as f_list:
+    #         for i in target_frame_indices:
+    #             # based on sample rate, decide whether this frame is sampled
+    #             line = 'file \'{}\'\n'.format(self.get_frame_image_name(i))
+    #             f_list.write(line)
+    #
+    #     # compress the sampled image into a video
+    #     frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+    #
+    #     cmd = ['ffmpeg', '-y',  '-r',
+    #            str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+    #            tmp_list_file, '-s', frame_size,
+    #            '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+    #            'yuv420p', '-hide_banner', output_video_name]
+    #     subprocess.run(cmd, check=True)
+    #     # get the video size
+    #     video_size = os.path.getsize(output_video_name)
+    #     if not save_video:
+    #         os.remove(output_video_name)
+    #     os.remove(tmp_list_file)
+    #     print('target fps={}, target resolution={}, video size={}'
+    #           .format(target_frame_rate, self._resolution, video_size))
+    #     print('finish generating {} and size={}'.format(
+    #         output_video_name, video_size))
+    #     return video_size
 
 
 class WaymoVideo(Video):
@@ -326,13 +426,13 @@ class WaymoVideo(Video):
         super().__init__(name, 10, resolution, dets, dets_nofilter, image_path,
                          'moving', model, dropped_detections=dropped_dets)
 
-    def get_frame_image(self, frame_index):
-        """Return the image at frame index."""
-        img_name = format(frame_index, '04d') + '.jpg'
-        img_file = os.path.join(self._image_path, img_name)
-        img = cv2.imread(img_file)
-        img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
-        return img
+    # def get_frame_image(self, frame_index):
+    #     """Return the image at frame index."""
+    #     img_name = format(frame_index, '04d') + '.jpg'
+    #     img_file = os.path.join(self._image_path, img_name)
+    #     img = cv2.imread(img_file)
+    #     img = cv2.resize(img, self._resolution, interpolation=cv2.INTER_AREA)
+    #     return img
 
     def get_frame_image_name(self, frame_index):
         """Return the image file name at frame index."""
@@ -340,36 +440,36 @@ class WaymoVideo(Video):
             self._image_path, '{:04d}.jpg'.format(frame_index))
         return img_file
 
-    def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None, save_video=True):
-        """Encode the target frames into a video and return video size."""
-        print("start generating "+output_video_name)
-        tmp_list_file = output_video_name + '_list.txt'
-        with open(tmp_list_file, 'w') as f_list:
-            for i in target_frame_indices:
-                # based on sample rate, decide whether this frame is sampled
-                line = 'file \'{}/{:04}.jpg\'\n'.format(self._image_path, i)
-                f_list.write(line)
-
-        # compress the sampled image into a video
-        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
-
-        cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
-               str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
-               tmp_list_file, '-s', frame_size,
-               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
-               'yuv420p', '-hide_banner', output_video_name]
-        subprocess.run(cmd, check=True)
-        # get the video size
-        video_size = os.path.getsize(output_video_name)
-        if not save_video:
-            os.remove(output_video_name)
-        os.remove(tmp_list_file)
-        print('target fps={}, target resolution={}, video size={}'
-              .format(target_frame_rate, self._resolution, video_size))
-        print('finish generating {} and size={}'.format(
-            output_video_name, video_size))
-        return video_size
+    # def encode(self, output_video_name, target_frame_indices=None,
+    #            target_frame_rate=None, save_video=True):
+    #     """Encode the target frames into a video and return video size."""
+    #     print("start generating "+output_video_name)
+    #     tmp_list_file = output_video_name + '_list.txt'
+    #     with open(tmp_list_file, 'w') as f_list:
+    #         for i in target_frame_indices:
+    #             # based on sample rate, decide whether this frame is sampled
+    #             line = 'file \'{}/{:04}.jpg\'\n'.format(self._image_path, i)
+    #             f_list.write(line)
+    #
+    #     # compress the sampled image into a video
+    #     frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+    #
+    #     cmd = ['ffmpeg', '-y', '-loglevel', 'panic', '-r',
+    #            str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+    #            tmp_list_file, '-s', frame_size,
+    #            '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+    #            'yuv420p', '-hide_banner', output_video_name]
+    #     subprocess.run(cmd, check=True)
+    #     # get the video size
+    #     video_size = os.path.getsize(output_video_name)
+    #     if not save_video:
+    #         os.remove(output_video_name)
+    #     os.remove(tmp_list_file)
+    #     print('target fps={}, target resolution={}, video size={}'
+    #           .format(target_frame_rate, self._resolution, video_size))
+    #     print('finish generating {} and size={}'.format(
+    #         output_video_name, video_size))
+    #     return video_size
 
 
 class MOT16Video(Video):
@@ -386,7 +486,7 @@ class MOT16Video(Video):
         config = configparser.ConfigParser()
         seqinfo_path = os.path.join(root, 'seqinfo.ini')
         config.read(seqinfo_path)
-        frame_rate = config['Sequence']['frameRate']
+        frame_rate = int(config['Sequence']['frameRate'])
         if filter_flag:
             dets, dropped_dets = filter_video_detections(
                 dets,
