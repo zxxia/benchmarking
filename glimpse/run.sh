@@ -5,34 +5,42 @@ SHORT_VIDEO_LENGTH=30
 TARGET_F1=0.9
 
 # YouTube Videos
-DATA_PATH=/data/zxxia/videos/
+DATA_PATH=/data/zxxia/videos
 VIDEOS="crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
         driving_downtown traffic highway highway_normal_traffic jp
          motorway nyc park russia1 traffic tw tw1
         tw_under_bridge lane_split russia"
-# VIDEOS="traffic"
+# VIDEOS="highway"
+VIDEOS="motorway highway park"
+
+# for VIDEO in $VIDEOS
+# do
+#     python test_glimpse_frame_select.py \
+#         --video $VIDEO \
+#         --metadata $DATA_PATH$VIDEO/metadata.json \
+#         --output glimpse_e2e_frame_select_results/glimpse_frame_select_${VIDEO}.csv \
+#         --log glimpse_e2e_frame_select_profile/profile_${VIDEO}.csv \
+#         --short_video_length $SHORT_VIDEO_LENGTH \
+#         --profile_length $PROFILE_LENGTH \
+#         --offset $OFFSET \
+#         --trace_path frame_select_traces &
+#         # --target_f1 $TARGET_F1 &
+# done
 
 for VIDEO in $VIDEOS
 do
-    # python glimpse_E2E.py \
-    #     --path $DATA_PATH$VIDEO/ \
-    #     --video $VIDEO \
-    #     --metadata $DATA_PATH$VIDEO/metadata.json \
-    #     --output $OUTPUT_FILE \
-    #     --short_video_length $SHORT_VIDEO_LENGTH \
-    #     --profile_length $PROFILE_LENGTH \
-    #     --offset $OFFSET \
-    #     --target_f1 $TARGET_F1
-    python glimpse_frame_select.py \
-        --path $DATA_PATH$VIDEO/ \
+    # /home/zxxia/cpulimit-master/src/cpulimit -l 100 python glimpse_e2e.py \
+    python glimpse_e2e.py \
         --video $VIDEO \
-        --metadata $DATA_PATH$VIDEO/metadata.json \
-        --output test_traces_results/glimpse_perfect_tracking_${VIDEO}.csv \
-        --log test_traces_profile/profile_${VIDEO}.csv \
+        --metadata $DATA_PATH/$VIDEO/metadata.json \
+        --output /data/zxxia/benchmarking/glimpse/glimpse_e2e_results/glimpse_result_${VIDEO}.csv \
+        --log /data/zxxia/benchmarking/glimpse/glimpse_e2e_results/glimpse_profile_${VIDEO}.csv \
         --short_video_length $SHORT_VIDEO_LENGTH \
         --profile_length $PROFILE_LENGTH \
         --offset $OFFSET \
-        --target_f1 $TARGET_F1 &
+        --trace_path /data/zxxia/benchmarking/glimpse/glimpse_e2e_results \
+        --profile_trace_path /data/zxxia/benchmarking/glimpse/glimpse_e2e_results
+        # --target_f1 $TARGET_F1 &
 done
 
 # DATA_PATH='/data2/zxxia/KITTI/'
