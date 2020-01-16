@@ -1,5 +1,5 @@
 import argparse
-from data_generator import DataGenerator
+from my_utils import DataGenerator
 import numpy as np
 import os
 import keras
@@ -14,7 +14,6 @@ from keras.backend.tensorflow_backend import set_session
 from keras.callbacks import EarlyStopping, ModelCheckpoint, CSVLogger
 from skimage.io import imread
 from skimage.transform import resize
-from identify_dominant_class import dominant_classes
 from keras.applications.vgg16 import VGG16
 from keras.applications.mobilenet_v2 import MobileNetV2, preprocess_input
 from keras.preprocessing import image
@@ -62,7 +61,7 @@ def get_callbacks(csv_logger, model_fname, patience=5):
 
 
 def noscope_model(input_shape, nb_classes, nb_dense=128, nb_filters=32,
-                  nb_layers=1, kernel_size=(3, 3), stride=(1, 1),
+                  nb_layers=3, kernel_size=(3, 3), stride=(1, 1),
                   regression=False):
     assert nb_layers >= 0
     assert nb_layers <= 3
@@ -103,6 +102,7 @@ def noscope_model(input_shape, nb_classes, nb_dense=128, nb_filters=32,
 
     model.compile(loss='categorical_crossentropy',
                   optimizer=keras.optimizers.RMSprop(lr=0.0001),
+                  #optimizer=keras.optimizers.Adam(lr=0.0001),
                   metrics=['accuracy'])
     return model
 
@@ -292,74 +292,74 @@ def load_label_faster_rcnn(label_file, dominate_classes, start=0, end=30001):
     return labels
 
 
-def get_data(dataset, dim):
+# def get_data(dataset, dim):
 
-    path = '/home/zhujun/video_analytics_pipelines/fast/data'
-    label_file = os.path.join(
-        path, dataset+'_label_from_COCO_direct_filtered.csv')
-    # use all the objects that appears in the training dataset
-    _, dominate_classes = dominant_classes(label_file, -1,
-                                           partition['train'][0],
-                                           partition['test'][-1])  # partition['train'][-1]
-    nb_classes = len(dominate_classes)
-    if nb_classes == 1:
-        nb_classes = 2
+#     path = '/home/zhujun/video_analytics_pipelines/fast/data'
+#     label_file = os.path.join(
+#         path, dataset+'_label_from_COCO_direct_filtered.csv')
+#     # use all the objects that appears in the training dataset
+#     _, dominate_classes = dominant_classes(label_file, -1,
+#                                            partition['train'][0],
+#                                            partition['test'][-1])  # partition['train'][-1]
+#     nb_classes = len(dominate_classes)
+#     if nb_classes == 1:
+#         nb_classes = 2
 
-    params = {'dim': dim,
-              'batch_size': 32,
-              'n_classes': nb_classes,
-              'n_channels': 3,
-              'shuffle': True}
-    # Datasets
-    # labels = load_label(dataset, dominate_classes)
-    labels = load_label_faster_rcnn(label_file, dominate_classes,
-                                    partition['train'][0],
-                                    partition['test'][-1])
+#     params = {'dim': dim,
+#               'batch_size': 32,
+#               'n_classes': nb_classes,
+#               'n_channels': 3,
+#               'shuffle': True}
+#     # Datasets
+#     # labels = load_label(dataset, dominate_classes)
+#     labels = load_label_faster_rcnn(label_file, dominate_classes,
+#                                     partition['train'][0],
+#                                     partition['test'][-1])
 
-    # Generators
-    training_generator = DataGenerator(partition['train'],
-                                       labels, dataset, **params)
-    validation_generator = DataGenerator(partition['val'],
-                                         labels, dataset, **params)
-    return nb_classes, training_generator, validation_generator, labels
+#     # Generators
+#     training_generator = DataGenerator(partition['train'],
+#                                        labels, dataset, **params)
+#     validation_generator = DataGenerator(partition['val'],
+#                                          labels, dataset, **params)
+#     return nb_classes, training_generator, validation_generator, labels
 
-# Use data generator
-
-
-def run_model(model, logfile_name, training_generator,
-              validation_generator, patience=5):
-    # Train model on dataset
-    temp_fname = tempfile.mkstemp(suffix='.hdf5', dir='/tmp/')[1]
-    csv_logger = CSVLogger(logfile_name, append=True, separator=';')
-    model.fit_generator(generator=training_generator,
-                        validation_data=validation_generator,
-                        # steps_per_epoch=300,
-                        # validation_steps=50,
-                        epochs=30,
-                        callbacks=get_callbacks(csv_logger,
-                                                temp_fname, patience))
-    model.load_weights(temp_fname)
-    os.remove(temp_fname)
-    return
+# # Use data generator
 
 
-def probas_to_classes(y_pred):
-    if len(y_pred.shape) > 1 and y_pred.shape[1] > 1:
-        return np.argmax(y_pred, axis=1)
-    return np.array([1 if p > 0.5 else 0 for p in y_pred])
+# def run_model(model, logfile_name, training_generator,
+#               validation_generator, patience=5):
+#     # Train model on dataset
+#     temp_fname = tempfile.mkstemp(suffix='.hdf5', dir='/tmp/')[1]
+#     csv_logger = CSVLogger(logfile_name, append=True, separator=';')
+#     model.fit_generator(generator=training_generator,
+#                         validation_data=validation_generator,
+#                         # steps_per_epoch=300,
+#                         # validation_steps=50,
+#                         epochs=30,
+#                         callbacks=get_callbacks(csv_logger,
+#                                                 temp_fname, patience))
+#     model.load_weights(temp_fname)
+#     os.remove(temp_fname)
+#     return
 
 
-def predict_labels(model, X_test_gen, batch_size):
-    begin = time.time()
-    data_len = partition['test'][-1] - partition['test'][0] + 1
-    # Alternate way to compute the classes
-    proba = model.predict_generator(X_test_gen,
-                                    steps=int(data_len / float(batch_size)) +
-                                    (data_len % batch_size > 0),
-                                    verbose=0)
-    predicted_labels = probas_to_classes(proba)
-    end = time.time()
-    return predicted_labels, end - begin
+# def probas_to_classes(y_pred):
+#     if len(y_pred.shape) > 1 and y_pred.shape[1] > 1:
+#         return np.argmax(y_pred, axis=1)
+#     return np.array([1 if p > 0.5 else 0 for p in y_pred])
+
+
+# def predict_labels(model, X_test_gen, batch_size):
+#     begin = time.time()
+#     data_len = partition['test'][-1] - partition['test'][0] + 1
+#     # Alternate way to compute the classes
+#     proba = model.predict_generator(X_test_gen,
+#                                     steps=int(data_len / float(batch_size)) +
+#                                     (data_len % batch_size > 0),
+#                                     verbose=0)
+#     predicted_labels = probas_to_classes(proba)
+#     end = time.time()
+#     return predicted_labels, end - begin
 
 
 def load_test_data(dataset, batch_size, dim, n_channels=3):

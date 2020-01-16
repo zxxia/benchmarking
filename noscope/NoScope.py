@@ -2,7 +2,17 @@
 import csv
 # from collections import defaultdict
 from benchmarking.utils.utils import interpolation
-
+import argparse
+from collections import defaultdict
+import os
+import random
+import tempfile
+import numpy as np
+import tensorflow as tf
+from keras.backend.tensorflow_backend import set_session
+from keras.callbacks import CSVLogger
+from models import get_callbacks, build_model
+from my_utils import DataGenerator
 
 class NoScope():
     """NoScope definition."""
@@ -144,6 +154,110 @@ def load_simple_model_classification(result_file):
 
     return small_model_result
 
+
+
+def train_small_model(dataset, gpu_num, model_save_path, video,
+                      model_arch = 'O1', num_of_epochs=30, batch_size=64):
+    # # config GPU
+    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID" 
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu_num
+    config = tf.ConfigProto()
+    config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    set_session(tf.Session(config=config))
+    # select small model structure
+    if model_arch == 'alexnet' or model_arch == 'O1' or model_arch == 'O2':
+        dim = (227, 227)
+    else:
+        dim = (224, 224)
+
+    # filename is the suffix of label file. Currently, car and truck are
+    # considered as two separate labels.
+    train_gen, val_gen, train_class_weight, train_distribution, all_classes = \
+        build_train_val(dim, dataset, video, batch_size)
+    model = build_model(dim, model_arch, len(all_classes))
+
+
+    # create temp log file
+    logfile_name = 'Test_NS_log.csv'
+    temp_fname = tempfile.mkstemp(suffix='.hdf5', dir='/tmp/')[1]
+    csv_logger = CSVLogger(logfile_name, append=True, separator=';')
+    # start model training
+    model.fit_generator(
+        train_gen,
+        epochs=num_of_epochs,
+        validation_data=val_gen,
+        class_weight=train_class_weight,
+        callbacks=get_callbacks(csv_logger, temp_fname, patience=5))
+
+    # save the trained model
+    model.load_weights(temp_fname)
+    os.remove(temp_fname)
+    model.save(os.path.join(model_save_path, dataset + '.h5'))
+    return
+
+
+def build_train_val(dim, dataset, video, batch_size):
+    """Build train-validatation set."""
+    # load label file, create training, validation data generator
+
+    partition_train = (1, 18001)
+    partition_val = (18001, 22001)
+
+
+
+    train_images = []
+    train_labels = {}
+    val_images = []
+    val_labels = {}
+    train_test = defaultdict(int)
+    val_test = defaultdict(int)
+    all_classes = []
+
+
+    # identify all the classes that appear in the training data,
+    # so later the label
+    # can be mapped to label indices
+    labels = video.get_video_classification_label()
+    all_classes = sorted(list(set([x[0] for x in labels.values()])))
+    print(all_classes)
+
+    # get train images path
+    for img_index in range(partition_train[0], partition_train[1]):
+        label = labels[img_index][0]
+        train_test[label] += 1
+        image_name = video.get_frame_image_name(img_index)
+        train_images.append(image_name)
+        basename = os.path.basename(image_name)
+        train_labels[basename] = all_classes.index(label)
+    print(train_labels)
+    # to address training data imbalance problem, reweight those classes
+    train_class_weight = {}
+    for key, value in train_test.items():
+        train_class_weight[all_classes.index(key)] = 1./value * 100.
+
+    # get val images path
+    for img_index in range(partition_val[0], partition_val[1]):
+        label = labels[img_index][0]
+        assert label in all_classes, print(label)
+        val_test[label] += 1
+        image_name = video.get_frame_image_name(img_index)
+        val_images.append(image_name)
+        basename = os.path.basename(image_name)
+        val_labels[basename] = all_classes.index(label)
+
+    print('Train data', len(train_images))
+    print(train_test)
+    train_distribution = [train_test[key] for key in all_classes]
+    print('Val data', len(val_images))
+    print(val_test)
+    nb_classes = len(all_classes)
+    train_gen = DataGenerator(train_images, train_labels, batch_size, dim,
+                              n_classes=nb_classes, shuffle=True)
+    val_gen = DataGenerator(val_images, val_labels, batch_size, dim,
+                            n_classes=nb_classes, shuffle=False)
+
+    return train_gen, val_gen, train_class_weight, train_distribution, \
+        all_classes
 
 # def load_noscope_perf(perf_file, gt, dataset, short_video_length=30, frame_rate=30, thresh=0.8):
 #     """
