@@ -2,8 +2,6 @@
 DATASET='driving2'
 GPU="1"
 
-
-
 RESOL='720p'
 DATA_PATH='/mnt/data/zhujun/dataset/Youtube/'
 OUTPUT='./'${DATASET}'/data/'
