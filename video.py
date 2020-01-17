@@ -128,28 +128,31 @@ class Video:
     def encode(self, output_video_name, target_frame_indices=None,
                target_frame_rate=None, save_video=True):
         """Encode the target frames into a video and return video size."""
-        print("start generating "+output_video_name)
-        tmp_list_file = output_video_name + '_list.txt'
-        with open(tmp_list_file, 'w') as f_list:
-            for i in target_frame_indices:
-                # based on sample rate, decide whether this frame is sampled
-                line = 'file \'{}\'\n'.format(self.get_frame_image_name(i))
-                f_list.write(line)
+        if os.path.exists(output_video_name):
+            video_size = os.path.getsize(output_video_name)
+        else:
+            print("start generating "+output_video_name)
+            tmp_list_file = output_video_name + '_list.txt'
+            with open(tmp_list_file, 'w') as f_list:
+                for i in target_frame_indices:
+                    # based on sample rate, decide whether this frame is sampled
+                    line = 'file \'{}\'\n'.format(self.get_frame_image_name(i))
+                    f_list.write(line)
 
-        # compress the sampled image into a video
-        frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
+            # compress the sampled image into a video
+            frame_size = str(self._resolution[0]) + 'x' + str(self._resolution[1])
 
-        cmd = ['ffmpeg', '-y',  '-r',
-               str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
-               tmp_list_file, '-s', frame_size,
-               '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
-               'yuv420p', '-hide_banner', output_video_name]
-        subprocess.run(cmd, check=True)
-        # get the video size
-        video_size = os.path.getsize(output_video_name)
-        if not save_video:
-            os.remove(output_video_name)
-        os.remove(tmp_list_file)
+            cmd = ['ffmpeg', '-y',  '-r',
+                str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
+                tmp_list_file, '-s', frame_size,
+                '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+                'yuv420p', '-hide_banner', output_video_name]
+            subprocess.run(cmd, check=True)
+            # get the video size
+            video_size = os.path.getsize(output_video_name)
+            if not save_video:
+                os.remove(output_video_name)
+            os.remove(tmp_list_file)
         print('target fps={}, target resolution={}, video size={}'
               .format(target_frame_rate, self._resolution, video_size))
         print('finish generating {} and size={}'.format(
@@ -239,6 +242,12 @@ class YoutubeVideo(Video):
         img_file = os.path.join(
             self._image_path, '{:06d}.jpg'.format(frame_index))
         return img_file
+
+
+    def get_frame_filesize(self, frame_index):
+        filename = self.get_frame_image_name(frame_index)
+        return os.path.getsize(filename)
+
 
     # def encode(self, output_video_name, target_frame_indices=None,
     #            target_frame_rate=None, save_video=True):
