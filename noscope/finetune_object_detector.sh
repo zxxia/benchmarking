@@ -1,24 +1,24 @@
 
-DATASET='driving2'
-GPU="1"
+DATASET='cropped_crossroad4'
+GPU="0"
 
-RESOL='720p'
+RESOL='360p'
 DATA_PATH='/mnt/data/zhujun/dataset/Youtube/'
-OUTPUT='./'${DATASET}'/data/'
+OUTPUT='/mnt/data/zhujun/dataset/NoScope_finetuned_models/'${DATASET}'/data/'
 
-python create_youtube_tf_record.py \
-     --resol=$RESOL \
-     --data_path=$DATA_PATH \
-     --dataset_name=$DATASET \
-     --output_path=$OUTPUT \
-     --train_range='1,18001' \
-     --val_range='18001,22001' \
+# python finetune_model/create_youtube_tf_record.py \
+#      --resol=$RESOL \
+#      --data_path=$DATA_PATH \
+#      --dataset_name=$DATASET \
+#      --output_path=$OUTPUT \
+#      --train_range='1,18001' \
+#      --val_range='18001,22001' \
 
 
 
 # CODE_PATH="/home/zhujunxiao/zxxia/models/research/object_detection"
 PIPELINE_CONFIG_PATH="./configs/ssd_mobilenet_v2_"${DATASET}".config"
-MODEL_DIR="./"${DATASET}"/trained_models/"
+MODEL_DIR="/mnt/data/zhujun/dataset/NoScope_finetuned_models/"${DATASET}"/trained_models/"
 NUM_TRAIN_STEPS=2000
 SAMPLE_1_OF_N_EVAL_EXAMPLES=1
 
@@ -33,7 +33,7 @@ python ./finetune_model/model_main.py \
 
 INPUT_TYPE=image_tensor
 TRAINED_CKPT_PREFIX=$MODEL_DIR"model.ckpt-"${NUM_TRAIN_STEPS}
-EXPORT_DIR="./"${DATASET}"/frozen_model/"
+EXPORT_DIR="/mnt/data/zhujun/dataset/NoScope_finetuned_models/"${DATASET}"/frozen_model/"
 python ./finetune_model/export_inference_graph.py \
     --input_type=${INPUT_TYPE} \
     --pipeline_config_path=${PIPELINE_CONFIG_PATH} \

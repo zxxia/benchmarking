@@ -19,13 +19,14 @@ class Vigil():
         pass
 
     def evaluate(self, video_name, video, original_video, frame_range,
-                 video_save_path):
+                 original_video_save_path, cropped_video_save_path):
         """Evaluate."""
         tpos = {}
         fpos = {}
         fneg = {}
+        bw = 0
         for i in range(frame_range[0], frame_range[1] + 1):
-
+            bw += video.get_frame_filesize(i)
             # relative uploaded area
             # relative_up_area = 0
             # simple_dt_boxes = mobilenet_dt[img_idx]
@@ -52,13 +53,13 @@ class Vigil():
         fn_total = sum(fneg.values())
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         original_bw = original_video.encode(
-            os.path.join(video_save_path, video_name + '.mp4'),
+            os.path.join(original_video_save_path, video_name + '.mp4'),
             list(range(frame_range[0], frame_range[1] + 1)),
             original_video.frame_rate)
-        bw = video.encode(os.path.join(video_save_path, video_name+'.mp4'),
+        video_bw = video.encode(os.path.join(cropped_video_save_path, video_name+'.mp4'),
                           list(range(frame_range[0], frame_range[1] + 1)),
                           video.frame_rate)
-        return bw/original_bw, f1_score
+        return bw/original_bw, f1_score, video_bw/original_bw
 
 
 def mask_image(img, boxes):

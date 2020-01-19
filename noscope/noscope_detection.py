@@ -21,7 +21,7 @@ VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
           'traffic', 'tw', 'tw1',
           'tw_under_bridge']
 
-VIDEOS = ['crossroad4']
+VIDEOS = ['highway']
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 SHORT_VIDEO_LENGTH = 30
 profile_length = 10
@@ -37,7 +37,7 @@ def main():
         OUTPUT_PATH = os.path.join(
             SMALL_MODEL_PATH, name, 'data'
         )
-        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log.csv')
+        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff.csv')
         f_out = open('Noscope_e2e_result_' + name + '_with_frame_diff.csv', 'w')
         f_out.write('dataset,best_confidence_score_thresh,f1,bandwidth, triggered_frames\n')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
