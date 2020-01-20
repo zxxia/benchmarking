@@ -351,20 +351,12 @@ def read_annot(annot_path):
             dets = np.empty((len(boxes_list), 5))
             for index in range(len(boxes_list)):
                 box_list = boxes_list[index].split(' ')
-                if len(box_list) == 6:
-                    x = int(box_list[0])
-                    y = int(box_list[1])
-                    w = int(box_list[2])
-                    h = int(box_list[3])
-                    t = int(box_list[4])
-                    score = float(box_list[5])
-                else:
-                    x = int(box_list[0])
-                    y = int(box_list[1])
-                    w = int(box_list[2])
-                    h = int(box_list[3])
-                    t = int(box_list[4])
-                    score = 1
+                x = int(box_list[0])
+                y = int(box_list[1])
+                w = int(box_list[2])
+                h = int(box_list[3])
+                t = int(box_list[4])
+                score = float(box_list[5])
 
                 dets[index, 0] = x
                 dets[index, 1] = y
@@ -375,20 +367,12 @@ def read_annot(annot_path):
             keep = nms(dets, 0.4)
             for index in keep:
                 box_list = boxes_list[index].split(' ')
-                if len(box_list) == 6:
-                    x = int(box_list[0])
-                    y = int(box_list[1])
-                    w = int(box_list[2])
-                    h = int(box_list[3])
-                    t = int(box_list[4])
-                    score = float(box_list[5])
-                else:
-                    x = int(box_list[0])
-                    y = int(box_list[1])
-                    w = int(box_list[2])
-                    h = int(box_list[3])
-                    t = int(box_list[4])
-                    score = 1
+                x = int(box_list[0])
+                y = int(box_list[1])
+                w = int(box_list[2])
+                h = int(box_list[3])
+                t = int(box_list[4])
+                score = float(box_list[5])
                 # No filter applied in this stage
                 frame_to_object[frame_id].append([x, y, w, h, t, score])
     return all_filename, frame_to_object

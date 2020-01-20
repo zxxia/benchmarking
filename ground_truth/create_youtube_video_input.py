@@ -1,15 +1,20 @@
 """Create input.record file."""
-import os
 import glob
-import tensorflow as tf
-from object_detection.utils import dataset_util
-from PIL import Image
+import os
 import pdb
+
+import tensorflow as tf
+from PIL import Image
+
+from benchmarking.constants import RESOL_DICT
+from object_detection.utils import dataset_util
 
 flags = tf.app.flags
 flags.DEFINE_string('data_path', '', 'Data path.')
 flags.DEFINE_string('output_path', '', 'Dataset name.')
-flags.DEFINE_string('dataset', None, 'dataset name.')
+flags.DEFINE_string('extension', 'jpg', 'image file type extension.')
+flags.DEFINE_string('resol', '', 'target resolution')
+
 
 FLAGS = flags.FLAGS
 
@@ -44,7 +49,7 @@ def create_tf_example(image, image_dir, include_masks=False):
 
 def main(_):
     """Do the input record file generation."""
-    required_flags = ['data_path', 'output_path', 'dataset']
+    required_flags = ['data_path', 'output_path', 'extension']
 
     for flag_name in required_flags:
         if not getattr(FLAGS, flag_name):
@@ -58,21 +63,15 @@ def main(_):
 
     writer = tf.io.TFRecordWriter(output_file)
 
-    if FLAGS.dataset == 'kitti':  # is not None:
-        img_name_template = '*.png'
-        # image['filename'] = '{0:010d}.png'.format(index)
-    elif FLAGS.dataset == 'waymo':
-        img_name_template = '*.jpg'
-        # image['filename'] = '{0:04d}.jpg'.format(index)
-    else:
-        img_name_template = '*.jpg'
-        # image['filename'] = '{0:06d}.jpg'.format(index)
-    img_paths = sorted(glob.glob(os.path.join(data_path, img_name_template)))
+    img_paths = sorted(glob.glob(os.path.join(data_path, '*'+FLAGS.extension)))
     print(img_paths)
 
     for img_path in img_paths:
         image = {}
         img = Image.open(img_path)
+        if FLAGS.resol != '':
+            img = img.resize(RESOL_DICT[FLAGS.resol])
+            # print(img.size)
         image['filename'] = os.path.basename(img_path)
         image['width'] = img.size[0]
         image['height'] = img.size[1]
