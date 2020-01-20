@@ -3,6 +3,8 @@ import argparse
 import csv
 import pdb
 import os
+import sys
+sys.path.append('../../')
 from benchmarking.video import YoutubeVideo
 from benchmarking.vigil.Vigil import Vigil, mask_video_ffmpeg
 # mask_video,
@@ -11,8 +13,8 @@ PATH = '/data/zxxia/videos/'
 
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 
-DT_ROOT = '/data/zxxia/benchmarking/results/videos'
-DATA_ROOT = '/data/zxxia/videos'
+DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
+DATA_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 
 
 def parse_args():
@@ -40,7 +42,7 @@ def main():
     """Vigil end-to-end."""
     args = parse_args()
     dt_file = os.path.join(DT_ROOT, args.video, '720p', 'profile',
-                           'updated_gt_Inception_COCO_no_filter.csv')
+                           'updated_gt_mobilenet_COCO_no_filter.csv')
     img_path = os.path.join(DATA_ROOT, args.video, '720p')
     output_path = os.path.join(args.save_path, args.video)
     if not os.path.exists(output_path):

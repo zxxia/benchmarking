@@ -14,19 +14,20 @@ from benchmarking.video import YoutubeVideo
 THRESH_LIST = np.arange(0.3, 1.1, 0.1)
 MSE_list = [0, 50, 100, 200]
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
-VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
-          'driving1', 'driving_downtown', 'highway',
-          'nyc', 'jp',  'lane_split',  'driving2',
-          'motorway', 'park', 'russia', 'russia1', 
-          'traffic', 'tw', 'tw1',
-          'tw_under_bridge']
+# VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
+#           'driving1', 'driving_downtown', 'highway',
+#           'nyc', 'jp',  'lane_split',  'driving2',
+#           'motorway', 'park', 'russia', 'russia1', 
+#           'traffic', 'tw', 'tw1',
+#           'tw_under_bridge']
 
-VIDEOS = ['highway']
+# VIDEOS = ['crossroad', 'crossroad3', 'drift', 'driving_downtown', 'jp', 'nyc', 'park', 'tw1']
+VIDEOS = ['crossroad2_night']
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 SHORT_VIDEO_LENGTH = 30
 profile_length = 10
 SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
-
+PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/original_profile_videos/'
 def main():
     """NoScope."""
     for name in VIDEOS:
@@ -72,7 +73,8 @@ def main():
                 clip, profile_start, profile_end))
             best_mse_thresh, best_thresh, best_relative_bw = \
                 pipeline.profile(clip, original_video, new_mobilenet_video,
-                                 [profile_start, profile_end])
+                                 [profile_start, profile_end],
+                                 profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
 
             print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
                   .format(clip, best_mse_thresh, best_thresh, best_relative_bw))

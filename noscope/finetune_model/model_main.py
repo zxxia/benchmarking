@@ -64,6 +64,8 @@ def main(unused_argv):
   os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
   flags.mark_flag_as_required('model_dir')
   flags.mark_flag_as_required('pipeline_config_path')
+  if not os.path.exists(FLAGS.model_dir):
+    os.makedirs(FLAGS.model_dir)
   config = tf.estimator.RunConfig(model_dir=FLAGS.model_dir)
 
   train_and_eval_dict = model_lib.create_estimator_and_inputs(

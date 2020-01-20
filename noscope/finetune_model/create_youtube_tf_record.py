@@ -50,24 +50,6 @@ from benchmarking.video import YoutubeVideo
 from benchmarking.constants import load_COCOlabelmap
 
 flags = tf.app.flags
-# tf.flags.DEFINE_boolean('include_masks', False,
-#                         'Whether to include instance segmentations masks '
-#                         '(PNG encoded) in the result. default: False.')
-# tf.flags.DEFINE_string('train_image_dir', '',
-#                        'Training image directory.')
-# tf.flags.DEFINE_string('val_image_dir', '',
-#                        'Validation image directory.')
-# tf.flags.DEFINE_string('test_image_dir', '',
-#                        'Test image directory.')
-# tf.flags.DEFINE_string('train_annotations_file', '',
-#                        'Training annotations JSON file.')
-# tf.flags.DEFINE_string('val_annotations_file', '',
-#                        'Validation annotations JSON file.')
-# tf.flags.DEFINE_string('testdev_annotations_file', '',
-#                        'Test-dev annotations JSON file.')
-# tf.flags.DEFINE_string('output_dir', '/tmp/', 'Output data directory.')
-
-
 
 flags.DEFINE_string('resol', '720p',
                     'Image resolution after resizing.')
@@ -273,7 +255,7 @@ def main(_):
           raise ValueError('Flag --{} is required'.format(flag_name))
   
   if not os.path.exists(FLAGS.output_path):
-      os.mkdir(FLAGS.output_path)
+      os.makedirs(FLAGS.output_path)
 
   train_output_path = os.path.join(FLAGS.output_path, FLAGS.dataset_name + '_train.record')
   val_output_path = os.path.join(FLAGS.output_path, FLAGS.dataset_name + '_val.record')

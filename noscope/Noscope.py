@@ -24,14 +24,14 @@ class NoScope():
         self.profile_writer.writerow(
             ["video_name","mse_thresh", "confidence_score_thresh", "f1", "triggered_frame", "tp", "fp", "fn"])
 
-    def profile(self, video_name, original_video, small_model_video, frame_range):
+    def profile(self, video_name, original_video, small_model_video, frame_range, profile_video_savepath):
         """Profile the first part of this video to get the confidence score threhold 
             for target f1.
 
         Return a list of config that satisfys the requirements.
         """
         original_bw = original_video.encode(
-            video_name+'.mp4', 
+            os.path.join(profile_video_savepath, video_name+'.mp4'), 
             list(range(frame_range[0], frame_range[1])),
             original_video.frame_rate, save_video=True)
         f1_dict = {}
