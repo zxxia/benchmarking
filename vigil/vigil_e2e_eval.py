@@ -15,7 +15,7 @@ OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 New_DT_ROOT = '/mnt/data/zhujun/dataset/Inference_results/videos'
-Vigil_DATA_ROOT = '/mnt/data/zhujun/dataset/Vigil_result/blackbg/'
+Vigil_DATA_ROOT = '/mnt/data/zhujun/dataset/Vigil_result/'
 
 SHORT_VIDEO_LENGTH = 30
 
@@ -27,9 +27,9 @@ SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
 def main():
     """Vigil end-to-end."""
 # 'crossroad', 'crossroad2', 'crossroad3', 'drift', 'driving_downtown', 'lane_split',
-                   # 'jp', 'motorway', 'nyc', 'park',  'russia1','russia',
-    DATASET_LIST = [ 'traffic', 'tw1', 'tw_road', 'tw_under_bridge']
-
+                   # 'jp', 'motorway', 'nyc', 'park',  'russia1','russia'
+    # DATASET_LIST = [ 'traffic', 'tw1', 'tw_road', 'tw_under_bridge']
+    DATASET_LIST = ['crossroad2_night']
     output_path = './results/'
     # load pipeline
     for name in DATASET_LIST:
@@ -48,16 +48,16 @@ def main():
 
 
 
-        dt_file = os.path.join(Vigil_DATA_ROOT, name, 'profile',
+        dt_file = os.path.join(Vigil_DATA_ROOT, name, '720p', 'profile',
                             'updated_gt_FasterRCNN_COCO_no_filter.csv')
-        img_path = os.path.join(Vigil_DATA_ROOT, name)
+        img_path = os.path.join(Vigil_DATA_ROOT, name, '720p')
         cropped_video = YoutubeVideo(name, '720p', metadata_file, dt_file, img_path)
         # Load haar detection results
         # haar_dt_file = 'haar_detections_new/haar_{}.csv'.format(dataset)
         # haar_dets = load_haar_detection(haar_dt_file)
         # haar_dets = filter_haar_detection(haar_dets, height_range=(720//20, 720))
 
-        nb_short_videos = (original_video.frame_count - 1)//(SHORT_VIDEO_LENGTH *
+        nb_short_videos = original_video.frame_count//(SHORT_VIDEO_LENGTH *
                                                     original_video.frame_rate)
         # profile_frame_cnt = profile_length * original_video.frame_rate
         # do the video bandwidth computation

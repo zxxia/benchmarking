@@ -15,7 +15,7 @@ import numpy as np
 class NoScope():
     """NoScope Pipeline."""
 
-    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.9):
+    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.75):
         """Load the configs."""
         self.target_f1 = target_f1
         self.confidence_score_list = confidence_score_list
@@ -108,8 +108,11 @@ def eval_images(image_range, selected_frames, original_video, video, thresh=0.8)
             else:
                 pipeline_dets[idx] = copy.deepcopy(current_dt)
         else:
-            pipeline_dets[idx] = copy.deepcopy(current_dt)
-
+            # if no object does not trigger full model
+            # pipeline_dets[idx] = copy.deepcopy(current_dt)
+            # if no object will trigger full model
+            pipeline_dets[idx] = copy.deepcopy(current_gt)
+            trigger_frame_list.append(idx)
 
     for idx in range(image_range[0], image_range[1] + 1):
         if idx not in dets or idx not in gtruth:

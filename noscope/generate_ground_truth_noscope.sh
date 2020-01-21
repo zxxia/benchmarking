@@ -1,13 +1,13 @@
-TRAIN_DATASET='crossroad2'
-DATASET='crossroad2_night'
-GPU="0"
+TRAIN_DATASET='crossroad2_night'
+DATASET='crossroad2'
+GPU="1"
 
 RESOL='720p'
 DATA_PATH='/mnt/data/zhujun/dataset/Youtube/'
 OUTPUT='/mnt/data/zhujun/dataset/NoScope_finetuned_models/'${DATASET}'/data/'
 MODEL_DIR="/mnt/data/zhujun/dataset/NoScope_finetuned_models/"${TRAIN_DATASET}"/frozen_model/"
 
-MODEL='mobilenetFinetuned_by_datatimedata'
+MODEL='mobilenetFinetuned_by_nighttimedata'
 
 # python ${CODE_PATH}/dataset_tools/create_youtube_video_input.py \
 #    --metadata_file=${DATA_PATH}${DATASET}/metadata.json \

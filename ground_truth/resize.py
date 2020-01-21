@@ -4,7 +4,6 @@ import os
 from benchmarking.constants import RESOL_DICT
 import subprocess
 
-
 def resize_video(video_in, video_out, target_size, target_qp=23):
     """Resize the video_in to video_out with target size."""
     cmd = ["ffmpeg", "-y", "-i", video_in, "-hide_banner", "-vf",
@@ -18,6 +17,8 @@ def resize_video(video_in, video_out, target_size, target_qp=23):
 
 def extract_frames(video, output_path):
     """Extract frames from videos."""
+    if not os.path.exists(output_path):
+        os.mkdir(output_path)
     output_img_name = os.path.join(output_path, "%06d.jpg")
     cmd = ["ffmpeg", "-y", "-i", video, output_img_name, "-qscale:v", "2.0",
            "-hide_banner"]

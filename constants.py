@@ -41,6 +41,14 @@ MODEL_COST = {'mobilenet': 31,
               'FasterRCNN50': 89,
               'FasterRCNN': 106}
 
+babygroot_DT_ROOT = '/mnt/data/zhujun/dataset/Youtube/'
+babygroot_model_path = '/home/zhujunxiao/video_analytics_pipelines/models/research/object_detection_old/'
+MODEL_PATH = {'FasterRCNN': 'faster_rcnn_resnet101_coco_2018_01_28',
+              'FasterRCNN50': 'faster_rcnn_resnet50_coco_2018_01_28',
+              'Inception': 'faster_rcnn_inception_v2_coco_2018_01_28',
+              'mobilenet': 'ssd_mobilenet_v2_coco_2018_03_29'
+}
+
 
 def load_COCOlabelmap(label_map_path):
     COCO_Labelmap = {}
