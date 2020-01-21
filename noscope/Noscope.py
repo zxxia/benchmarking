@@ -15,7 +15,7 @@ import numpy as np
 class NoScope():
     """NoScope Pipeline."""
 
-    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.9):
+    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.75):
         """Load the configs."""
         self.target_f1 = target_f1
         self.confidence_score_list = confidence_score_list
@@ -24,14 +24,14 @@ class NoScope():
         self.profile_writer.writerow(
             ["video_name","mse_thresh", "confidence_score_thresh", "f1", "triggered_frame", "tp", "fp", "fn"])
 
-    def profile(self, video_name, original_video, small_model_video, frame_range):
+    def profile(self, video_name, original_video, small_model_video, frame_range, profile_video_savepath):
         """Profile the first part of this video to get the confidence score threhold 
             for target f1.
 
         Return a list of config that satisfys the requirements.
         """
         original_bw = original_video.encode(
-            video_name+'.mp4', 
+            os.path.join(profile_video_savepath, video_name+'.mp4'), 
             list(range(frame_range[0], frame_range[1])),
             original_video.frame_rate, save_video=True)
         f1_dict = {}
@@ -108,8 +108,11 @@ def eval_images(image_range, selected_frames, original_video, video, thresh=0.8)
             else:
                 pipeline_dets[idx] = copy.deepcopy(current_dt)
         else:
-            pipeline_dets[idx] = copy.deepcopy(current_dt)
-
+            # if no object does not trigger full model
+            # pipeline_dets[idx] = copy.deepcopy(current_dt)
+            # if no object will trigger full model
+            pipeline_dets[idx] = copy.deepcopy(current_gt)
+            trigger_frame_list.append(idx)
 
     for idx in range(image_range[0], image_range[1] + 1):
         if idx not in dets or idx not in gtruth:

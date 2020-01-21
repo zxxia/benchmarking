@@ -1,4 +1,4 @@
-"""NoScope Overfitting Script."""
+"""NoScope Motivation Script."""
 import argparse
 import csv
 import pdb
@@ -12,21 +12,22 @@ from benchmarking.noscope.Noscope import NoScope
 from benchmarking.video import YoutubeVideo
 
 THRESH_LIST = np.arange(0.3, 1.1, 0.1)
-MSE_list = [0, 50, 100, 200]
+MSE_list = [0, 50, 100]
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
-VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
-          'driving1', 'driving_downtown', 'highway',
-          'nyc', 'jp',  'lane_split',  'driving2',
-          'motorway', 'park', 'russia', 'russia1', 
-          'traffic', 'tw', 'tw1',
-          'tw_under_bridge']
+# VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
+#           'driving1', 'driving_downtown', 'highway',
+#           'nyc', 'jp',  'lane_split',  'driving2',
+#           'motorway', 'park', 'russia', 'russia1', 
+#           'traffic', 'tw', 'tw1',
+#           'tw_under_bridge']
 
-VIDEOS = ['highway']
+# VIDEOS = ['crossroad', 'crossroad3', 'drift', 'driving_downtown', 'jp', 'nyc', 'park', 'tw1']
+VIDEOS = ['driving2']
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 SHORT_VIDEO_LENGTH = 30
 profile_length = 10
 SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
-
+PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/original_profile_videos/'
 def main():
     """NoScope."""
     for name in VIDEOS:
@@ -37,8 +38,8 @@ def main():
         OUTPUT_PATH = os.path.join(
             SMALL_MODEL_PATH, name, 'data'
         )
-        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff.csv')
-        f_out = open('Noscope_e2e_result_' + name + '_with_frame_diff.csv', 'w')
+        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff_0.8.csv')
+        f_out = open('Noscope_e2e_result_' + name + '_with_frame_diff_0.8.csv', 'w')
         f_out.write('dataset,best_confidence_score_thresh,f1,bandwidth, triggered_frames\n')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
         img_path = os.path.join(DT_ROOT, name, resol)
@@ -72,7 +73,8 @@ def main():
                 clip, profile_start, profile_end))
             best_mse_thresh, best_thresh, best_relative_bw = \
                 pipeline.profile(clip, original_video, new_mobilenet_video,
-                                 [profile_start, profile_end])
+                                 [profile_start, profile_end],
+                                 profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
 
             print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
                   .format(clip, best_mse_thresh, best_thresh, best_relative_bw))
