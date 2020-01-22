@@ -10,12 +10,13 @@ sys.path.append('../../')
 from benchmarking.utils.model_utils import eval_single_image
 from benchmarking.utils.utils import interpolation, compute_f1
 import numpy as np
+from benchmarking.constants import MODEL_COST
 
 
 class NoScope():
     """NoScope Pipeline."""
 
-    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.75):
+    def __init__(self, confidence_score_list, mse_thresh_list, profile_log, target_f1=0.9):
         """Load the configs."""
         self.target_f1 = target_f1
         self.confidence_score_list = confidence_score_list
@@ -24,7 +25,8 @@ class NoScope():
         self.profile_writer.writerow(
             ["video_name","mse_thresh", "confidence_score_thresh", "f1", "triggered_frame", "tp", "fp", "fn"])
 
-    def profile(self, video_name, original_video, small_model_video, frame_range, profile_video_savepath):
+    def profile(self, video_name, original_video, small_model_video, 
+                frame_range, profile_video_savepath, cost='gpu'):
         """Profile the first part of this video to get the confidence score threhold 
             for target f1.
 
@@ -36,6 +38,7 @@ class NoScope():
             original_video.frame_rate, save_video=True)
         f1_dict = {}
         bw_dict = {}
+        gpu_dict = {}
         if self.mse_thresh_list == []:
             self.mse_thresh_list = [0] # largest possible MSE, i.e., no frame difference detector
         
@@ -55,11 +58,22 @@ class NoScope():
                 f1_dict[(mse_thresh, thresh)] = f1_score
                 # compute corresponding bw based on triggered frames
                 bw = compute_bw(original_video, trigger_frame_list)
+                abs_gpu = len(selected_frames) * MODEL_COST['mobilenet'] + len(trigger_frame_list) * MODEL_COST['FasterRCNN']
+                gpu_dict[(mse_thresh, thresh)] = abs_gpu / ((frame_range[1] + 1 - frame_range[0]) * MODEL_COST['FasterRCNN'])
                 bw_dict[(mse_thresh, thresh)] = bw
                 print('profile on {} {}, mse thresh={}, confidence score thresh={}, trigged frame cn={}, f1={}, bw={}'
                         .format(video_name, frame_range, mse_thresh, thresh, len(trigger_frame_list),
                                 f1_score, bw))
-        best_mse_thresh, best_thresh = find_best_thresh(f1_dict, bw_dict, self.target_f1)
+
+        if cost == 'bw':
+            # cost is bandwidth
+            cost_dict = bw_dict
+        else: 
+            # cost is gpu
+            cost_dict = gpu_dict
+
+
+        best_mse_thresh, best_thresh = find_best_thresh(f1_dict, cost_dict, self.target_f1)
         if (best_mse_thresh, best_thresh) in bw_dict:
             best_bw = bw_dict[(best_mse_thresh, best_thresh)]
         else:
@@ -81,7 +95,10 @@ class NoScope():
                 frame_range, selected_frames, original_video, small_model_video, best_thresh)
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         bw = compute_bw(original_video, trigger_frame_list)
-        return f1_score, bw / original_bw, trigger_frame_list
+
+        gpu = len(selected_frames) * MODEL_COST['mobilenet'] + len(trigger_frame_list) * MODEL_COST['FasterRCNN']
+        relative_gpu = gpu / ((frame_range[1] + 1 - frame_range[0]) * MODEL_COST['FasterRCNN'])
+        return f1_score, bw / original_bw, relative_gpu, selected_frames, trigger_frame_list
 
 
 
@@ -137,16 +154,16 @@ def compute_bw(original_video, trigger_frame_list):
         bw += original_video.get_frame_filesize(triggered_frame_idx)
     return bw
 
-def find_best_thresh(f1_dict, bw_dict, target_f1):
+def find_best_thresh(f1_dict, cost_dict, target_f1):
     if max(f1_dict.values()) < target_f1:
         best_config =  (0, 1) 
     else: 
         best_config = None
-        min_bw = max(bw_dict.values()) + 1
+        min_cost = max(cost_dict.values()) + 1
         for key in sorted(f1_dict):
-            if f1_dict[key] >= target_f1 and bw_dict[key] < min_bw:
+            if f1_dict[key] >= target_f1 and cost_dict[key] < min_cost:
                 best_config = key
-                min_bw = bw_dict[key]
+                min_cost = cost_dict[key]
 
         # index = next(x[0] for x in enumerate(f1_list)
         #                     if x[1] >= target_f1)
