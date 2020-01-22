@@ -15,7 +15,7 @@ from benchmarking.noscope.Noscope import NoScope
 from benchmarking.video import YoutubeVideo
 
 THRESH_LIST = np.arange(0.3, 1.1, 0.1)
-MSE_list = [0, 25, 50, 75, 100]
+MSE_list = [0]
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 # VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
 #           'driving1', 'driving_downtown', 'highway',
@@ -34,7 +34,7 @@ SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
 PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/original_profile_videos/'
 def main():
     """NoScope."""
-    f_out = open('Noscope_e2e_result_with_frame_diff_allvideo_profile_once_0.75.csv', 'w')
+    f_out = open('Noscope_e2e_result_allvideo_profile_once_0.75.csv', 'w')
     f_out.write('dataset, best_frame_diff, best_confidence_score_thresh,f1,bandwidth, triggered_frames\n')
     for name in VIDEOS:
         if "cropped" in name:
@@ -44,7 +44,7 @@ def main():
         OUTPUT_PATH = os.path.join(
             SMALL_MODEL_PATH, name, 'data'
         )
-        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff_profile_once_0.75.csv')
+        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_profile_once_0.75.csv')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
         img_path = os.path.join(DT_ROOT, name, resol)
         dt_file = os.path.join(

@@ -9,14 +9,7 @@ from PIL import Image
 from benchmarking.constants import RESOL_DICT
 from object_detection.utils import dataset_util
 
-flags = tf.app.flags
-flags.DEFINE_string('data_path', '', 'Data path.')
-flags.DEFINE_string('output_path', '', 'Dataset name.')
-flags.DEFINE_string('extension', 'jpg', 'image file type extension.')
-flags.DEFINE_string('resol', '', 'target resolution')
 
-
-FLAGS = flags.FLAGS
 
 
 def create_tf_example(image, image_dir, include_masks=False):
@@ -47,31 +40,19 @@ def create_tf_example(image, image_dir, include_masks=False):
     return tf_example
 
 
-def main(_):
-    """Do the input record file generation."""
-    required_flags = ['data_path', 'output_path', 'extension']
-
-    for flag_name in required_flags:
-        if not getattr(FLAGS, flag_name):
-            raise ValueError('Flag --{} is required'.format(flag_name))
-    data_path = FLAGS.data_path
-    output_path = FLAGS.output_path
-    output_file = os.path.join(output_path, 'input.record')
-
+def create_tensorflow_inputrecord(data_path, output_path, resol, extension='jpg'):
     if not os.path.exists(output_path):
         os.mkdir(output_path)
-
+    output_file = os.path.join(output_path, 'input.record')
     writer = tf.io.TFRecordWriter(output_file)
-
-    img_paths = sorted(glob.glob(os.path.join(data_path, '*'+FLAGS.extension)))
-    print(img_paths)
+    img_paths = sorted(glob.glob(os.path.join(data_path, '*'+ extension)))
 
     for img_path in img_paths:
         image = {}
         img = Image.open(img_path)
-        if FLAGS.resol != '':
-            img = img.resize(RESOL_DICT[FLAGS.resol])
-            # print(img.size)
+        if resol != '':
+            img = img.resize(RESOL_DICT[resol])
+
         image['filename'] = os.path.basename(img_path)
         image['width'] = img.size[0]
         image['height'] = img.size[1]
@@ -79,6 +60,28 @@ def main(_):
         tf_example = create_tf_example(image, data_path)
         writer.write(tf_example.SerializeToString())
     writer.close()
+    return
+
+def main(_):
+    flags = tf.app.flags
+    flags.DEFINE_string('data_path', '', 'Data path.')
+    flags.DEFINE_string('output_path', '', 'Dataset name.')
+    flags.DEFINE_string('extension', 'jpg', 'image file type extension.')
+    flags.DEFINE_string('resol', '', 'target resolution')
+
+
+    FLAGS = flags.FLAGS
+    """Do the input record file generation."""
+    required_flags = ['data_path', 'output_path', 'extension']
+    for flag_name in required_flags:
+        if not getattr(FLAGS, flag_name):
+            raise ValueError('Flag --{} is required'.format(flag_name))
+    data_path = FLAGS.data_path
+    output_path = FLAGS.output_path
+    extension = FLAGS.extension
+    resol = FLAGS.resol
+    create_tensorflow_inputrecord(data_path, output_path, resol, extension)
+    return
 
 
 if __name__ == '__main__':

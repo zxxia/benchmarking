@@ -137,7 +137,7 @@ def infer_detections_and_add_to_example(gt_f,
          detected_labels_tensor, image_filename_tensor, height, width])
     detected_boxes = detected_boxes.T
     t_elapsed = time.time() - start_t
-    print('time(s) used:', t_elapsed)
+    # print('time(s) used:', t_elapsed)
 
     tf_example.ParseFromString(serialized_example)
     feature = tf_example.features.feature
