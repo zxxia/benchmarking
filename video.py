@@ -348,6 +348,8 @@ class KittiVideo(Video):
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
+                score_range=(0.3, 1.0),
+                width_range=(resolution[0] // 20, resolution[0]/2),
                 height_range=(resolution[1] // 20, resolution[1]))
             self._dropped_detections = dropped_dets
             if merge_label_flag:
@@ -375,6 +377,11 @@ class KittiVideo(Video):
             self._image_path, '{:010d}.png'.format(frame_index))
         return img_file
 
+
+
+    def get_frame_filesize(self, frame_index):
+        filename = self.get_frame_image_name(frame_index)
+        return os.path.getsize(filename)
     # def encode(self, output_video_name, target_frame_indices=None,
     #            target_frame_rate=None, save_video=True):
     #     """Encode the target frames into a video and return video size."""
@@ -422,6 +429,8 @@ class WaymoVideo(Video):
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
+                score_range=(0.3, 1.0),
+                width_range=(resolution[0] // 20, resolution[0]/2),
                 height_range=(resolution[1] // 20, resolution[1]))
             # self._dropped_detections = dropped_dets
             if merge_label_flag:
@@ -503,6 +512,8 @@ class MOT16Video(Video):
                 target_types={COCOLabels.CAR.value,
                               COCOLabels.BUS.value,
                               COCOLabels.TRUCK.value},
+                score_range=(0.3, 1.0),
+                width_range=(resolution[0] // 20, resolution[0]/2),
                 height_range=(resolution[1] // 20, resolution[1]))
             self._dropped_detections = dropped_dets
             if merge_label_flag:

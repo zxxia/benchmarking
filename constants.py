@@ -15,13 +15,19 @@ RESOL_DICT = {'180p': (320, 180),
 
 CAMERA_TYPES = {
     'static': ['crossroad', 'crossroad2', 'crossroad3',
-               'crossroad4', 'drift', 'highway', 'highway_normal_traffic',
-               'jp', 'jp_hw', 'motorway', 'nyc', 'russia',
+               'crossroad4', 'crossroad5',
+               'crossroad5_night', 'crossroad6', 'crossroad7',
+                'drift', 'highway', 'highway1', 'highway_normal_traffic',
+                'highway_no_traffic',
+                'jp', 'jp_hw', 'motorway', 'russia',
                'russia1', 'traffic', 'tw', 'tw1', 'tw_road',
                'tw_under_bridge', 't_crossroad', 'canada_crossroad',
-               'cropped_crossroad4', 'cropped_crossroad4_2', 'cropped_crossroad5', 'crossroad2_night'],
-    'moving': ['driving1', 'driving2', 'driving_downtown', 'park',
-               'lane_split', 'road_trip', 'cropped_driving2']
+               'cropped_crossroad4', 'cropped_crossroad4_2', 'cropped_crossroad4_3',  'cropped_crossroad3',
+               'cropped_crossroad5', 'cropped_crossroad5_night',
+                'crossroad2_night'],
+    'moving': ['driving1', 'driving2', 'driving_downtown', 'park', 'motor', 'nyc',
+                'reckless_driving', 'street_racing',
+               'lane_split', 'road_trip', 'cropped_driving1', 'cropped_driving2']
 }
 
 
@@ -36,6 +42,7 @@ class COCOLabels(Enum):
 
 MODEL_COST = {'mobilenet': 31,
               'inception': 58,
+              'Inception': 58,
               'resnet50': 89,
               'Resnet50': 89,
               'FasterRCNN50': 89,

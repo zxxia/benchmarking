@@ -10,15 +10,16 @@ from benchmarking.video import YoutubeVideo
 from benchmarking.utils.model_utils import load_full_model_detection
 from scipy import stats
 
-VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4','drift',
-          'driving1', 'driving_downtown', 'highway',
-          'nyc', 'jp',  'lane_split',  'driving2',
-          'motorway', 'park', 'russia', 'russia1', 
-          'traffic', 'tw', 'tw1',
-          'tw_under_bridge']
+# VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4','drift',
+#           'driving1', 'driving_downtown', 'highway',
+#           'nyc', 'jp',  'lane_split',  'driving2',
+#           'motorway', 'park', 'russia', 'russia1', 
+#           'traffic', 'tw', 'tw1',
+#           'tw_under_bridge']
 
-# DT_ROOT = '/data/zxxia/benchmarking/results/videos'
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
+VIDEOS = [x for x in os.listdir(DT_ROOT) if os.path.isdir(os.path.join(DT_ROOT, x))]
+
 SHORT_VIDEO_LENGTH = 30
 
 def feature_gen(data):
@@ -58,11 +59,15 @@ with open('video_features_{}s/allvideo_features_long_add_width_20_filter.csv'.fo
         'percent_of_frame_w_object, percent_of_frame_w_new_object, nb_distinct_classes\n')
     for name in VIDEOS:
         print(name)
+        if 'cropped' in name:
+            resol = '360p'
+        else:
+            resol = '720p'
         dt_file = os.path.join(
-            DT_ROOT, name, '720p',
+            DT_ROOT, name, resol,
             'profile/updated_gt_FasterRCNN_COCO_no_filter.csv')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
-        video = YoutubeVideo(name, '720p', metadata_file, dt_file, None)
+        video = YoutubeVideo(name, resol, metadata_file, dt_file, None)
         # load full model's detection results as ground truth
         gt = video.get_video_detection()
         velocity = compute_velocity(gt, video.start_frame_index,
