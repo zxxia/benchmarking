@@ -1,7 +1,6 @@
 from collections import defaultdict
 import numpy as np
 from benchmarking.utils.utils import IoU
-from benchmarking.constants import load_COCOlabelmap
 
 
 def nonnegative(num):

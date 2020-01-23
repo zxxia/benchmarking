@@ -1,6 +1,4 @@
-"""NoScope Motivation Script. Difference with noscope_detection.py: 
-only profile on the first segment, and use the best config 
-for the rest of the segments"""
+"""NoScope Motivation Script. """
 
 import argparse
 import csv
@@ -10,7 +8,6 @@ import os
 import copy
 import numpy as np
 from collections import defaultdict
-sys.path.append('../../')
 from benchmarking.noscope.Noscope import NoScope
 from benchmarking.video import YoutubeVideo
 
@@ -34,7 +31,7 @@ SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
 PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/original_profile_videos/'
 def main():
     """NoScope."""
-    f_out = open('Noscope_e2e_result_with_frame_diff_allvideo_profile_once_w_gpu_cost_min_gpu.csv', 'w')
+    f_out = open('./results/Noscope_e2e_result.csv', 'w')
     f_out.write('dataset, best_frame_diff, best_confidence_score_thresh,f1,bandwidth, gpu, selected_frames, triggered_frames\n')
     for name in VIDEOS:
         if "cropped" in name:
@@ -44,7 +41,7 @@ def main():
         OUTPUT_PATH = os.path.join(
             SMALL_MODEL_PATH, name, 'data'
         )
-        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff_profile_once_w_gpu_cost_min_gpu.csv')
+        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log.csv')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
         img_path = os.path.join(DT_ROOT, name, resol)
         dt_file = os.path.join(
@@ -73,29 +70,29 @@ def main():
             SHORT_VIDEO_LENGTH*original_video.frame_rate)
 
 
-        # profile on first segment 
-        i = 0
-        clip = name + '_' + str(i)
-        start_frame = i*SHORT_VIDEO_LENGTH * \
-            original_video.frame_rate+1+OFFSET*original_video.frame_rate
-        end_frame = (i+1)*SHORT_VIDEO_LENGTH * \
-            original_video.frame_rate+OFFSET*original_video.frame_rate
-        print('{} start={} end={}'.format(clip, start_frame, end_frame))
+        # # profile on first segment 
+        # i = 0
+        # clip = name + '_' + str(i)
+        # start_frame = i*SHORT_VIDEO_LENGTH * \
+        #     original_video.frame_rate+1+OFFSET*original_video.frame_rate
+        # end_frame = (i+1)*SHORT_VIDEO_LENGTH * \
+        #     original_video.frame_rate+OFFSET*original_video.frame_rate
+        # print('{} start={} end={}'.format(clip, start_frame, end_frame))
 
-        # use profile_length video for profiling
-        profile_start = start_frame
-        profile_end = start_frame + original_video.frame_rate * \
-            profile_length - 1
+        # # use profile_length video for profiling
+        # profile_start = start_frame
+        # profile_end = start_frame + original_video.frame_rate * \
+        #     profile_length - 1
 
-        print('profile {} start={} end={}'.format(
-            clip, profile_start, profile_end))
-        best_mse_thresh, best_thresh, best_relative_bw = \
-            pipeline.profile(clip, original_video, new_mobilenet_video,
-                                [profile_start, profile_end],
-                                profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
+        # print('profile {} start={} end={}'.format(
+        #     clip, profile_start, profile_end))
+        # best_mse_thresh, best_thresh, best_relative_bw = \
+        #     pipeline.profile(clip, original_video, new_mobilenet_video,
+        #                         [profile_start, profile_end],
+        #                         profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
 
-        print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
-                .format(clip, best_mse_thresh, best_thresh, best_relative_bw))
+        # print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
+        #         .format(clip, best_mse_thresh, best_thresh, best_relative_bw))
 
 
 
@@ -114,15 +111,15 @@ def main():
             profile_end = start_frame + original_video.frame_rate * \
                 profile_length - 1
 
-            # print('profile {} start={} end={}'.format(
-            #     clip, profile_start, profile_end))
-            # best_mse_thresh, best_thresh, best_relative_bw = \
-            #     pipeline.profile(clip, original_video, new_mobilenet_video,
-            #                      [profile_start, profile_end],
-            #                      profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
+            print('profile {} start={} end={}'.format(
+                clip, profile_start, profile_end))
+            best_mse_thresh, best_thresh, best_f1, best_relative_bw, best_gpu = \
+                pipeline.profile(clip, original_video, new_mobilenet_video,
+                                 [profile_start, profile_end],
+                                 profile_video_savepath=PROFILE_VIDEO_SAVEPATH)
 
-            # print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
-            #       .format(clip, best_mse_thresh, best_thresh, best_relative_bw))
+            print("Profile {}: best mse thresh={}, best thresh={}, best bw={}"
+                  .format(clip, best_mse_thresh, best_thresh, best_relative_bw))
 
             test_start = profile_end + 1
             test_end = end_frame

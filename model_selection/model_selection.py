@@ -13,23 +13,25 @@ from benchmarking.model_selection.ModelSelection import ModelSelection
 from benchmarking.video import YoutubeVideo
 
 
-VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4','drift',
-          'driving1', 'driving_downtown', 'highway',
-          'nyc', 'jp',  'lane_split',  'driving2',
-          'motorway', 'park', 'russia', 'russia1', 
-          'traffic', 'tw', 'tw1',
-          'tw_under_bridge']
+# VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4','drift',
+#           'driving1', 'driving_downtown', 'highway',
+#           'nyc', 'jp',  'lane_split',  'driving2',
+#           'motorway', 'park', 'russia', 'russia1', 
+#           'traffic', 'tw', 'tw1',
+#           'tw_under_bridge']
 
 # VIDEOS = ['cropped_driving2', 'cropped_crossroad4', 'cropped_crossroad4_2', 'cropped_crossroad5' ]
-VIDEOS = ['crossroad3', 'crossroad4', 'motorway', 'drift'
-]
+# VIDEOS = ['crossroad3', 'crossroad4', 'motorway', 'drift'
+# ]
 # DT_ROOT = '/data/zxxia/benchmarking/results/videos'
 DT_ROOT = '/mnt/data/zhujun/dataset/Youtube'
 SHORT_VIDEO_LENGTH = 30
 OFFSET = 0
 
+VIDEOS = [x for x in os.listdir(DT_ROOT) if os.path.isdir(os.path.join(DT_ROOT, x))]
+
 profile_length = 30
-model_list = ['mobilenet', 'inception', 'Resnet50', 'FasterRCNN']
+model_list = ['mobilenet', 'Inception', 'FasterRCNN50', 'FasterRCNN']
 # model_list = ['FasterRCNN50']
 
 def compute_easy_frame_percentage(original_video, frame_range, large_box_thresh=0.2):
@@ -43,28 +45,28 @@ def compute_easy_frame_percentage(original_video, frame_range, large_box_thresh=
             easy_frame_cn += 1
     return float(easy_frame_cn)/cn
 
-f_out = open('model_selection_allfullvideo_perf.csv', 'w')
-f_out.write('dataset,best_model,f1,gpu, easy_frame_percentage\n')
+f_out = open('./results/model_selection_overfitting_mergelabel.csv', 'w')
+f_out.write('dataset, best_model, f1, gpu, easy_frame_percentage\n')
 for name in VIDEOS:
     if "cropped" in name:
         resol = '360p'
     else:
         resol = '720p'
 
-    pipeline = ModelSelection(model_list, name + 'profile_log.csv')
+    pipeline = ModelSelection(model_list, './results/' + name + '_profile_log_mergelabel.csv')
     metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
     model = 'FasterRCNN'
     dt_file = os.path.join(
         DT_ROOT, name, resol,
         'profile/updated_gt_' + model + '_COCO_no_filter.csv')
-    original_video = YoutubeVideo(name, resol, metadata_file, dt_file, None)
+    original_video = YoutubeVideo(name, resol, metadata_file, dt_file, None, merge_label_flag=True)
     videos = {}
     dt_all = {}
     for model in model_list:
         dt_file = os.path.join(
             DT_ROOT, name, resol,
             'profile/updated_gt_' + model + '_COCO_no_filter.csv')
-        video = YoutubeVideo(name, resol, metadata_file, dt_file, None)
+        video = YoutubeVideo(name, resol, metadata_file, dt_file, None, merge_label_flag=True)
         videos[model] = video
         dt_all[model] = video.get_video_classification_label()
 

@@ -4,11 +4,15 @@ GPU="2"
 RESOL='720p'
 DATA_PATH='/mnt/data/zhujun/dataset/Youtube/'
 
-# DATASET_LIST="crossroad crossroad3
-#               drift driving_downtown jp
+# DATASET_LIST="crossroad2 crossroad2_night crossroad crossroad3 crossroad4
+#               drift driving1 driving2 driving_downtown jp highway lane_split motorway 
+#               russia1 traffic tw1 tw_under_bridge
 #               nyc park tw1"
 
-DATASET_LIST='crossroad2_night'
+# DATASET_LIST='KITTI'
+# for long video, training range = 10min, val range = 
+
+DATASET_LIST="crossroad5 crossroad6 crossroad7 highway1 tw russia1"
 
 for DATASET in $DATASET_LIST
 do
@@ -26,7 +30,7 @@ do
 
     PIPELINE_CONFIG_PATH="./configs/ssd_mobilenet_v2_"${DATASET}".config"
     MODEL_DIR="/mnt/data/zhujun/dataset/NoScope_finetuned_models/"${DATASET}"/trained_models/"
-    NUM_TRAIN_STEPS=2000
+    NUM_TRAIN_STEPS=1000
     SAMPLE_1_OF_N_EVAL_EXAMPLES=1
 
 
