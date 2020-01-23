@@ -323,7 +323,7 @@ class Glimpse():
                                        i, dt_glimpse[i - 1],
                                        tracking_error_thresh)
                     time_elapsed = time.time() - start_t
-                    # print('tracking used: {}s'.format(time_elapsed*1000))
+                    # print('tracking used: {}s'.format(time_elapsed))
                     tracking_t_elapsed.append(time_elapsed)
                     # w_h_ratio_trigger = False
                     # for box in new_boxes:
@@ -393,6 +393,7 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
                      thresh=35):
     """Compute the sum of pixel differences which are greater than thresh."""
     # thresh = 35 is used in Glimpse paper
+    # pdb.set_trace()
     start_t = time.time()
     diff = np.absolute(new_frame.astype(int) - old_frame.astype(int))
     mask = np.greater(diff, thresh)
@@ -441,7 +442,7 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
     black = (0, 0, 0)
 
     # define optical flow parameters
-    lk_params = dict(winSize=(15, 15), maxLevel=5,
+    lk_params = dict(winSize=(15, 15), maxLevel=2,  # 5,
                      criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT,
                                10, 0.03))
 
@@ -450,7 +451,7 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
                           minDistance=7, blockSize=7)
 
     # mask = np.zeros_like(oldFrameGray)
-
+    start_t = time.time()
     old_corners = []
     for x, y, xmax, ymax, t, score, obj_id in old_boxes:
         # mask[y:ymax, x:xmax] = 255
@@ -460,6 +461,7 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
             corners[:, 0, 0] = corners[:, 0, 0] + x
             corners[:, 0, 1] = corners[:, 0, 1] + y
             old_corners.append(corners)
+    # print('compute feature {}seconds'.format(time.time() - start_t))
     if not old_corners:
         # cannot find available corners and treat as objects disappears
         return True, [], 0

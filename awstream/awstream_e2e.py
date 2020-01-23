@@ -51,14 +51,17 @@ def main():
         dt_file = os.path.join(PATH, args.video, ORIGINAL_REOSL, 'profile',
                                'updated_gt_FasterRCNN_COCO_no_filter.csv')
         original_video = YoutubeVideo(args.video, ORIGINAL_REOSL,
-                                      metadata_file, dt_file, img_path, True)
+                                      metadata_file, dt_file, img_path,
+                                      filter_flag=True,
+                                      merge_label_flag=True)
         videos = {}
         for resol in RESOLUTION_LIST:
             img_path = os.path.join(DATA_PATH, args.video, resol)
             dt_file = os.path.join(PATH, args.video, resol, 'profile',
                                    'updated_gt_FasterRCNN_COCO_no_filter.csv')
             video = YoutubeVideo(args.video, resol, metadata_file, dt_file,
-                                 img_path, True)
+                                 img_path, filter_flag=True,
+                                 merge_label_flag=True)
             videos[resol] = video
             print('loading {}...'.format(dt_file))
 
@@ -68,7 +71,8 @@ def main():
         for i in range(num_of_short_videos):
             clip = args.video + '_' + str(i)
             start_frame = i*args.short_video_length * \
-                original_video.frame_rate+1+OFFSET*original_video.frame_rate
+                original_video.frame_rate+original_video.start_frame_index + \
+                OFFSET*original_video.frame_rate
             end_frame = (i+1)*args.short_video_length * \
                 original_video.frame_rate+OFFSET*original_video.frame_rate
             print('{} start={} end={}'.format(clip, start_frame, end_frame))
