@@ -126,7 +126,7 @@ class Video:
         return smoothed_classification_labels
 
     def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None, save_video=True):
+               target_frame_rate=None, save_video=True, crf=25):
         """Encode the target frames into a video and return video size."""
         if os.path.exists(output_video_name):
             video_size = os.path.getsize(output_video_name)
@@ -145,7 +145,7 @@ class Video:
             cmd = ['ffmpeg', '-y',  '-r',
                 str(target_frame_rate), '-f', 'concat', '-safe', '0', '-i',
                 tmp_list_file, '-s', frame_size,
-                '-vcodec', 'libx264', '-crf', '25', '-pix_fmt',
+                '-vcodec', 'libx264', '-crf', str(crf), '-pix_fmt',
                 'yuv420p', '-hide_banner', output_video_name]
             subprocess.run(cmd, check=True)
             # get the video size

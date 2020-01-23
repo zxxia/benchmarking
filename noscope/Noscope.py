@@ -6,7 +6,6 @@ import cv2
 from collections import defaultdict
 import pdb
 import sys
-sys.path.append('../../')
 from benchmarking.utils.model_utils import eval_single_image
 from benchmarking.utils.utils import interpolation, compute_f1
 import numpy as np
@@ -42,8 +41,9 @@ class NoScope():
         if self.mse_thresh_list == []:
             self.mse_thresh_list = [0] # largest possible MSE, i.e., no frame difference detector
         
+        frame_difference = frame_diffence_compute(frame_range, original_video)
         for mse_thresh in self.mse_thresh_list:
-            selected_frames = frame_difference_detector(frame_range, original_video, mse_thresh)
+            selected_frames = frame_difference_detector(frame_range, original_video.frame_rate, frame_difference, mse_thresh)
             for thresh in self.confidence_score_list:
                 # choose confidence score
                 tp_total, fp_total, fn_total, trigger_frame_list = eval_images(
@@ -74,13 +74,17 @@ class NoScope():
 
 
         best_mse_thresh, best_thresh = find_best_thresh(f1_dict, cost_dict, self.target_f1)
-        if (best_mse_thresh, best_thresh) in bw_dict:
+        if (best_mse_thresh, best_thresh) in cost_dict:
             best_bw = bw_dict[(best_mse_thresh, best_thresh)]
+            best_f1 = f1_dict[(best_mse_thresh, best_thresh)]
+            best_gpu = gpu_dict[(best_mse_thresh, best_thresh)]
         else:
             best_bw = 1
+            best_f1 = 1
+            best_gpu = (MODEL_COST['mobilenet'] + MODEL_COST['FasterRCNN'])/ float(MODEL_COST['FasterRCNN'])
         print("best mse thresh {}, best score thresh {}, bw {}".format(best_mse_thresh, best_thresh, best_bw))
         best_relative_bw = best_bw / original_bw
-        return best_mse_thresh, best_thresh, best_relative_bw
+        return best_mse_thresh, best_thresh, best_f1, best_relative_bw, best_gpu
 
     def evaluate(self, video_name, original_video, small_model_video, 
                  best_mse_thresh, best_thresh, frame_range):
@@ -90,7 +94,8 @@ class NoScope():
                                                      frame_range[1]+1)),
                                           original_video.frame_rate)
 
-        selected_frames = frame_difference_detector(frame_range, original_video, best_mse_thresh)
+        frame_difference = frame_diffence_compute(frame_range, original_video)
+        selected_frames = frame_difference_detector(frame_range, original_video.frame_rate, frame_difference, best_mse_thresh)
         tp_total, fp_total, fn_total, trigger_frame_list = eval_images(
                 frame_range, selected_frames, original_video, small_model_video, best_thresh)
         f1_score = compute_f1(tp_total, fp_total, fn_total)
@@ -126,10 +131,10 @@ def eval_images(image_range, selected_frames, original_video, video, thresh=0.8)
                 pipeline_dets[idx] = copy.deepcopy(current_dt)
         else:
             # if no object does not trigger full model
-            # pipeline_dets[idx] = copy.deepcopy(current_dt)
+            pipeline_dets[idx] = copy.deepcopy(current_dt)
             # if no object will trigger full model
-            pipeline_dets[idx] = copy.deepcopy(current_gt)
-            trigger_frame_list.append(idx)
+            # pipeline_dets[idx] = copy.deepcopy(current_gt)
+            # trigger_frame_list.append(idx)
 
     for idx in range(image_range[0], image_range[1] + 1):
         if idx not in dets or idx not in gtruth:
@@ -170,10 +175,12 @@ def find_best_thresh(f1_dict, cost_dict, target_f1):
     return best_config[0], best_config[1]
 
 
-def frame_difference_detector(frame_range, video, mse_thresh, t_skip=0, t_diff=0.1):
-    selected_frame = []
+
+
+def frame_diffence_compute(frame_range, video, t_skip=0, t_diff=0.1):
     start_frame = frame_range[0]
     end_frame = frame_range[1]
+    frame_diff = {}
     if t_skip != 0:
         frame_skip = round(video.frame_rate * t_skip)
     else:
@@ -183,10 +190,30 @@ def frame_difference_detector(frame_range, video, mse_thresh, t_skip=0, t_diff=0
     for frame_idx in range(start_frame, end_frame, frame_skip):
         previous_frame_idx = frame_idx - previous_frame_interval
         if previous_frame_idx < start_frame:
-            selected_frame.append(frame_idx)
+            continue
         else:
             _mse = compute_diff(video.get_frame_image_name(previous_frame_idx), 
                                 video.get_frame_image_name(frame_idx))
+            frame_diff[frame_idx] = _mse
+    return frame_diff  
+
+def frame_difference_detector(frame_range, frame_rate, frame_difference, 
+                                mse_thresh, t_skip=0, t_diff=0.1):
+    selected_frame = []
+    start_frame = frame_range[0]
+    end_frame = frame_range[1]
+    if t_skip != 0:
+        frame_skip = round(frame_rate * t_skip)
+    else:
+        frame_skip = 1
+    
+    previous_frame_interval = round(frame_rate * t_diff)
+    for frame_idx in range(start_frame, end_frame, frame_skip):
+        previous_frame_idx = frame_idx - previous_frame_interval
+        if previous_frame_idx < start_frame:
+            selected_frame.append(frame_idx)
+        else:
+            _mse = frame_difference[frame_idx]
             if _mse > mse_thresh:
                 selected_frame.append(frame_idx)
     return selected_frame

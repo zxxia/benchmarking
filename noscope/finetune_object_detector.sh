@@ -9,6 +9,9 @@ DATA_PATH='/mnt/data/zhujun/dataset/Youtube/'
 #               nyc park tw1"
 
 DATASET_LIST='crossroad2_night'
+# for long video, training range = 10min, val range = 
+
+
 
 for DATASET in $DATASET_LIST
 do
@@ -26,7 +29,7 @@ do
 
     PIPELINE_CONFIG_PATH="./configs/ssd_mobilenet_v2_"${DATASET}".config"
     MODEL_DIR="/mnt/data/zhujun/dataset/NoScope_finetuned_models/"${DATASET}"/trained_models/"
-    NUM_TRAIN_STEPS=2000
+    NUM_TRAIN_STEPS=1000
     SAMPLE_1_OF_N_EVAL_EXAMPLES=1
 
 
