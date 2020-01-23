@@ -6,8 +6,8 @@ from object_detection.utils import dataset_util
 #  from PIL import Image
 #  import PIL
 #  import io
-from utils.utils import load_metadata
-from constants import RESOL_DICT
+from benchmarking.utils.utils import load_metadata
+from benchmarking.constants import RESOL_DICT
 
 flags = tf.app.flags
 flags.DEFINE_string('resol', 'original',

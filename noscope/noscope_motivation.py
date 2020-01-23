@@ -15,7 +15,7 @@ from benchmarking.noscope.Noscope import NoScope
 from benchmarking.video import YoutubeVideo
 
 THRESH_LIST = np.arange(0.3, 1.1, 0.1)
-MSE_list = [0, 25, 50, 75, 100]
+MSE_list = [0, 25, 50, 75, 100, 125, 150]
 OFFSET = 0  # The time offset from the start of the video. Unit: seconds
 # VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
 #           'driving1', 'driving_downtown', 'highway',
@@ -34,8 +34,8 @@ SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
 PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/original_profile_videos/'
 def main():
     """NoScope."""
-    f_out = open('Noscope_e2e_result_with_frame_diff_allvideo_profile_once_0.75.csv', 'w')
-    f_out.write('dataset, best_frame_diff, best_confidence_score_thresh,f1,bandwidth, triggered_frames\n')
+    f_out = open('Noscope_e2e_result_with_frame_diff_allvideo_profile_once_w_gpu_cost_min_gpu.csv', 'w')
+    f_out.write('dataset, best_frame_diff, best_confidence_score_thresh,f1,bandwidth, gpu, selected_frames, triggered_frames\n')
     for name in VIDEOS:
         if "cropped" in name:
             resol = '360p'
@@ -44,7 +44,7 @@ def main():
         OUTPUT_PATH = os.path.join(
             SMALL_MODEL_PATH, name, 'data'
         )
-        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff_profile_once_0.75.csv')
+        pipeline = NoScope(THRESH_LIST, MSE_list, OUTPUT_PATH + '/tmp_log_with_frame_diff_profile_once_w_gpu_cost_min_gpu.csv')
         metadata_file = DT_ROOT + '/{}/metadata.json'.format(name)
         img_path = os.path.join(DT_ROOT, name, resol)
         dt_file = os.path.join(
@@ -129,7 +129,7 @@ def main():
 
             print('Evaluate {} start={} end={}'.format(
                 clip, test_start, test_end))
-            f1_score, relative_bw, trigger_frame_list = pipeline.evaluate(
+            f1_score, relative_bw, relative_gpu, selected_frame_list, trigger_frame_list = pipeline.evaluate(
                 os.path.join(OUTPUT_PATH, clip + '.mp4'), original_video,
                 new_mobilenet_video, best_mse_thresh, best_thresh,
                 [test_start, test_end])
@@ -141,6 +141,8 @@ def main():
                                   str(best_thresh),
                                   str(f1_score),
                                   str(relative_bw),
+                                  str(relative_gpu),
+                                  ' '.join([str(x) for x in selected_frame_list]),
                                   ' '.join([str(x) for x in trigger_frame_list])])+ '\n')
 
               

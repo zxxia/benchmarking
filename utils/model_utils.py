@@ -325,3 +325,19 @@ def smooth_classification(labels):
 
     return smoothed_labels
 
+
+def load_COCOlabelmap(label_map_path):
+    COCO_Labelmap = {}
+    with open(label_map_path, 'r') as f:
+        line = f.readline()
+        while line:
+            if 'id' in line:
+                ID = int(line.strip().split(':')[1].strip())
+                line = f.readline()
+                label = line.strip().split(':')[1]
+                COCO_Labelmap[ID] = label.strip().replace('"', '')
+                line = f.readline()
+            else:
+                line = f.readline()
+
+    return COCO_Labelmap

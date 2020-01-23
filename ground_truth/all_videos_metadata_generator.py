@@ -8,11 +8,13 @@ import glob
 import cv2
 from resize import extract_frames, resize_video
 from benchmarking.constants import RESOL_DICT
+from ground_truth_generation_pipeline import gt_generation_pipeline
 import shutil 
 import json
 
-RESOL_LIST = ['720p', '540p', '480p', '360p']
-MODEL_LIST = ['FasterRCNN', 'Inception', 'mobilenet', 'FasterRCNN50']
+# RESOL_LIST = ['720p', '540p', '480p', '360p']
+RESOL_LIST = ['720p']
+MODEL_LIST = ['mobilenet']
 External_gt_source = '/mnt/data/zhujun/dataset/Inference_results/videos'
 
 def extract_video_names(path):
@@ -86,6 +88,7 @@ def groundtruth_existence_check(video, path, video_info):
             
             if not os.path.exists(another_gt_path):
                 print('Dataset {} has no ground truth for resol {}'.format(video, resol))  
+                os.mkdir(gt_path)
             else:
                 print('Ground truth exists in another ground truth path:', video, resol)
         else:
@@ -96,11 +99,12 @@ def groundtruth_existence_check(video, path, video_info):
                     another_gt_filename = os.path.join(another_gt_path, 'updated_gt_' + model + '_COCO_no_filter.csv')
                     if not os.path.exists(another_gt_filename):
                         print(video, resol, model)
-                        continue
+                        #videoname, resol, model, gpu
+                        # if video in ['jp', 'crossroad2', 'driving2', 'tw1', '']:
+                        gt_generation_pipeline(video, resol, model, gpu='2')
                     else:
                         print('Copy gt for dataset {}, resol {}, model {}'.format(video, resol, model))
                         shutil.copyfile(another_gt_filename, gt_filename)
-
     return
 
 def image_existence_check(video, path, video_info, fix=True):
@@ -143,7 +147,7 @@ def main():
         video_info = video_existence_check(video, video_path)
         video_info = image_existence_check(video, video_path, video_info, fix=True)
         groundtruth_existence_check(video, video_path, video_info)
-        print('{:20}: {}, {}'.format(video, video_info['720p_video_exists'],video_info['image_existence'] ))
+        # print('{:20}: {}, {}'.format(video, video_info['720p_video_exists'],video_info['image_existence'] ))
 
                 
         

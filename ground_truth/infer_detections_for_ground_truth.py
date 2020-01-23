@@ -42,68 +42,48 @@ import detection_inference_for_ground_truth as detection_inference
 # from object_detection.metrics import tf_example_parser
 
 
-tf.flags.DEFINE_string('gpu', None,
-                       'GPU number.')
-tf.flags.DEFINE_string('input_tfrecord_paths', None,
-                       'A comma separated list of paths to input TFRecords.')
-tf.flags.DEFINE_string('output_time_path', None,
-                       'Path to the output GPU processing time file.')
-tf.flags.DEFINE_string('output_tfrecord_path', None,
-                       'Path to the output TFRecord.')
-tf.flags.DEFINE_string('inference_graph', None,
-                       'Path to the inference graph with embedded weights.')
-tf.flags.DEFINE_string('gt_csv', None, 'Path to ground truth csv.')
-tf.flags.DEFINE_boolean('discard_image_pixels', True,
-                        'Discards the images in the output TFExamples. This'
-                        ' significantly reduces the output size and is useful'
-                        ' if the subsequent tools don\'t need access to the'
-                        ' images (e.g. when computing evaluation measures).')
-
-FLAGS = tf.flags.FLAGS
 
 
-def main(_):
+
+
+def infer_ground_truth(all_input_tfrecord_paths, inference_graph, 
+                        output_tfrecord_path, gt_csv, output_time_path, gpu, 
+                        discard_image_pixels=True):
+    # config
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"  # see issue #152
-    os.environ["CUDA_VISIBLE_DEVICES"] = FLAGS.gpu
-    all_time = []
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
-
-    required_flags = ['input_tfrecord_paths', 'output_tfrecord_path',
-                      'inference_graph', 'output_time_path', 'gt_csv']
-
-    for flag_name in required_flags:
-        if not getattr(FLAGS, flag_name):
-            raise ValueError('Flag --{} is required'.format(flag_name))
-
-    f = open(FLAGS.output_time_path, 'w')
-    gt_f = open(FLAGS.gt_csv, 'w')
-    gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
-
+    os.environ["CUDA_VISIBLE_DEVICES"] = gpu
     config = tf.compat.v1.ConfigProto()
     config.gpu_options.per_process_gpu_memory_fraction = 0.5
+    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
+
+    f = open(output_time_path, 'w')
+    gt_f = open(gt_csv, 'w')
+    gt_f.write('image name, bounding boxes (x, y, w, h, type, score)\n')
+    all_time = []
+    tf.reset_default_graph()
     with tf.compat.v1.Session(config=config) as sess:
         input_tfrecord_paths = [
-            v for v in FLAGS.input_tfrecord_paths.split(',') if v]
+            v for v in all_input_tfrecord_paths.split(',') if v]
         tf.compat.v1.logging.info('Reading input from %d files',
-                                  len(input_tfrecord_paths))
+                                len(input_tfrecord_paths))
         serialized_example_tensor, image_tensor, image_filename_tensor, height, width \
             = detection_inference.build_input(input_tfrecord_paths)
         tf.compat.v1.logging.info('Reading graph and building model...')
         (detected_boxes_tensor, detected_scores_tensor, detected_labels_tensor) \
             = detection_inference.build_inference_graph(image_tensor,
-                                                        FLAGS.inference_graph)
+                                                        inference_graph)
 
         tf.compat.v1.logging.info(
             'Running inference and writing output to {}'.format(
-                FLAGS.output_tfrecord_path))
+                output_tfrecord_path))
         sess.run(tf.compat.v1.local_variables_initializer())
         tf.train.start_queue_runners()
-        with tf.io.TFRecordWriter(FLAGS.output_tfrecord_path) as tf_record_writer:
+        with tf.io.TFRecordWriter(output_tfrecord_path) as tf_record_writer:
             try:
                 for counter in itertools.count():
                     tf.compat.v1.logging.log_every_n(tf.compat.v1.logging.INFO,
-                                                     'Processed %d images...',
-                                                     10, counter)
+                                                    'Processed %d images...',
+                                                    100, counter)
                     start_time = time.time()
                     tf_example, image_filename = \
                         detection_inference. \
@@ -111,7 +91,7 @@ def main(_):
                             gt_f, serialized_example_tensor,
                             detected_boxes_tensor, detected_scores_tensor,
                             detected_labels_tensor, image_filename_tensor,
-                            height, width, FLAGS.discard_image_pixels)
+                            height, width, discard_image_pixels)
                     all_time.append(time.time()-start_time)
                     image_filename = image_filename.decode("utf-8")
                     f.write(image_filename + ',' + "{:.9f}".format(
@@ -119,7 +99,51 @@ def main(_):
                     tf_record_writer.write(tf_example.SerializeToString())
             except tf.errors.OutOfRangeError:
                 tf.compat.v1.logging.info('Finished processing records')
-    print(sum(all_time)/len(all_time))
+        sess.close()
+    # delete input records
+    for file in input_tfrecord_paths:
+        print('Removing input record: ', file)
+        os.remove(file)
+    return
+
+def main(_):
+    tf.flags.DEFINE_string('gpu', None,
+                        'GPU number.')
+    tf.flags.DEFINE_string('input_tfrecord_paths', None,
+                        'A comma separated list of paths to input TFRecords.')
+    tf.flags.DEFINE_string('output_time_path', None,
+                        'Path to the output GPU processing time file.')
+    tf.flags.DEFINE_string('output_tfrecord_path', None,
+                        'Path to the output TFRecord.')
+    tf.flags.DEFINE_string('inference_graph', None,
+                        'Path to the inference graph with embedded weights.')
+    tf.flags.DEFINE_string('gt_csv', None, 'Path to ground truth csv.')
+    tf.flags.DEFINE_boolean('discard_image_pixels', True,
+                            'Discards the images in the output TFExamples. This'
+                            ' significantly reduces the output size and is useful'
+                            ' if the subsequent tools don\'t need access to the'
+                            ' images (e.g. when computing evaluation measures).')
+
+    FLAGS = tf.flags.FLAGS
+    required_flags = ['input_tfrecord_paths', 'output_tfrecord_path',
+                      'inference_graph', 'output_time_path', 'gt_csv']
+    for flag_name in required_flags:
+        if not getattr(FLAGS, flag_name):
+            raise ValueError('Flag --{} is required'.format(flag_name))
+    gpu = FLAGS.gpu
+    output_time_path = FLAGS.output_time_path
+    gt_csv = FLAGS.gt_csv
+    all_input_tfrecord_paths = FLAGS.input_tfrecord_paths
+    inference_graph = FLAGS.inference_graph
+    output_tfrecord_path = FLAGS.output_tfrecord_path
+    infer_ground_truth(all_input_tfrecord_paths, 
+                        inference_graph, 
+                        output_tfrecord_path, 
+                        gt_csv, 
+                        output_time_path, 
+                        gpu,
+                        FLAGS.discard_image_pixels)
+    return
 
 
 if __name__ == '__main__':

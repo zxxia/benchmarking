@@ -12,7 +12,6 @@ import numpy as np
 # from PIL import Image
 from absl import app, flags
 import sys
-sys.path.append('../../')
 from benchmarking.utils.utils import nms, Most_Common, IoU
 # from show_annot import show
 FLAGS = flags.FLAGS

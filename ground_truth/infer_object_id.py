@@ -13,18 +13,6 @@ import numpy as np
 from absl import app, flags
 from benchmarking.utils.utils import nms, Most_Common, IoU
 # from show_annot import show
-FLAGS = flags.FLAGS
-flags.DEFINE_string('resol', 'None', 'Image resolution.')
-#  flags.DEFINE_string('quality_parameter', 'original', 'Quality parameter')
-# flags.DEFINE_string('metadata_file', '', 'metadata file')
-flags.DEFINE_string('input_file', None, 'input file')
-flags.DEFINE_string('output_file', None, 'output file')
-# flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
-flags.DEFINE_string('model_name', 'FasterRCNN', '')
-# flags.DEFINE_string('overlap_percent', '', 'updated gt file')
-# flags.DEFINE_string('vote_percent', '', 'updated gt file')
-# flags.DEFINE_string('win_size', '', 'updated gt file')
-
 
 def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
                dist_coef=0.45):
@@ -378,21 +366,11 @@ def read_annot(annot_path):
     return all_filename, frame_to_object
 
 
-def main(argv):
-    """ smooth bounding boxes and assign object id to bounding boxes """
-
-    required_flags = ['input_file', 'output_file']
-
-    for flag_name in required_flags:
-        if not getattr(FLAGS, flag_name):
-            raise ValueError('Flag --{} is required'.format(flag_name))
-
-    annot_file = FLAGS.input_file
-    output_file = FLAGS.output_file
+def infer_object_id(annot_file, output_file, model_name='FasterRCNN'):
     # Do not filter boxes using height
     all_filename, frame_to_object = read_annot(annot_file)
     print('Done loading annot.')
-    if FLAGS.model_name == 'FasterRCNN':
+    if model_name == 'FasterRCNN':
         # new_frame_to_object = smooth(frame_to_object)
         print('smoothing FasterRCNN results')
         new_frame_to_object = smooth_annot(all_filename, frame_to_object)
@@ -404,6 +382,34 @@ def main(argv):
         # tag_object(all_filename, new_frame_to_object, output_file, 0.8)
         tag_object(all_filename, frame_to_object, output_file, 0.8)
     print('Done smoothing and tagging annot.')
+    return
+
+def main(argv):
+    """ smooth bounding boxes and assign object id to bounding boxes """
+    FLAGS = flags.FLAGS
+    #  flags.DEFINE_string('quality_parameter', 'original', 'Quality parameter')
+    # flags.DEFINE_string('metadata_file', '', 'metadata file')
+    flags.DEFINE_string('input_file', None, 'input file')
+    flags.DEFINE_string('output_file', None, 'output file')
+    # flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
+    flags.DEFINE_string('model_name', 'FasterRCNN', '')
+    # flags.DEFINE_string('overlap_percent', '', 'updated gt file')
+    # flags.DEFINE_string('vote_percent', '', 'updated gt file')
+    # flags.DEFINE_string('win_size', '', 'updated gt file')
+
+
+    required_flags = ['input_file', 'output_file']
+
+    for flag_name in required_flags:
+        if not getattr(FLAGS, flag_name):
+            raise ValueError('Flag --{} is required'.format(flag_name))
+
+    annot_file = FLAGS.input_file
+    output_file = FLAGS.output_file
+    model_name = FLAGS.model_name
+    infer_object_id(annot_file, output_file, model_name)
+    return
+
 
 
 if __name__ == '__main__':

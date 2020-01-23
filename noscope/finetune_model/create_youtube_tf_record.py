@@ -41,13 +41,11 @@ import PIL.Image
 
 import tensorflow as tf
 import sys
-sys.path.append('/home/zhujunxiao/zxxia/models/research/')
 from object_detection.dataset_tools import tf_record_creation_util
 from object_detection.utils import dataset_util
 # from object_detection.utils import label_map_util
-sys.path.append('../../')
 from benchmarking.video import YoutubeVideo
-from benchmarking.constants import load_COCOlabelmap
+from benchmarking.utils.model_utils import load_COCOlabelmap
 
 flags = tf.app.flags
 
