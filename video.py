@@ -87,7 +87,7 @@ class Video:
         """Return the image at frame index."""
         img = cv2.imread(self.get_frame_image_name(frame_index))
 
-        if img.shape[0] != self._resoluion[1] or \
+        if img.shape[0] != self._resolution[1] or \
                 img.shape[1] != self._resolution[0]:
             img = cv2.resize(img, self._resolution,
                              interpolation=cv2.INTER_AREA)

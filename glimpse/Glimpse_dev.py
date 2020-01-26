@@ -3,6 +3,7 @@ import csv
 import os
 import pdb
 from collections import defaultdict
+import copy
 import time
 import numpy as np
 import cv2
@@ -144,7 +145,7 @@ class Glimpse():
                 # log the frame details under para1 and para2
                 frames_log_file = os.path.join(
                     self.profile_traces_save_path,
-                    clip + '_{}_{}_frames_log.csv'.format(para1, para2))
+                    clip + '_{}_{}_frames_profile_log.csv'.format(para1, para2))
                 with open(frames_log_file, 'w') as f:
                     frames_log_writer = csv.DictWriter(
                         f, ['frame id', 'frame diff', 'frame diff thresh',
@@ -354,7 +355,7 @@ class Glimpse():
 
                 if self.mode == 'frame select':
                     # frame select this is used to be comparable to videostorm
-                    dt_glimpse[i] = dt_glimpse[i - 1]
+                    dt_glimpse[i] = copy.deepcopy(dt_glimpse[i - 1])
                 elif self.mode == 'perfect tracking':
                     obj_id_in_perv_frame = [box[6] for box in dt_glimpse[i-1]]
                     # assume perfect tracking, the boxes of all objects

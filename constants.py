@@ -1,6 +1,6 @@
 """This module contains some constants used accross different modules."""
 from enum import Enum
-
+import numpy as np
 RESOL_DICT = {'180p': (320, 180),
               '240p': (426, 240),
               '300p': (534, 300),
@@ -39,6 +39,7 @@ class COCOLabels(Enum):
     TRAIN = 7
     TRUCK = 8
 
+OFFSET = 0
 
 MODEL_COST = {'mobilenet': 31,
               'inception': 58,
@@ -60,3 +61,37 @@ MODEL_PATH = {'FasterRCNN': 'faster_rcnn_resnet101_coco_2018_01_28',
 RESOL_LIST = ['360p', '480p', '540p', '720p']
 # RESOL_LIST = ['720p']
 MODEL_LIST = ['FasterRCNN', 'mobilenet', 'Inception', 'FasterRCNN50']
+
+Original_resol = '720p'
+Full_model = 'FasterRCNN'
+
+
+Glimpse_para1_dict = {
+    'crossroad': np.arange(30, 42, 2),
+    'crossroad2': np.arange(20, 42, 2),
+    'crossroad3': np.arange(70, 100, 3),
+    'crossroad4': np.arange(30, 62, 2),
+    'drift': np.arange(290, 400, 10),
+    'driving1': np.arange(10, 25, 2),
+    'driving2': np.arange(5, 30, 2),
+    'driving_downtown': np.arange(4, 20, 2),
+    'highway': np.arange(30, 40, 2),
+    'highway_normal_traffic': np.arange(34, 40, 2),
+    'jp': np.arange(30, 40, 2),
+    'jp_hw': np.arange(30, 40, 2),
+    'lane_split': np.arange(6, 14, 2),
+    'motorway': np.arange(2, 6, 2),
+    'nyc': np.arange(2, 22, 2),
+    'park': np.arange(2, 10, 2),
+    'russia': np.arange(100, 400, 20),
+    'russia1': np.arange(100, 400, 20),
+    'traffic': np.arange(6, 15, 1),
+    'tw': np.arange(25, 55, 5),
+    'tw1': np.arange(25, 55, 5),
+    'tw_road': np.arange(15, 45, 5),
+    'tw_under_bridge': np.arange(350, 450, 10),
+    'waymo': np.arange(20, 220, 20),
+    'video': np.arange(290, 400, 10)
+}
+
+Glimpse_para2_list = [1]

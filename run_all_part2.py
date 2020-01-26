@@ -8,6 +8,8 @@ import time
 from benchmarking.constants import babygroot_DT_ROOT
 from benchmarking.ground_truth.run_inference import run_inference
 from benchmarking.vigil.run_Vigil import run_Vigil
+from benchmarking.glimpse.run_Glimpse import run_Glimpse
+
 
 def read_video_info(video_path):
     video_info = {}
@@ -86,7 +88,8 @@ def main():
     start_time = time.time()
     profile_length = 10
     segment_length = 30
-    for folder in selected: #folder_list[0:1]:
+    target_f1 = 0.9
+    for folder in selected[0:2]: #folder_list[0:1]:
 
 
 
@@ -99,7 +102,7 @@ def main():
         logging.info(json.dumps(dataset_info))
 
         # run inference using multiple models 
-        run_inference(dataset_info, args.gpu_num)
+        # run_inference(dataset_info, args.gpu_num)
         # run Vigil pipeline
         run_Vigil(dataset_info, 
                   gpu_num=args.gpu_num, 
@@ -108,7 +111,7 @@ def main():
                   segment_length=segment_length)
         
         # run Glimpse result
-        
+        run_Glimpse(dataset_info, profile_length, segment_length, target_f1)
 
     # path = os.path.join(babygroot_DT_ROOT, args.name)
     # print(path)

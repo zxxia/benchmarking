@@ -1,4 +1,4 @@
-""" vigil overfitting scirpt  """
+""" vigil scirpt  """
 import argparse
 import csv
 import copy 
