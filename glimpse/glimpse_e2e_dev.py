@@ -2,14 +2,14 @@ import argparse
 import csv
 import os
 import numpy as np
-from benchmarking.glimpse.Glimpse import Glimpse
+from benchmarking.glimpse.Glimpse_dev import Glimpse
 from benchmarking.video import YoutubeVideo
 
 PARA1_LIST_DICT = {
     'crossroad': np.arange(30, 42, 2),
     'crossroad2': np.arange(20, 42, 2),
-    'crossroad3': np.arange(70, 100, 3),
-    'crossroad4': np.arange(30, 62, 2),
+    'crossroad3': np.arange(70, 100, 5),
+    'crossroad4': np.arange(30, 42, 2),
     'drift': np.arange(290, 400, 10),
     'driving1': np.arange(10, 25, 2),
     'driving2': np.arange(5, 30, 2),
@@ -30,7 +30,8 @@ PARA1_LIST_DICT = {
     # 'tw_road': np.arange(15, 45, 5),
     'tw_under_bridge': np.arange(350, 450, 10),
 }
-PARA2_LIST = [10, 8, 5, 3, 2, 1]
+# PARA2_LIST = [10, 8, 5, 3, 2, 1]
+PARA2_LIST = [1]
 DET_ROOT = '/data/zxxia/benchmarking/results/videos'
 IMG_ROOT = '/data/zxxia/videos'
 
@@ -83,7 +84,7 @@ def main():
     with open(args.output, 'w', 1) as final_result_f:
         result_writer = csv.writer(final_result_f)
         header = ['video chunk', 'para1', 'para2', 'f1',
-                  'frame rate', 'frame diff fps', 'tracking fps']
+                  'frame rate', 'frame diff fps', 'tracking fps', 'bw']
         result_writer.writerow(header)
 
         # read ground truth and full model detection result
@@ -119,6 +120,9 @@ def main():
                                                best_para1, best_para2)
             # use the selected parameters for the next 5 mins
             frames_triggered = frame_diff_triggered.union(tracking_triggered)
+            bw = 0
+            for frame_idx in frames_triggered:
+                bw += video.get_frame_filesize(frame_idx)
             final_fps = len(frames_triggered) / (test_end - test_start + 1)
             frame_diff_fps = len(frame_diff_triggered) / \
                 (test_end - test_start + 1)
@@ -126,7 +130,7 @@ def main():
                 (test_end - test_start + 1)
             result_writer.writerow(
                 [clip, best_para1, best_para2, f1, final_fps, frame_diff_fps,
-                 tracking_fps])
+                 tracking_fps, bw])
 
             frames_log_file = os.path.join(
                 args.trace_path,
