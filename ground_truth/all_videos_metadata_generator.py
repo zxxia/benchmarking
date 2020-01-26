@@ -16,6 +16,7 @@ RESOL_LIST = ['480p']
 # RESOL_LIST = ['720p']
 MODEL_LIST = ['Inception']
 External_gt_source = '/mnt/data/zhujun/dataset/Inference_results/videos'
+DATA_path = '/mnt/data/zhujun/dataset/Youtube/'
 
 def extract_video_names(path):
     folder_list = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
@@ -106,7 +107,7 @@ def groundtruth_existence_check(video, path, video_info, fix):
                         print(video, resol, model)
                         #videoname, resol, model, gpu
                         if fix == True:
-                            gt_generation_pipeline(video, resol, model, gpu='3')
+                            gt_generation_pipeline(os.path.join(DATA_path, video, resol), resol, model, gpu='3')
                     else:
                         print('Copy gt for dataset {}, resol {}, model {}'.format(video, resol, model))
                         shutil.copyfile(another_gt_filename, gt_filename)
@@ -148,7 +149,6 @@ def image_existence_check(video, path, video_info, fix):
 
 
 def main():
-    DATA_path = '/mnt/data/zhujun/dataset/Youtube/'
     all_video_names = extract_video_names(DATA_path)
 
     all_video_checkresult = {}

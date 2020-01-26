@@ -9,9 +9,9 @@ from benchmarking.ground_truth.infer_object_id import infer_object_id
 
 
 
-def gt_generation_pipeline(videopath, resol, model, extension, gpu):
+def gt_generation_pipeline(data_path, resol, model, extension, gpu):
     inference_graph = os.path.join(babygroot_model_path, MODEL_PATH[model], 'frozen_inference_graph.pb') 
-    data_path = os.path.join(videopath, resol)
+    # data_path = os.path.join(videopath, resol)
     tensorflow_record_path = os.path.join(data_path, 'profile')
     create_tensorflow_inputrecord(data_path, tensorflow_record_path, resol, extension)
     print("Done creating input!")
@@ -39,8 +39,8 @@ def main():
     model = 'FasterRCNN'
     gpu = '0'
     resol = '720p'
-    videopath = os.path.join(babygroot_DT_ROOT, videoname)
-    gt_generation_pipeline(videoname, resol, model, gpu)
+    data_path = os.path.join(babygroot_DT_ROOT, videoname, 'resol')
+    gt_generation_pipeline(data_path, resol, model, gpu)
     return
 
 if __name__ == '__main__':

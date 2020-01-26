@@ -7,6 +7,7 @@ import os
 import time
 from benchmarking.constants import babygroot_DT_ROOT
 from benchmarking.ground_truth.run_inference import run_inference
+from benchmarking.vigil.run_Vigil import run_Vigil
 
 def read_video_info(video_path):
     video_info = {}
@@ -16,11 +17,9 @@ def read_video_info(video_path):
     fps = int(vid.get(cv2.CAP_PROP_FPS))      # OpenCV2 version 2 used "CV_CAP_PROP_FPS"
     frame_count = int(vid.get(cv2.CAP_PROP_FRAME_COUNT))
     duration = frame_count/fps
-    minutes = int(duration/60)
-    seconds = duration%60
     vid.release()
     video_info['video_name'] = os.path.basename(video_path).replace('.mp4', '')
-    video_info['duration'] = str(minutes) + ':' + str(seconds)
+    video_info['duration'] = duration
     video_info['resol'] = [width, height]
     video_info['frame_rate'] = fps
     video_info['frame_count'] = frame_count
@@ -35,9 +34,7 @@ def read_image_info(img_files, frame_rate):
     height, width, channels = img.shape
 
     duration = image_info['frame_count']/frame_rate
-    minutes = int(duration/60)
-    seconds = duration%60
-    image_info['duration'] = str(minutes) + ':' + str(seconds)
+    image_info['duration'] = duration
     image_info['resol'] = [width, height]
     return image_info
 
@@ -47,7 +44,7 @@ def parse_args():
         description="VideoStorm with temporal overfitting")
     parser.add_argument("--gpu_num", type=str, required=True, default="3")
     parser.add_argument("--name", type=str, required=True, help="dataset name")
-    parser.add_argument("--type", type=str, required=True, default="mp4")
+    parser.add_argument("--type", type=str, required=True, default="video")
     parser.add_argument("--camera", type=str, required=True, default=None,
                         help="camera type")
     parser.add_argument("--frame_rate", type=int, default=0,
@@ -78,8 +75,6 @@ def main():
     args = parse_args()
     # define video path, name
     # video source format
-    # path = os.path.join(babygroot_DT_ROOT, args.name)
-
 
     waymo_path = '/mnt/data/zhujun/dataset/Waymo/waymo_images'
     folder_list = sorted([x for x in os.listdir(waymo_path) if os.path.isdir(os.path.join(waymo_path, x))])
@@ -88,11 +83,16 @@ def main():
         'segment-14233522945839943589_100_000_120_000_with_camera_labels', 'segment-15578655130939579324_620_000_640_000_with_camera_labels', 'segment-13476374534576730229_240_000_260_000', 'segment-17244566492658384963_2540_000_2560_000', 
         'segment-4487677815262010875_4940_000_4960_000', 'segment-4916527289027259239_5180_000_5200_000', 'segment-4641822195449131669_380_000_400_000', 'segment-8327447186504415549_5200_000_5220_000', 'segment-8207498713503609786_3005_450_3025_450', 'segment-5222336716599194110_8940_000_8960_000', 'segment-4986495627634617319_2980_000_3000_000', 'segment-2064489349728221803_3060_000_3080_000_with_camera_labels', 'segment-3908622028474148527_3480_000_3500_000_with_camera_labels', 'segment-2922309829144504838_1840_000_1860_000', 'segment-15834329472172048691_2956_760_2976_760', 'segment-17386718718413812426_1763_140_1783_140', 'segment-17066133495361694802_1220_000_1240_000', 'segment-12161824480686739258_1813_380_1833_380', 'segment-11918003324473417938_1400_000_1420_000', 'segment-11037651371539287009_77_670_97_670_with_camera_labels', 'segment-16213317953898915772_1597_170_1617_170_with_camera_labels']
     not_selected = [x for x in folder_list if x not in selected]
-    for folder in not_selected: #folder_list[0:1]:
+    start_time = time.time()
+    profile_length = 10
+    segment_length = 30
+    for folder in selected: #folder_list[0:1]:
+
+
+
         path = os.path.join(waymo_path, folder, 'FRONT')
         print(path)
         logging.basicConfig(filename=path + '/run_all.log', filemode='w', level=logging.DEBUG)
-        start_time = time.time()
         # generate basic metadata
         logging.info('Processing dataset: %s', path)
         dataset_info = preprocessing(path, args.type, args.frame_rate, args.camera)
@@ -100,7 +100,44 @@ def main():
 
         # run inference using multiple models 
         run_inference(dataset_info, args.gpu_num)
+        # run Vigil pipeline
+        run_Vigil(dataset_info, 
+                  gpu_num=args.gpu_num, 
+                  local_model='Inception', 
+                  profile_length=profile_length, 
+                  segment_length=segment_length)
         
+        # run Glimpse result
+        
+
+    # path = os.path.join(babygroot_DT_ROOT, args.name)
+    # print(path)
+    # logging.basicConfig(filename=path + '/run_all.log', filemode='w', level=logging.DEBUG)
+    # start_time = time.time()
+
+
+    # # generate basic metadata
+    # logging.info('Processing dataset: %s', path)
+    # dataset_info = preprocessing(path, args.type, args.frame_rate, args.camera)
+    # logging.info(json.dumps(dataset_info))
+
+    # # run inference using multiple models 
+    # run_inference(dataset_info, args.gpu_num)
+
+    # # VideoStorm results
+    # # run_VideoStorm(dataset_info, mode='e2e')
+    # # run_VideoStorm(dataset_info, mode='motivation')
+
+    # # AWStream results
+    
+    # #          
+
+    # # Glimpse results
+
+    # # Vigil results
+
+    # run_Vigil(dataset_info, mode='e2e', gpu_num=args.gpu_num,local_model='Inception')
+    # # run_Vigil(dataset_info, mode='motivation')
 
     
 

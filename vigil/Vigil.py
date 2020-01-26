@@ -27,24 +27,6 @@ class Vigil():
         bw = 0
         for i in range(frame_range[0], frame_range[1] + 1):
             bw += video.get_frame_filesize(i)
-            # relative uploaded area
-            # relative_up_area = 0
-            # simple_dt_boxes = mobilenet_dt[img_idx]
-            # for simple_dt_box in simple_dt_boxes:
-            #     simple_dt_box = resize_bbox(simple_dt_box, 0.2, 0.2,
-            #                                 resolution)
-            #     xmin, ymin, xmax, ymax = simple_dt_box[:4]
-            #     relative_up_area += (xmax-xmin)*(ymax-ymin) /\
-            #         (resolution[0]*resolution[1])
-            # relative_up_areas.append(relative_up_area)
-
-            # tot_obj_area = 0
-            # for gt_box in gt_boxes:
-            #     xmin, ymin, xmax, ymax = gt_box[:4]
-            #     tot_obj_area += (xmax-xmin)*(ymax-ymin) /\
-            #         (resolution[0]*resolution[1])
-            # tot_obj_areas.append(tot_obj_area)
-
             tpos[i], fpos[i], fneg[i] = eval_single_image(
                 original_video.get_frame_detection(i),
                 video.get_frame_detection(i))
@@ -59,7 +41,7 @@ class Vigil():
         video_bw = video.encode(os.path.join(cropped_video_save_path, video_name+'.mp4'),
                           list(range(frame_range[0], frame_range[1] + 1)),
                           video.frame_rate)
-        return bw/original_bw, f1_score, video_bw/original_bw
+        return bw/original_bw, f1_score, video_bw/original_bw, original_bw
 
 
 def mask_image(img, boxes):

@@ -30,7 +30,7 @@ def get_inference_results(info, gpu_num):
             os.mkdir(gt_path)
         gt_filename = os.path.join(gt_path, 'updated_gt_' + model + '_COCO_no_filter.csv')        
         if not os.path.exists(gt_filename):
-            gt_generation_pipeline(path, resol, model, extension, gpu_num)
+            gt_generation_pipeline(os.path.join(path, resol), resol, model, extension, gpu_num)
         if os.path.exists(gt_path + '/input.record'):
             os.remove(gt_path + '/input.record')
 
@@ -43,7 +43,7 @@ def get_inference_results(info, gpu_num):
     #     model = 'FasterRCNN'
     #     gt_filename = os.path.join(gt_path, 'updated_gt_' + model + '_COCO_no_filter.csv')
     #     if not os.path.exists(gt_filename):
-    #         gt_generation_pipeline(path, resol, model, extension, gpu_num)   
+    #         gt_generation_pipeline(os.path.join(path, resol), resol, model, extension, gpu_num)   
     #     if os.path.exists(gt_path + '/input.record'):
     #         os.remove(gt_path + '/input.record')
     
