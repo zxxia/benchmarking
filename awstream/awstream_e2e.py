@@ -35,6 +35,8 @@ def parse_args():
                         help="short video length in second")
     parser.add_argument("--profile_length", type=int, required=True,
                         help="profile length in second")
+    parser.add_argument("--video_save_path", type=str, required=True,
+                        help="video save path")
     args = parser.parse_args()
     return args
 
@@ -42,7 +44,7 @@ def parse_args():
 def main():
     args = parse_args()
     pipeline = Awstream(TEMPORAL_SAMPLING_LIST,
-                        RESOLUTION_LIST, None, args.log)
+                        RESOLUTION_LIST, None, args.log, args.video_save_path)
     with open(args.output, 'w', 1) as f_out:
         f_out.write('dataset,best_resolution,f1,frame_rate,bandwidth\n')
         metadata_file = os.path.join(DATA_PATH, args.video, 'metadata.json')
@@ -96,8 +98,7 @@ def main():
             print('Evaluate {} start={} end={}'.format(
                 clip, test_start, test_end))
             f1_score, relative_bw = pipeline.evaluate(
-                os.path.join(OUTPUT_PATH, clip + '.mp4'), original_video,
-                videos[str(best_resol[1])+'p'], best_fps,
+                clip, original_video, videos[str(best_resol[1])+'p'], best_fps,
                 [test_start, test_end])
 
             print('{} best fps={}, best resolution={} ==> tested f1={}'
