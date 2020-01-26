@@ -12,7 +12,7 @@ class Awstream():
     """Awstream Pipeline."""
 
     def __init__(self, temporal_sampling_list, resolution_list, quantizer_list,
-                 profile_log, target_f1=0.9):
+                 profile_log, video_save_path, target_f1=0.9):
         """Load the configs."""
         self.target_f1 = target_f1
         self.temporal_sampling_list = temporal_sampling_list
@@ -21,14 +21,18 @@ class Awstream():
         self.profile_writer = csv.writer(open(profile_log, 'w', 1))
         self.profile_writer.writerow(
             ["video_name", "resolution", "frame_rate", "f1", "tp", "fp", "fn"])
+        self.video_save_path = video_save_path
 
     def profile(self, video_name, video_dict, original_video, frame_range):
         """Profile the combinations of fps and resolution.
 
         Return a list of config that satisfys the requirements.
         """
-        original_bw = original_video.encode(
-            video_name+'.mp4', list(range(frame_range[0], frame_range[1])),
+        # videos encoded in profile are not saved
+        video_save_name = os.path.join(
+            self.video_save_path, video_name+'_original_profile'+'.mp4')
+        original_bw = original_video.encode_iframe_control(
+            video_save_name, list(range(frame_range[0], frame_range[1])),
             original_video.frame_rate, save_video=False)
         best_resol = original_video.resolution
         best_fps = original_video.frame_rate
@@ -75,9 +79,11 @@ class Awstream():
                     if img_index % sample_rate >= 1:
                         continue
                     target_frame_indices.append(img_index)
-                bndwdth = video.encode(video_name + '.mp4',
-                                       target_frame_indices,
-                                       target_fps, save_video=False)
+                video_save_name = os.path.join(
+                    self.video_save_path, video_name+'_profile'+'.mp4')
+                bndwdth = video.encode_iframe_control(
+                    video_save_name, target_frame_indices, target_fps,
+                    save_video=False)
                 print(min_bw, bndwdth)
                 if bndwdth <= min_bw:
                     min_bw = bndwdth
@@ -89,10 +95,11 @@ class Awstream():
     def evaluate(self, video_name, original_video, video,
                  best_frame_rate, frame_range):
         """Evaluate the performance of best config."""
-        origin_bw = original_video.encode(video_name,
-                                          list(range(frame_range[0],
-                                                     frame_range[1]+1)),
-                                          original_video.frame_rate)
+        video_save_name = os.path.join(
+            self.video_save_path, video_name+'_original_eval'+'.mp4')
+        origin_bw = original_video.encode_iframe_control(
+            video_save_name, list(range(frame_range[0], frame_range[1]+1)),
+            original_video.frame_rate)
 
         sample_rate = original_video.frame_rate/best_frame_rate
         target_frame_indices = []
@@ -101,8 +108,10 @@ class Awstream():
             if img_index % sample_rate >= 1:
                 continue
             target_frame_indices.append(img_index)
-        bndwdth = video.encode(
-            video_name, target_frame_indices, best_frame_rate)
+        video_save_name = os.path.join(
+            self.video_save_path, video_name+'_eval'+'.mp4')
+        bndwdth = video.encode_iframe_control(
+            video_save_name, target_frame_indices, best_frame_rate)
         tp_total, fp_total, fn_total = eval_images(frame_range, original_video,
                                                    video, sample_rate)
 
