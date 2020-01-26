@@ -3,21 +3,18 @@
 
 import os
 from benchmarking.constants import babygroot_model_path, MODEL_PATH, babygroot_DT_ROOT
-from create_youtube_video_input import create_tensorflow_inputrecord
-from infer_detections_for_ground_truth import infer_ground_truth
-from infer_object_id import infer_object_id
+from benchmarking.ground_truth.create_youtube_video_input import create_tensorflow_inputrecord
+from benchmarking.ground_truth.infer_detections_for_ground_truth import infer_ground_truth
+from benchmarking.ground_truth.infer_object_id import infer_object_id
 
 
 
-def gt_generation_pipeline(videoname, resol, model, gpu):
+def gt_generation_pipeline(videopath, resol, model, extension, gpu):
     inference_graph = os.path.join(babygroot_model_path, MODEL_PATH[model], 'frozen_inference_graph.pb') 
-    data_path = os.path.join(babygroot_DT_ROOT, videoname, resol)
+    data_path = os.path.join(videopath, resol)
     tensorflow_record_path = os.path.join(data_path, 'profile')
-    print(tensorflow_record_path)
-    create_tensorflow_inputrecord(data_path, tensorflow_record_path, resol, extension='jpg')
+    create_tensorflow_inputrecord(data_path, tensorflow_record_path, resol, extension)
     print("Done creating input!")
-    # import pdb
-    # pdb.set_trace()
 
     # start inferring ground truth
     all_input_tfrecord_paths = os.path.join(tensorflow_record_path, 'input.record')
@@ -42,6 +39,7 @@ def main():
     model = 'FasterRCNN'
     gpu = '0'
     resol = '720p'
+    videopath = os.path.join(babygroot_DT_ROOT, videoname)
     gt_generation_pipeline(videoname, resol, model, gpu)
     return
 

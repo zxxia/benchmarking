@@ -48,7 +48,7 @@ MODEL_COST = {'mobilenet': 31,
               'FasterRCNN50': 89,
               'FasterRCNN': 106}
 
-babygroot_DT_ROOT = '/mnt/data/zhujun/dataset/Youtube/'
+babygroot_DT_ROOT = '/mnt/data/zhujun/dataset/'
 babygroot_model_path = '/home/zhujunxiao/video_analytics_pipelines/models/research/object_detection_old/'
 MODEL_PATH = {'FasterRCNN': 'faster_rcnn_resnet101_coco_2018_01_28',
               'FasterRCNN50': 'faster_rcnn_resnet50_coco_2018_01_28',
@@ -57,3 +57,6 @@ MODEL_PATH = {'FasterRCNN': 'faster_rcnn_resnet101_coco_2018_01_28',
 }
 
 
+RESOL_LIST = ['360p', '480p', '540p', '720p']
+# RESOL_LIST = ['720p']
+MODEL_LIST = ['FasterRCNN', 'mobilenet', 'Inception', 'FasterRCNN50']

@@ -32,7 +32,7 @@ PROFILE_VIDEO_SAVEPATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models/orig
 def main():
     """NoScope."""
     f_out = open('./results/Noscope_e2e_result.csv', 'w')
-    f_out.write('dataset, best_frame_diff, best_confidence_score_thresh,f1,bandwidth, gpu, selected_frames, triggered_frames\n')
+    f_out.write('dataset,best_frame_diff,best_confidence_score_thresh,f1,bandwidth,gpu,selected_frames,triggered_frames\n')
     for name in VIDEOS:
         if "cropped" in name:
             resol = '360p'

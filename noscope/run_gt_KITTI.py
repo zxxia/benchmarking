@@ -23,17 +23,17 @@ def main():
             output_path = os.path.join(OUTPUT, video_name)
             if not os.path.exists(output_path):
                 os.mkdir(output_path)
-            # cmd = ["python", "../ground_truth/create_youtube_video_input.py",
-            #        "--data_path="+img_path+'/'+resol, 
-            #        "--output_path="+output_path,
-            #        '--resol='+resol]
+            cmd = ["python", "../ground_truth/create_youtube_video_input.py",
+                   "--data_path="+img_path+'/'+resol, 
+                   "--output_path="+output_path,
+                   '--resol='+resol]
 
-            # print(cmd)
-            # subprocess.run(cmd, check=True)
+            print(cmd)
+            subprocess.run(cmd, check=True)
             cmd = ['python', '../ground_truth/infer_detections_for_ground_truth.py',
                    '--inference_graph=' + MODEL_DIR,
                    '--discard_image_pixels',
-                   '--gpu=0',
+                   '--gpu=2',
                    '--input_tfrecord_paths='+
                    os.path.join(output_path, 'input.record'),
                    '--output_tfrecord_path=' +
@@ -44,10 +44,12 @@ def main():
             print(cmd)
             subprocess.run(cmd, check=True)
             cmd = ['python', './finetune_model/infer_finetuned_mobilenet_object_id.py',
-                   '--resol={}'.format(resol),
-                   '--input_file={}/gt_'+MODEL+'_COCO.csv'.format(
-                       output_path),
-                   '--output_file={}/updated_gt_'+MODEL+'_COCO_no_filter.csv'.format(output_path)]
+                   '--resol='+resol,
+                   '--input_file='+
+                   os.path.join(output_path, 'gt_'+MODEL+'_COCO.csv'),
+                   '--output_file='+
+                   os.path.join(output_path, 'updated_gt_'+MODEL+'_COCO_no_filter.csv')]
+            print(cmd)
             subprocess.run(cmd, check=True)
 
 
