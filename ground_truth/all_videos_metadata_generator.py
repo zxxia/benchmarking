@@ -12,10 +12,11 @@ from ground_truth_generation_pipeline import gt_generation_pipeline
 import shutil 
 import json
 
-# RESOL_LIST = ['720p', '540p', '480p', '360p']
-RESOL_LIST = ['720p']
-MODEL_LIST = ['mobilenet']
+RESOL_LIST = ['480p']
+# RESOL_LIST = ['720p']
+MODEL_LIST = ['Inception']
 External_gt_source = '/mnt/data/zhujun/dataset/Inference_results/videos'
+DATA_path = '/mnt/data/zhujun/dataset/Youtube/'
 
 def extract_video_names(path):
     folder_list = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
@@ -69,10 +70,15 @@ def video_existence_check(video, path):
                 flag = True
             else:
                 print('Dataset {} is not 720p'.format(video))
+
+            if not os.path.exists(os.path.dirname(mp4_names[0]) + '/metadata.json'):
+                print('{} not exists.'.format(os.path.dirname(mp4_names[0]) + '/metadata.json'))
     video_info['720p_video_exists'] = flag
+
+
     return video_info
 
-def groundtruth_existence_check(video, path, video_info):
+def groundtruth_existence_check(video, path, video_info, fix):
     if 'cropped' in video:
         resolution_list = ['360p']
     else:
@@ -84,15 +90,15 @@ def groundtruth_existence_check(video, path, video_info):
 
         if not os.path.exists(gt_path):
             # check out external ground truth path
-            another_gt_path = gt_path.replace(path, os.path.join(External_gt_source, video))
-            
+            another_gt_path = gt_path.replace(path, os.path.join(External_gt_source, video))            
             if not os.path.exists(another_gt_path):
                 print('Dataset {} has no ground truth for resol {}'.format(video, resol))  
-                os.mkdir(gt_path)
             else:
                 print('Ground truth exists in another ground truth path:', video, resol)
+            os.mkdir(gt_path)
         else:
             for model in MODEL_LIST:
+                gt_existence[(resol, model)] = False
                 gt_filename = os.path.join(gt_path, 'updated_gt_' + model + '_COCO_no_filter.csv')
                 if not os.path.exists(gt_filename):
                     another_gt_path = gt_path.replace(path, os.path.join(External_gt_source, video))
@@ -100,14 +106,19 @@ def groundtruth_existence_check(video, path, video_info):
                     if not os.path.exists(another_gt_filename):
                         print(video, resol, model)
                         #videoname, resol, model, gpu
-                        # if video in ['jp', 'crossroad2', 'driving2', 'tw1', '']:
-                        gt_generation_pipeline(video, resol, model, gpu='2')
+                        if fix == True:
+                            gt_generation_pipeline(os.path.join(DATA_path, video, resol), resol, model, gpu='3')
                     else:
                         print('Copy gt for dataset {}, resol {}, model {}'.format(video, resol, model))
                         shutil.copyfile(another_gt_filename, gt_filename)
-    return
+                        gt_existence[(resol, model)] = True
+                else:
+                    gt_existence[(resol, model)] = True
+    
+    video_info['ground_truth_existence'] = gt_existence #json.dumps(gt_existence)
+    return video_info
 
-def image_existence_check(video, path, video_info, fix=True):
+def image_existence_check(video, path, video_info, fix):
     if 'cropped' in video:
         resolution_list = ['360p']  
     else:
@@ -132,26 +143,25 @@ def image_existence_check(video, path, video_info, fix=True):
         else:
             image_existence[resol] = True
     
-    video_info['image_existence'] = json.dumps(image_existence)
+    video_info['image_existence'] = image_existence # json.dumps(image_existence)
 
     return video_info
 
 
 def main():
-    DATA_path = '/mnt/data/zhujun/dataset/Youtube/'
     all_video_names = extract_video_names(DATA_path)
 
     all_video_checkresult = {}
     for video in all_video_names:
         video_path = os.path.join(DATA_path, video)
         video_info = video_existence_check(video, video_path)
-        video_info = image_existence_check(video, video_path, video_info, fix=True)
-        groundtruth_existence_check(video, video_path, video_info)
+        video_info = image_existence_check(video, video_path, video_info, fix=False)
+        video_info = groundtruth_existence_check(video, video_path, video_info, fix=True)
         # print('{:20}: {}, {}'.format(video, video_info['720p_video_exists'],video_info['image_existence'] ))
-
-                
-        
-
+        all_video_checkresult[video] = video_info
+    # for key in all_video_checkresult:
+    #     if all_video_checkresult[key]['frame_count'] > 22000:
+    #         print(key, all_video_checkresult[key]['frame_count'])
     return
 
 if __name__ == '__main__':

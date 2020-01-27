@@ -4,9 +4,10 @@ import csv
 import pdb
 import os
 import sys
-sys.path.append('../../')
+from benchmarking.constants import OFFSET
 from benchmarking.video import YoutubeVideo
 from benchmarking.vigil.Vigil import Vigil, mask_video_ffmpeg
+
 # mask_video,
 
 # PATH = '/data/zxxia/videos/'
@@ -18,9 +19,7 @@ New_DT_ROOT = '/mnt/data/zhujun/dataset/Inference_results/videos'
 Vigil_DATA_ROOT = '/mnt/data/zhujun/dataset/Vigil_result/'
 
 SHORT_VIDEO_LENGTH = 30
-
 profile_length = 10
-# name = 'cropped_crossroad4_2'
 OFFSET = 0
 SMALL_MODEL_PATH = '/mnt/data/zhujun/dataset/NoScope_finetuned_models'
 

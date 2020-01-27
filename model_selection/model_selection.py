@@ -46,7 +46,7 @@ def compute_easy_frame_percentage(original_video, frame_range, large_box_thresh=
     return float(easy_frame_cn)/cn
 
 f_out = open('./results/model_selection_overfitting_mergelabel.csv', 'w')
-f_out.write('dataset, best_model, f1, gpu, easy_frame_percentage\n')
+f_out.write('dataset,best_model,f1,gpu,easy_frame_percentage\n')
 for name in VIDEOS:
     if "cropped" in name:
         resol = '360p'
@@ -68,7 +68,6 @@ for name in VIDEOS:
             'profile/updated_gt_' + model + '_COCO_no_filter.csv')
         video = YoutubeVideo(name, resol, metadata_file, dt_file, None, merge_label_flag=True)
         videos[model] = video
-        dt_all[model] = video.get_video_classification_label()
 
     # img_path = '/mnt/data/zhujun/dataset/Youtube/' + name + '/360p/' 
     # for frame_idx in range(1, 1000):

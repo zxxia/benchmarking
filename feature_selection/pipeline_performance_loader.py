@@ -88,6 +88,7 @@ class Parser:
 
 	def NS_parser(self):
 		perf = {}
+		print(self.path)
 		with open(self.path, 'r') as f:
 			f.readline()
 			for line in f:
@@ -106,12 +107,14 @@ class Parser:
 			f.readline()
 			for line in f:
 				line_list = line.strip().split(',')
-				f1 = float(line_list[3])
-				gpu = float(line_list[5])
-				perf[line_list[0]] = (gpu, f1, bw)		
+				f1 = float(line_list[2])
+				gpu = float(line_list[3])
+				perf[line_list[0]] = (gpu, f1)		
 		return perf
 
 	def load_perf(self):
+		print('here')
+
 		if self.pipeline == 'videostorm':
 			perf = self.VS_parser()
 			return perf
@@ -126,8 +129,10 @@ class Parser:
 			return perf
 		elif self.pipeline == 'noscope':
 			perf = self.NS_parser()
+			return perf
 		elif self.pipeline == 'modelselection':
 			perf = self.MS_parser() 
+			return perf
 		else:
 			print('Pipeline {} does not exist!!'.format(self.pipeline))
 
@@ -144,6 +149,9 @@ def read_feature(feature_file):
 		for line in f:
 			line_list = line.strip().split(',')
 			key = line_list[0]
+			if 'nan' in line:
+				print(line)
+				continue
 			features[key] = [float(x) for x in line_list[1:]]
 	return features
 

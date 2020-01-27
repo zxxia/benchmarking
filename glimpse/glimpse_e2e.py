@@ -27,7 +27,7 @@ PARA1_LIST_DICT = {
     'traffic': np.arange(6, 15, 1),
     'tw': np.arange(25, 55, 5),
     'tw1': np.arange(25, 55, 5),
-    # 'tw_road': np.arange(15, 45, 5),
+    'tw_road': np.arange(15, 45, 5),
     'tw_under_bridge': np.arange(350, 450, 10),
 }
 PARA2_LIST = [10, 8, 5, 3, 2, 1]

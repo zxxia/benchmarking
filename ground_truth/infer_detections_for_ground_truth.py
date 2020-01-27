@@ -38,11 +38,28 @@ import itertools
 import time
 import os
 import tensorflow as tf
-import detection_inference_for_ground_truth as detection_inference
+import benchmarking.ground_truth.detection_inference_for_ground_truth as detection_inference
 # from object_detection.metrics import tf_example_parser
 
 
+tf.flags.DEFINE_string('gpu', None,
+                    'GPU number.')
+tf.flags.DEFINE_string('input_tfrecord_paths', None,
+                    'A comma separated list of paths to input TFRecords.')
+tf.flags.DEFINE_string('output_time_path', None,
+                    'Path to the output GPU processing time file.')
+tf.flags.DEFINE_string('output_tfrecord_path', None,
+                    'Path to the output TFRecord.')
+tf.flags.DEFINE_string('inference_graph', None,
+                    'Path to the inference graph with embedded weights.')
+tf.flags.DEFINE_string('gt_csv', None, 'Path to ground truth csv.')
+tf.flags.DEFINE_boolean('discard_image_pixels', True,
+                        'Discards the images in the output TFExamples. This'
+                        ' significantly reduces the output size and is useful'
+                        ' if the subsequent tools don\'t need access to the'
+                        ' images (e.g. when computing evaluation measures).')
 
+FLAGS = tf.flags.FLAGS
 
 
 
@@ -100,31 +117,10 @@ def infer_ground_truth(all_input_tfrecord_paths, inference_graph,
             except tf.errors.OutOfRangeError:
                 tf.compat.v1.logging.info('Finished processing records')
         sess.close()
-    # delete input records
-    for file in input_tfrecord_paths:
-        print('Removing input record: ', file)
-        os.remove(file)
-    return
+
 
 def main(_):
-    tf.flags.DEFINE_string('gpu', None,
-                        'GPU number.')
-    tf.flags.DEFINE_string('input_tfrecord_paths', None,
-                        'A comma separated list of paths to input TFRecords.')
-    tf.flags.DEFINE_string('output_time_path', None,
-                        'Path to the output GPU processing time file.')
-    tf.flags.DEFINE_string('output_tfrecord_path', None,
-                        'Path to the output TFRecord.')
-    tf.flags.DEFINE_string('inference_graph', None,
-                        'Path to the inference graph with embedded weights.')
-    tf.flags.DEFINE_string('gt_csv', None, 'Path to ground truth csv.')
-    tf.flags.DEFINE_boolean('discard_image_pixels', True,
-                            'Discards the images in the output TFExamples. This'
-                            ' significantly reduces the output size and is useful'
-                            ' if the subsequent tools don\'t need access to the'
-                            ' images (e.g. when computing evaluation measures).')
 
-    FLAGS = tf.flags.FLAGS
     required_flags = ['input_tfrecord_paths', 'output_tfrecord_path',
                       'inference_graph', 'output_time_path', 'gt_csv']
     for flag_name in required_flags:

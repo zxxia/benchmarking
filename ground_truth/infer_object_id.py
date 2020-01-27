@@ -14,6 +14,21 @@ from absl import app, flags
 from benchmarking.utils.utils import nms, Most_Common, IoU
 # from show_annot import show
 
+
+FLAGS = flags.FLAGS
+#  flags.DEFINE_string('quality_parameter', 'original', 'Quality parameter')
+# flags.DEFINE_string('metadata_file', '', 'metadata file')
+flags.DEFINE_string('input_file', None, 'input file')
+flags.DEFINE_string('output_file', None, 'output file')
+# flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
+flags.DEFINE_string('model_name', 'FasterRCNN', '')
+# flags.DEFINE_string('overlap_percent', '', 'updated gt file')
+# flags.DEFINE_string('vote_percent', '', 'updated gt file')
+# flags.DEFINE_string('win_size', '', 'updated gt file')
+
+
+
+
 def tag_object(all_filename, frame_to_object, update_gt_file,  # output_file,
                dist_coef=0.45):
     """Assign object id to bounding boxes.
@@ -372,7 +387,7 @@ def infer_object_id(annot_file, output_file, model_name='FasterRCNN'):
     print('Done loading annot.')
     if model_name == 'FasterRCNN':
         # new_frame_to_object = smooth(frame_to_object)
-        print('smoothing FasterRCNN results')
+        print('smoothing ' + model_name + ' results')
         new_frame_to_object = smooth_annot(all_filename, frame_to_object)
         print('Done smoothing annot.')
         tag_object(all_filename, new_frame_to_object, output_file)
@@ -386,17 +401,6 @@ def infer_object_id(annot_file, output_file, model_name='FasterRCNN'):
 
 def main(argv):
     """ smooth bounding boxes and assign object id to bounding boxes """
-    FLAGS = flags.FLAGS
-    #  flags.DEFINE_string('quality_parameter', 'original', 'Quality parameter')
-    # flags.DEFINE_string('metadata_file', '', 'metadata file')
-    flags.DEFINE_string('input_file', None, 'input file')
-    flags.DEFINE_string('output_file', None, 'output file')
-    # flags.DEFINE_string('updated_gt_file', None, 'updated gt file')
-    flags.DEFINE_string('model_name', 'FasterRCNN', '')
-    # flags.DEFINE_string('overlap_percent', '', 'updated gt file')
-    # flags.DEFINE_string('vote_percent', '', 'updated gt file')
-    # flags.DEFINE_string('win_size', '', 'updated gt file')
-
 
     required_flags = ['input_file', 'output_file']
 

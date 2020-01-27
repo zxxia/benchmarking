@@ -5,6 +5,7 @@ import os
 import pdb
 import subprocess
 import cv2
+import glob
 import pandas as pd
 from benchmarking.utils.model_utils import load_full_model_detection, \
     filter_video_detections, convert_detection_to_classification, smooth_classification
@@ -86,7 +87,7 @@ class Video:
         """Return the image at frame index."""
         img = cv2.imread(self.get_frame_image_name(frame_index))
 
-        if img.shape[0] != self._resoluion[1] or \
+        if img.shape[0] != self._resolution[1] or \
                 img.shape[1] != self._resolution[0]:
             img = cv2.resize(img, self._resolution,
                              interpolation=cv2.INTER_AREA)
@@ -490,3 +491,91 @@ class MOT15Video(Video):
         super().__init__(video_name, frame_rate, resolution, dets,
                          dets_nofilter, image_path, 'moving', model,
                          dropped_dets)
+
+
+
+class GeneralVideo(Video):
+    def __init__(self, dataset_info, resolution_name, model='FasterRCNN', filter_flag=True,
+                 merge_label_flag=False):
+        """GeneralVideo Video Constructor."""
+
+        frame_rate = dataset_info['frame_rate']
+        dataset_path = dataset_info['path']
+        if not dataset_path.endswith('/'):
+            name = os.path.basename(dataset_path)
+        else:
+            name = dataset_path.split('/')[-2]
+        
+        detection_file = os.path.join(dataset_path, resolution_name, 'profile',
+                                    'updated_gt_' + model + '_COCO_no_filter.csv')
+        image_path = os.path.join(dataset_path, resolution_name)
+        dets, num_of_frames = load_full_model_detection(detection_file)
+        dets_nofilter = copy.deepcopy(dets)
+        resolution = RESOL_DICT[resolution_name]
+        if dataset_info['type'] == 'png':
+            self.extension = 'png'
+        else:
+            self.extension = 'jpg'
+        # TODO: handle overlapping boxes
+        camera_type = dataset_info['camera_type']
+        if  camera_type == 'static':
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
+                    dets,
+                    target_types={COCOLabels.CAR.value,
+                                  COCOLabels.BUS.value,
+                                  COCOLabels.TRUCK.value},
+                    score_range=(0.3, 1.0),
+                    width_range=(resolution[0] // 20, resolution[0]/2),
+                    height_range=(resolution[1] // 20, resolution[1]/2))
+                # self._dropped_detections = dropped_dets
+                if merge_label_flag:
+                    for frame_idx, boxes in dets.items():
+                        for box_idx, _ in enumerate(boxes):
+                            # Merge all cars and trucks into cars
+                            dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                    #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+            else:
+                dropped_dets = None
+
+        elif camera_type == 'moving':
+            if filter_flag:
+                dets, dropped_dets = filter_video_detections(
+                    dets,
+                    target_types={COCOLabels.CAR.value,
+                                  COCOLabels.BUS.value,
+                                  COCOLabels.TRUCK.value},
+                    height_range=(resolution[1] // 20, resolution[1]))
+                if merge_label_flag:
+                    for frame_idx, boxes in dets.items():
+                        for box_idx, _ in enumerate(boxes):
+                            # Merge all cars and trucks into cars
+                            dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+            else:
+                dropped_dets = None
+
+        if camera_type == 'road_trip':
+            for frame_idx in dets:
+                tmp_boxes = []
+                for box in dets[frame_idx]:
+                    xmin, ymin, xmax, ymax = box[:4]
+                    if ymin >= 500/720*resolution[1] \
+                            and ymax >= 500/720*resolution[1]:
+                        continue
+                    if (xmax - xmin) >= 2/3 * resolution[0]:
+                        continue
+                    tmp_boxes.append(box)
+                dets[frame_idx] = tmp_boxes
+
+        super().__init__(name, frame_rate, resolution, dets, dets_nofilter,
+                         image_path, camera_type, model, dropped_dets)
+
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
+        first_image = next(glob.iglob(self._image_path +  "/*." + self.extension))
+        filename_len = len(os.path.basename(first_image).split('.')[0])
+        filename = str(frame_index).zfill(filename_len) + '.' + self.extension
+        img_file = os.path.join(
+            self._image_path, filename)
+        return img_file

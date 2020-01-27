@@ -15,6 +15,15 @@ def resize_video(video_in, video_out, target_size, target_qp=23):
     subprocess.run(cmd, check=True)
 
 
+def resize_image(image_in, image_out, target_size, target_qp=23):
+    """Resize the image_in to image_out with target size."""
+    cmd = ["ffmpeg", "-y", "-i", image_in, "-vf", "scale=" +
+           target_size, "-crf", str(target_qp), image_out]
+    # \ .format(, target_size, target_qp, video_out)]
+    print(cmd)
+    subprocess.run(cmd, check=True)   
+    
+
 def extract_frames(video, output_path):
     """Extract frames from videos."""
     if not os.path.exists(output_path):
