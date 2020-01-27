@@ -11,5 +11,6 @@
 *.tar.gz
 *.zip
 *.png
+.DS_Store
 __pycache__
 results
