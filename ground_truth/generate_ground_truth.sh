@@ -1,22 +1,18 @@
 #!/bin/bash
-declare -A RESOL
-declare -A NUM_OF_FRAMES
 
 
 # Change CODE_PATH to the object detection path.
 # CODE_PATH="/home/zxxia/models/research/object_detection"
 CODE_PATH="/data/zxxia/models/research/object_detection"
 # Change full model path to path where trained object detection model is saved.
-# FULL_MODEL_PATH="/home/zxxia/models/research/"\
-# "object_detection/faster_rcnn_resnet101_coco_2018_01_28/"\
-# "frozen_inference_graph.pb"
 FULL_MODEL_PATH="/data/zxxia/models/research/"\
 "object_detection/faster_rcnn_resnet101_coco_2018_01_28/"\
 "frozen_inference_graph.pb"
 
-# MOBILENET_SSD_PATH="/home/zxxia/models/research/"\
-# "object_detection/ssd_mobilenet_v2_coco_2018_03_29/"\
-# "frozen_inference_graph.pb"
+INCEPTION_PATH="/data/zxxia/models/research/"\
+"object_detection/faster_rcnn_inception_v2_coco_2018_01_28/"\
+"frozen_inference_graph.pb"
+
 MOBILENET_SSD_PATH="/data/zxxia/models/research/"\
 "object_detection/ssd_mobilenet_v2_coco_2018_03_29/"\
 "frozen_inference_graph.pb"
@@ -25,11 +21,12 @@ MOBILENET_SSD_PATH="/data/zxxia/models/research/"\
 # DATA_PATH='/data/zxxia/benchmarking/results/videos/'
 DATA_PATH='/data/zxxia/videos/'
 DATASET_LIST="crossroad crossroad2 crossroad3 crossroad4 driving1 driving2
-              drift driving_downtown highway highway_normal_traffic jp
+              drift driving_downtown highway highway_normal_traffic jp jp_hw
               lane_split motorway nyc park russia russia1 tw tw1 tw_under_bridge tw_road traffic"
-
+# DATASET_LIST="t_crossroad"
+DATASET_LIST="park"
 RESULT_PATH='/data/zxxia/benchmarking/results/videos/'
-DATASET_LIST="road_trip"
+# DATASET_LIST="traffic"
 declare -A VIDEO_TYPE_ARRAY
 VIDEO_TYPE_ARRAY["driving1"]="moving"
 VIDEO_TYPE_ARRAY["driving2"]="moving"
@@ -60,57 +57,53 @@ VIDEO_TYPE_ARRAY["road_trip"]="moving"
 
 # Choose an idle GPU
 GPU="1"
-RESOL_LIST='180p' #1080p 720p 540p 480p 360p 300p'
-QP_LIST="original" #'30 35 40'
+RESOL_LIST='720p' #1080p 720p 540p 480p 360p 300p'180p
+QP_LIST="23" #'30 35 40'
 for DATASET in $DATASET_LIST
 do
     echo ${DATASET}
 
     for RESOL in $RESOL_LIST
     do
+        # rm /data/zxxia/videos/${DATASET}/${RESOL}/profile/*.record
         # echo $RESOL
         # echo ${DATA_PATH}${DATASET}/${RESOL}
-        # mkdir ${DATA_PATH}${DATASET}/${RESOL}
-        # python3 resize.py \
-        #     --input_video=${DATA_PATH}${DATASET}/${DATASET}.mp4 \
-        #     --output_video=${DATA_PATH}${DATASET}/${RESOL}/${DATASET}_${RESOL}.mp4\
-        #     --output_image_path=${DATA_PATH}${DATASET}/${RESOL}/ \
-        #     --resol=$RESOL
 
         for QP in $QP_LIST
         do
-            # python3 change_quantization.py \
-            #     --dataset=$DATASET_NAME \
-            #     --path=$DATA_PATH \
-            #     --quality_parameter=$QP \
-            #     --resolution=$RESIZE_RESOL
+        # mkdir ${DATA_PATH}${DATASET}/${RESOL}/qp${QP}
+        # python3 resize.py \
+        #     --input_video=${DATA_PATH}${DATASET}/${DATASET}.mp4 \
+        #     --output_video=${DATA_PATH}${DATASET}/${RESOL}/qp${QP}/${DATASET}_${RESOL}_${QP}.mp4\
+        #     --resol=$RESOL \
+        #     --qp=${QP}
 
-            # python3 ${CODE_PATH}/dataset_tools/create_youtube_video_input.py \
-            #     --metadata_file=${DATA_PATH}${DATASET}/metadata.json \
+            # --output_image_path=${DATA_PATH}${DATASET}/${RESOL}/ \
+            # python3 create_youtube_video_input.py \
             #     --data_path=${DATA_PATH}${DATASET}/${RESOL} \
-            #     --output_path=${DATA_PATH}${DATASET}/${RESOL}/profile/ \
-            #     --resol=$RESOL
-            #
+            #     --output_path=${DATA_PATH}${DATASET}/${RESOL}/profile \
+            #     --dataset=youtube
+
             # echo "Done creating input!"
 
-            # Run inferenece on full model FasterRCNN
-            # python3 ${CODE_PATH}/inference/infer_detections_for_ground_truth.py \
-            #     --inference_graph=$FULL_MODEL_PATH \
-            #     --discard_image_pixels \
-            #     --gpu=$GPU \
-            #     --input_tfrecord_paths=${DATA_PATH}${DATASET}/${RESOL}/profile/input.record \
-            #     --output_tfrecord_path=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.record \
-            #     --output_time_path=${DATA_PATH}${DATASET}/${RESOL}/profile/full_model_time_FasterRCNN_COCO.csv \
-            #     --gt_csv=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv
+            # Run inferenece on a model
+            /home/zxxia/cpulimit-master/src/cpulimit -l 100 python3 infer_detections_for_ground_truth.py \
+                --inference_graph=$MOBILENET_SSD_PATH \
+                --discard_image_pixels \
+                --gpu=5 \
+                --input_tfrecord_paths=${DATA_PATH}${DATASET}/${RESOL}/profile/input.record \
+                --output_tfrecord_path=measure_time/gt_FasterRCNN_COCO.record \
+                --output_time_path=measure_time/full_model_time_FasterRCNN_COCO.csv \
+                --gt_csv=measure_time/gt_FasterRCNN_COCO.csv
             # echo "Done inference!"
 
             # python3 infer_object_id.py \
             #     --resol=$RESOL \
-            #     --input_file=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_FasterRCNN_COCO.csv \
-            #     --output_file=${DATA_PATH}/${DATASET}/${RESOL}/profile/updated_gt_FasterRCNN_COCO_no_filter.csv
+            #     --input_file=${DATA_PATH}${DATASET}/${RESOL}/profile/gt_Inception_COCO.csv \
+            #     --output_file=${DATA_PATH}${DATASET}/${RESOL}/profile/updated_gt_Inception_COCO_no_filter.csv &
             # mkdir /data/zxxia/benchmarking/results/videos/${DATASET}/${RESOL}
             # mkdir /data/zxxia/benchmarking/results/videos/${DATASET}/${RESOL}/profile
-            # cp ${DATA_PATH}/${DATASET}/${RESOL}/profile/*.csv /data/zxxia/benchmarking/results/videos/${DATASET}/${RESOL}/profile/
+            # cp ${DATA_PATH}/${DATASET}/${RESOL}/profile/updated_gt_Inception_COCO_no_filter.csv /data/zxxia/benchmarking/results/videos/${DATASET}/${RESOL}/profile/
 
             # python3 video_feature_youtube.py \
             #     --metadata_file=${DATA_PATH}/${DATASET}/metadata.json \

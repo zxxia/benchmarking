@@ -2,23 +2,37 @@
 
 VIDEOS='crossroad crossroad2 crossroad3 crossroad4 drift driving1 driving2
 driving_downtown highway highway_normal_traffic nyc jp jp_hw lane_split
-motorway park russia russia1 traffic tw tw1 tw_road tw_under_bridge'
+motorway park russia russia1 traffic tw tw1 tw_road tw_under_bridge road_trip t_crossroad'
 
-# VIDEOS='road_trip'
-# VIDEOS='traffic'
-#
 for VIDEO in $VIDEOS
 do
-    python videostorm_overfitting.py \
+    # python videostorm_e2e.py \
+    #     --video $VIDEO \
+    #     --metadata_file /data/zxxia/videos/${VIDEO}/metadata.json \
+    #     --output test_coverage_results/videostorm_coverage_results_${VIDEO}.csv \
+    #     --log test_coverage_profile/videostorm_coverage_profile_${VIDEO}.csv \
+    #     --short_video_length 30 \
+    #     --profile_length 10&
+    python videostorm_e2e.py \
         --video $VIDEO \
-        --input /data/zxxia/benchmarking/results/videos/${VIDEO}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv \
         --metadata_file /data/zxxia/videos/${VIDEO}/metadata.json \
         --output test_coverage_results/videostorm_coverage_results_${VIDEO}.csv \
         --log test_coverage_profile/videostorm_coverage_profile_${VIDEO}.csv \
         --short_video_length 30 \
-        --profile_length 10 &
+        --profile_length 10
 done
+# for VIDEO in $VIDEOS
+# do
+#     python videostorm_temporal_overfitting.py \
+#         --video $VIDEO \
+#         --metadata_file /data/zxxia/videos/${VIDEO}/metadata.json \
+#         --output youtube_overfitting_30s/videostorm_overfitting_results_${VIDEO}.csv \
+#         --log youtube_overfitting_30s/videostorm_overfitting_profile_${VIDEO}.csv \
+#         --short_video_length 30 \
+#         --profile_length 30&
+# done
 
+        #--input /data/zxxia/benchmarking/results/videos/${VIDEO}/720p/profile/updated_gt_FasterRCNN_COCO_no_filter.csv \
 
 
 # For KITTI dataset
