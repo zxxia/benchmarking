@@ -41,10 +41,12 @@ def control_features(videos, feature1, feature2, ratio=0.05):
 
 def divide_bins(videos, feature1, feature2, num_bins):
     """Divide the features into bins and assign videos to each bins."""
-    feature1_bins = np.arange(np.min(feature1), np.max(feature1),
-                              np.ptp(feature1)/(num_bins+1))
-    feature2_bins = np.arange(np.min(feature2), np.max(feature2),
-                              np.ptp(feature2)/(num_bins+1))
+    bin_step = np.ptp(feature1)/num_bins
+    feature1_bins = np.arange(np.min(feature1), np.max(feature1)+bin_step,
+                              bin_step)
+    bin_step = np.ptp(feature2)/num_bins
+    feature2_bins = np.arange(np.min(feature2), np.max(feature2)+bin_step,
+                              bin_step)
     bin_videos = {}
     for i in range(num_bins):
         for j in range(num_bins):
@@ -62,8 +64,8 @@ def divide_bins(videos, feature1, feature2, num_bins):
 
 
 def main():
-    # aws_selection()
-    vs_selection()
+    aws_selection()
+    # vs_selection()
     # no_selection()
 
 
@@ -239,11 +241,11 @@ def vs_selection():
     results = []
     for name in VIDEOS:
         results.append(pd.read_csv(
-            '~/Projects/benchmarking/videostorm/test_coverage_results/videostorm_coverage_results_{}.csv'.format(name)))
+            '/data/zxxia/benchmarking/results/videostorm/test_coverage_results/videostorm_coverage_results_{}.csv'.format(name)))
         # vs_results.append(pd.read_csv(
         #     '~/Projects/benchmarking/videostorm/youtube_overfitting_30s/videostorm_overfitting_results_{}.csv'.format(name)))
     results.append(pd.read_csv(
-        '~/Projects/benchmarking/videostorm/waymo_720p_e2e/videostorm_e2e_waymo.csv'))
+        '/data/zxxia/benchmarking/results/videostorm/waymo_720p_e2e/videostorm_e2e_waymo.csv'))
     # vs_results.append(pd.read_csv(
     #     '~/Projects/benchmarking/videostorm/waymo_overfitting/videostorm_overfitting_waymo.csv'))
 
@@ -260,9 +262,9 @@ def vs_selection():
     plt.legend()
 
     kitti_results = pd.read_csv(
-        '../videostorm/kitti_e2e/videostorm_e2e_kitti.csv')
+        '/data/zxxia/benchmarking/results/videostorm/kitti_e2e/videostorm_e2e_kitti.csv')
     canda_results = pd.read_csv(
-        '../videostorm/canada_e2e/videostorm_e2e_canada.csv')
+        '/data/zxxia/benchmarking/results/videostorm/canada_e2e/videostorm_e2e_canada.csv')
     with open('../plot/vs_video_selection.csv', 'w') as f:
         writer = csv.writer(f)
         writer.writerow(['coverage video', 'coverage gpu', 'coverage f1',
@@ -286,8 +288,8 @@ def aws_selection():
     features = []
     features.append(pd.read_csv(
         'video_features_30s/allvideo_features_long_add_width_20_filter.csv'))
-    features.append(pd.read_csv(
-        'video_features_30s/waymovideo_features_long_add_width_20_filter.csv'))
+    # features.append(pd.read_csv(
+    #     'video_features_30s/waymovideo_features_long_add_width_20_filter.csv'))
     features = pd.concat(features, ignore_index=True)
     print(features.shape)
     features = features.dropna()
@@ -344,11 +346,11 @@ def aws_selection():
         # aws_results.append(pd.read_csv(
         #     '~/Projects/benchmarking/awstream/overfitting_results_30s_30s_label_merge/awstream_spatial_overfitting_results_{}.csv'.format(name)))
         results.append(pd.read_csv(
-            '~/Projects/benchmarking/awstream/e2e_results_30s_10s/awstream_e2e_results_{}.csv'.format(name)))
+            '/data/zxxia/benchmarking/results/awstream/e2e_results_30s_10s/awstream_e2e_results_{}.csv'.format(name)))
     # aws_results.append(pd.read_csv(
     #     '~/Projects/benchmarking/awstream/awstream_overfitting_waymo_30s.csv'))
-    results.append(pd.read_csv(
-        '~/Projects/benchmarking/awstream/awstream_e2e_waymo.csv'))
+    # results.append(pd.read_csv(
+    #     '/data/zxxia/benchmarking/results/awstream/awstream_e2e_waymo.csv'))
 
     results = pd.concat(results, ignore_index=True)
     plt.figure()
@@ -362,7 +364,8 @@ def aws_selection():
     plt.ylim(0, 1.1)
     plt.legend()
 
-    kitti_results = pd.read_csv('../awstream/awstream_e2e_kitti.csv')
+    kitti_results = pd.read_csv(
+        '/data/zxxia/benchmarking/results/awstream/awstream_e2e_kitti.csv')
     plt.figure()
     plt.scatter(results['bandwidth'], results['f1'], label='all', s=1)
     plt.scatter(kitti_results['bandwidth'], kitti_results['f1'], label='kitti')
