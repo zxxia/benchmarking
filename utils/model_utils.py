@@ -3,23 +3,24 @@ import numpy as np
 from benchmarking.utils.utils import IoU
 
 
-def nonnegative(num):
-    if num < 0:
-        return 0.0
-    return num
+# def nonnegative(num):
+#     if num < 0:
+#         return 0.0
+#     return num
 
 
 def load_full_model_detection(filename):
-    '''
-    Load full model detection results. This function should not filter any
-    detections. The filter logic is separated to another function.
-    '''
+    """Load full model detection results.
+
+    This function should not filter any detections. The filter logic is
+    separated to another function.
+    """
     full_model_dt = {}
     with open(filename, 'r') as f:
         for line in f:
             line_list = line.strip().split(',')
             # real image index starts from 1
-            img_index = int(line_list[0].split('.')[0])  # - 1
+            img_index = int(line_list[0].split('.')[0])
             if not line_list[1]:  # no detected object
                 gt_boxes_final = []
             else:
@@ -41,7 +42,7 @@ def load_full_model_detection(filename):
                     gt_boxes_final.append([x, y, x+w, y+h, t, score, obj_id])
             full_model_dt[img_index] = gt_boxes_final
 
-    return full_model_dt, img_index
+    return full_model_dt
 
 
 def filter_video_detections(video_detections, width_range=None,
@@ -153,8 +154,10 @@ def filter_frame_detections(detections, width_range=None, height_range=None,
 
 
 def remove_overlappings(boxes, overlap_thr=None):
-    """ to solve the occutation issue.
-    remove the smaller box if two boxes overlap """
+    """Attempt to solve the occutation issue.
+
+    Remove the smaller box if two boxes overlap.
+    """
     # sort all boxes based on area
     if overlap_thr is None:
         return boxes
@@ -174,12 +177,12 @@ def remove_overlappings(boxes, overlap_thr=None):
 
 
 def compute_area(box):
-    """ compute the absolute area of a box in number of pixels """
+    """Compute the absolute area of a box in number of pixels."""
     return (box[2]-box[0]+1) * (box[3]-box[1]+1)
 
 
 def compute_intersection_area(box_i, box_j):
-    """ compute the relative overlapping of the  """
+    """Compute the relative overlapping of two boxes."""
     xmin = max(box_i[0], box_j[0])
     ymin = max(box_i[1], box_j[1])
     xmax = min(box_i[2], box_j[2])
