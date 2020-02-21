@@ -19,7 +19,7 @@ VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
           'motorway', 'park',  # 'russia', 'russia1', 'traffic',  'tw',   'tw1',
           'tw_under_bridge']
 
-PS = 4
+PS = 20
 
 
 def videostorm_vs_glimpse():
@@ -196,7 +196,8 @@ def videostorm_vs_glimpse():
 
 def awstream_vs_glimpse():
     # Plot glimpse vs. awstream results
-    plt.figure()
+    plt.figure(0)
+    ax = plt.gca()
     gl_path = '/data/zxxia/benchmarking/glimpse/e2e_results_kcf/glimpse_result_{}.csv'
     aws_path = '/data/zxxia/benchmarking/results/awstream/e2e_results_iframe_control/awstream_e2e_results_{}.csv'
     aws_bw = pd.read_csv(
@@ -204,7 +205,13 @@ def awstream_vs_glimpse():
     bw_ratios = []
     acc_ratios = []
     videos_to_plot = []
-    for video in VIDEOS:
+
+    gl_bw_t = []
+    aws_bw_t = []
+    gl_f1_t = []
+    aws_f1_t = []
+    for video in ['crossroad3']:
+        # for video in VIDEOS:
         gl_results = pd.read_csv(gl_path.format(video))
         aws_results = pd.read_csv(aws_path.format(video))
 
@@ -226,21 +233,47 @@ def awstream_vs_glimpse():
             bw_ratios.append(row['bw']/original_bw -
                              aws_results[target_index]['bandwidth'].iloc[0])
             videos_to_plot.append(row['video chunk'])
+            if video == 'crossroad3':
+                gl_bw_t.append(row['bw']/original_bw)
+                aws_bw_t.append(aws_results[target_index]['bandwidth'].iloc[0])
+                gl_f1_t.append(row['f1'])
+                aws_f1_t.append(aws_results[target_index]['f1'].iloc[0])
 
     plt.axvline(x=0, linestyle='--', c='k')
     plt.axhline(y=0, linestyle='--', c='k')
     plt.scatter(bw_ratios, acc_ratios, s=PS)
     plt.xlim(-0.5, 0.5)
+    plt.ylim(-0.15, 0.15)
     # plt.ylim(-0.5, 0.5)
     # for perf, acc, vid in zip(bw_ratios, acc_ratios, videos_to_plot):
-    #     ax.annotate(vid, (perf, acc))
+    #     if (acc < 0 and perf > 0 or acc > 0 and perf < 0) and 'crossroad3' in vid:
+    #         ax.annotate(vid, (perf, acc))
+    ts = np.arange(len(gl_bw_t[31:35])) * 30
+    plt.figure(1)
+    plt.subplot(2, 1, 1)
+    plt.plot(ts, gl_f1_t[31:35], 'o-', label='glimpse')
+    plt.plot(ts, aws_f1_t[31:35], 'o-', label='awstream')
+    plt.title('f1')
+    plt.subplot(2, 1, 2)
+    # gl_results = pd.read_csv(gl_path.format('crossroad3'))
+    # aws_results = pd.read_csv(aws_path.format('crossroad3'))
+    plt.plot(ts, gl_bw_t[31:35], 'o-', label='glimpse')
+    plt.plot(ts, aws_bw_t[31:35], 'o-', label='awstream')
+    plt.title('bandwidth')
+    plt.legend()
+
+    # with open('var_over_time.csv', 'w') as f:
+    #     writer = csv.writer(f)
+    #     for t, aws_acc, aws_perf, gl_acc, gl_perf in zip(
+    #             ts, aws_f1_t[31:35], aws_bw_t[31:35], gl_f1_t[31:35], gl_bw_t[31:35]):
+    #         writer.writerow([t, aws_acc, aws_perf, gl_acc, gl_perf])
     # plt.xlim(0, 2)
     # plt.ylim(0, 2)
-    with open('aw_gl.csv', 'w') as f:
-        writer = csv.writer(f)
-        for perf_ratio, acc_ratio in zip(bw_ratios, acc_ratios):
-            # if perf_ratio > 0 and acc_ratio > 0:
-            writer.writerow([perf_ratio, acc_ratio])
+    # with open('aw_gl.csv', 'w') as f:
+    #     writer = csv.writer(f)
+    #     for perf_ratio, acc_ratio in zip(bw_ratios, acc_ratios):
+    #         # if perf_ratio > 0 and acc_ratio > 0:
+    #         writer.writerow([perf_ratio, acc_ratio])
 
 
 def main():
