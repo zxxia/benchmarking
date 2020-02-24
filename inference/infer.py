@@ -67,8 +67,13 @@ def load_object_detection_results(filename):
                                               'class', 'score', 'object id']
     """
     df = pd.read_csv(filename)
-    dets = {k: g[['xmin', 'ymin', 'xmax', 'ymax', 'class', 'score']
-                 ].values.tolist() for k, g in df.groupby("frame id")}
+    if 'object id' in df.columns:
+        dets = {k: g[['xmin', 'ymin', 'xmax', 'ymax', 'class',
+                      'score', 'object id']
+                     ].values.tolist() for k, g in df.groupby("frame id")}
+    else:
+        dets = {k: g[['xmin', 'ymin', 'xmax', 'ymax', 'class', 'score']
+                     ].values.tolist() for k, g in df.groupby("frame id")}
     return dets
 
 
