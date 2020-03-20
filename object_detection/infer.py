@@ -7,7 +7,7 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import pandas as pd
-import tensorflow as tf
+# import tensorflow as tf
 from PIL import Image
 
 from benchmarking.utils.utils import nms
@@ -15,8 +15,7 @@ from benchmarking.utils.utils import nms
 from model import Model
 
 
-def write_to_file(csvwriter, img_path, resolution, detections, profile_writer,
-                  t_used):
+def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
     """Write detetions into a csv file."""
     # pdb.set_trace()
     frame_id = int(os.path.basename(os.path.splitext(img_path)[0]))
@@ -27,19 +26,13 @@ def write_to_file(csvwriter, img_path, resolution, detections, profile_writer,
                                      detections['detection_boxes'],
                                      detections['detection_scores']):
             csvwriter.writerow(
-                [frame_id,
-                 box[1]*resolution[1], box[0]*resolution[0],
-                 box[3]*resolution[1], box[2]*resolution[0], label, score])
+                [frame_id, box[1], box[0], box[3], box[2], label, score])
     profile_writer.writerow([frame_id, t_used])
 
 
 def infer(args):
     """Do object detection."""
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    assert len(gpus) > 0, "Not enough GPU hardware devices available"
-    tf.config.experimental.set_visible_devices(gpus[args.device], 'GPU')
-    tf.config.experimental.set_memory_growth(gpus[args.device], True)
-    model = Model(args.model)
+    model = Model(args.model, args.device)
     model_name = os.path.basename(args.model)
 
     dets_path = os.path.join(args.output_path, f'{model_name}_detections.csv')
@@ -54,8 +47,7 @@ def infer(args):
         for i, img_path in enumerate(img_paths):
             image = np.array(Image.open(img_path))
             detections, t_used = model.infer_single_image(image)
-            write_to_file(writer, img_path, image.shape,
-                          detections, profile_writer, t_used)
+            write_to_file(writer, img_path, detections, profile_writer, t_used)
             if (i+1) % 10 == 0 or (i+1) == len(img_paths):
                 print('Processed {}/{} images...'.format(i+1, len(img_paths)))
 
@@ -63,8 +55,7 @@ def infer(args):
         for i, img_path in enumerate(img_paths):
             image = np.array(Image.open(img_path))
             detections, t_used = model.infer_single_image(image)
-            write_to_file(writer, img_path, image.shape,
-                          detections, profile_writer, t_used)
+            write_to_file(writer, img_path, detections, profile_writer, t_used)
             if (i+1) % 10 == 0 or (i+1) == len(img_paths):
                 print('Processed {}/{} images...'.format(i+1, len(img_paths)))
 

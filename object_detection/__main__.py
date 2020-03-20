@@ -1,6 +1,6 @@
-"""Inference module main function."""
-from inference.parser import parse_args
-from inference.infer import infer
+"""Object detection module main function."""
+from object_detection.parser import parse_args
+from object_detection.infer import infer
 
 if __name__ == '__main__':
     args = parse_args()
