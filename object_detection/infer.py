@@ -7,18 +7,17 @@ from collections import Counter, defaultdict
 
 import numpy as np
 import pandas as pd
-# import tensorflow as tf
 from PIL import Image
 
-from benchmarking.utils.utils import nms
+from utils.utils import nms
 
-from model import Model
+from object_detection.model import Model
 
 
 def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
     """Write detetions into a csv file."""
     # pdb.set_trace()
-    frame_id = int(os.path.basename(os.path.splitext(img_path)[0]))
+    frame_id = int(os.path.basename(os.path.splitext(img_path)[0])) - 1
     if detections['num_detections'] == 0:
         csvwriter.writerow([frame_id, '', '', '', '', '', ''])
     else:
@@ -30,31 +29,31 @@ def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
     profile_writer.writerow([frame_id, t_used])
 
 
-def infer(args):
+def infer(input_path, output_path, device, model_path):
     """Do object detection."""
-    model = Model(args.model, args.device)
-    model_name = os.path.basename(args.model)
+    model = Model(model_path, device)
+    model_name = os.path.basename(model_path)
 
-    dets_path = os.path.join(args.output_path, f'{model_name}_detections.csv')
-    profile_path = os.path.join(args.output_path, f'{model_name}_profile.csv')
+    dets_path = os.path.join(output_path, f'{model_name}_detections.csv')
+    profile_path = os.path.join(output_path, f'{model_name}_profile.csv')
     with open(dets_path, 'w', 1) as f, open(profile_path, 'w', 1) as f_profile:
         writer = csv.writer(f)
         writer.writerow(['frame id', 'xmin', 'ymin',
                          'xmax', 'ymax', 'class', 'score'])
         profile_writer = csv.writer(f_profile)
         profile_writer.writerow(['frame id', 'time used(s)'])
-        img_paths = sorted(glob.glob(os.path.join(args.input_path, '*.jpg')))
+        img_paths = sorted(glob.glob(os.path.join(input_path, '*.jpg')))
         for i, img_path in enumerate(img_paths):
             image = np.array(Image.open(img_path))
-            detections, t_used = model.infer_single_image(image)
+            detections, t_used = model.infer(image)
             write_to_file(writer, img_path, detections, profile_writer, t_used)
             if (i+1) % 10 == 0 or (i+1) == len(img_paths):
                 print('Processed {}/{} images...'.format(i+1, len(img_paths)))
 
-        img_paths = sorted(glob.glob(os.path.join(args.input_path, '*.png')))
+        img_paths = sorted(glob.glob(os.path.join(input_path, '*.png')))
         for i, img_path in enumerate(img_paths):
             image = np.array(Image.open(img_path))
-            detections, t_used = model.infer_single_image(image)
+            detections, t_used = model.infer(image)
             write_to_file(writer, img_path, detections, profile_writer, t_used)
             if (i+1) % 10 == 0 or (i+1) == len(img_paths):
                 print('Processed {}/{} images...'.format(i+1, len(img_paths)))
@@ -63,7 +62,7 @@ def infer(args):
     dets = smooth_annot(dets)
     dets = tag_object(dets)
     smoothed_dets_path = os.path.join(
-        args.output_path, f'{model_name}_smoothed_detections.csv')
+        output_path, f'{model_name}_smoothed_detections.csv')
     with open(smoothed_dets_path, 'w', 1) as f:
         writer = csv.writer(f)
         writer.writerow(['frame id', 'xmin', 'ymin',

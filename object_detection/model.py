@@ -19,7 +19,7 @@ class Model(object):
         model = tf.saved_model.load(str(model_dir))
         self.model = model.signatures['serving_default']
 
-    def infer_single_image(self, image):
+    def infer(self, image):
         # TODO: support batch inference
         """Run object detection on a single image."""
         image = np.asarray(image)
