@@ -1,8 +1,12 @@
 """Implementation of Glimpse Client."""
+import argparse
 import copy
+import csv
 import http.client
 import json
+import os
 import subprocess
+import time
 
 import cv2
 import numpy as np
@@ -15,7 +19,7 @@ BUFFER_SIZE = 1024 * 4  # 4KB
 class Client(object):
     """Implementation of Glimpse Client."""
 
-    def __init__(self, server_addr, port, video_path, config_1, config_2):
+    def __init__(self, server_addr, port, video_path, config_1, config_2=None):
         """Client initialization.
 
         Args
@@ -31,7 +35,9 @@ class Client(object):
             self.video.resolution[1]/config_1
 
         self.trackers_dict = None  # trackers
-        self.frame_detections = {}
+        self.detections = {}
+        self.profile = {}
+        self.bytes_sent = {}
 
     def send_stream(self):
         """Send stream to server."""
@@ -61,16 +67,22 @@ class Client(object):
                     prev_triggered_frame_gray is None)\
                         or frame_difference(prev_frame_gray, frame_gray, None,
                                             None) > self.frame_diff_thresh:
-                    boxes = self.send_frame(raw_frame)
-                    boxes = json.loads(boxes)
+                    # TODO: maintain an active cache and implement the frame
+                    # picking logic described in the paper.
+                    boxes, t_used, bytes_sent = self.send_frame(raw_frame)
+                    t_used = float(t_used)
                     prev_triggered_frame_gray = copy.deepcopy(frame_gray)
                     self.init_trackers(frame_idx, frame, boxes)
                 else:
-                    # TODO: Tracking
-                    boxes = self.update_trackers(frame)
+                    # Tracking
+                    boxes, t_used = self.update_trackers(frame)
+                    t_used = 0  # gpu time used is 0
+                    bytes_sent = 0
 
                 prev_frame_gray = copy.deepcopy(frame_gray)
-                self.frame_detections[frame_idx] = boxes
+                self.detections[frame_idx] = boxes
+                self.profile[frame_idx] = t_used
+                self.bytes_sent[frame_idx] = bytes_sent
                 frame_idx += 1
                 print('frame {}: {}'.format(frame_idx, len(boxes)))
                 # print(boxes)
@@ -105,7 +117,8 @@ class Client(object):
         # print(len(raw_frame), len(compressed_frame))
         self.conn.request('POST', '/post', compressed_frame, headers)
         response = self.conn.getresponse()
-        return response.read().decode()
+        boxes, t_used = json.loads(response.read().decode())
+        return boxes, t_used, len(compressed_frame)
 
     def init_trackers(self, frame_idx, frame, boxes):
         """Initialize trackers on Glimpose client."""
@@ -115,45 +128,64 @@ class Client(object):
         for obj_id, box in enumerate(boxes):
             xmin, ymin, xmax, ymax, t, score = box
             tracker = cv2.TrackerKCF_create()
-            # TODO: double check the definition of box input
             tracker.init(frame_copy,
                          (xmin*640/resolution[0], ymin*480/resolution[1],
                           (xmax-xmin)*640/resolution[0],
                           (ymax-ymin)*480/resolution[1]))
-            self.trackers_dict[str(frame_idx)+'_'+str(obj_id)] = tracker
+            self.trackers_dict[f'{frame_idx}_{obj_id}_{t}'] = tracker
 
     def update_trackers(self, frame):
         """Return the tracked bounding boxes on new frame."""
         resolution = self.video.resolution
         frame_copy = cv2.resize(frame, (640, 480))
-        # start_t = time.time()
+        start_t = time.time()
         boxes = []
         to_delete = []
         for obj, tracker in self.trackers_dict.items():
             # obj_id = obj.split('_')[1]
+            t = obj.split('_')[-1]
             ok, bbox = tracker.update(frame_copy)
             if ok:
                 # tracking succeded
-                # TODO: change the box format
                 x, y, w, h = bbox
-                boxes.append([int(x*resolution[0]/640),
-                              int(y*resolution[1]/480),
-                              int((x+w)*resolution[0]/640),
-                              int((y+h)*resolution[1]/480),
-                              3, 1])  # , int(obj_id)
+                boxes.append([x*resolution[0]/640, y*resolution[1]/480,
+                              (x+w)*resolution[0]/640, (y+h)*resolution[1]/480,
+                              int(t), 1])
             else:
                 # tracking failed
                 # record the trackers that need to be deleted
                 to_delete.append(obj)
         for obj in to_delete:
             self.trackers_dict.pop(obj)
-        # debug_print("tracking used: {}s".format(time.time()-start_t))
+        t_used = time.time() - start_t
 
-        return boxes
+        return boxes, t_used
 
     def dump_detections(self, filename):
         """Dump detections to disk."""
-        raise NotImplementedError
+        with open(filename, 'w', 1) as f:
+            writer = csv.writer(f)
+            header = ['frame id', 'xmin', 'ymin', 'xmax', 'ymax',
+                      'class', 'score']
+            writer.writerow(header)
+            for frame_id in sorted(self.detections):
+                boxes = self.detections[frame_id]
+                if not boxes:
+                    writer.writerow([frame_id, '', '', '', '', '', ''])
+                for box in boxes:
+                    xmin, ymin, xmax, ymax, obj_type, score = box
+                    writer.writerow(
+                        [frame_id, xmin, ymin, xmax, ymax, obj_type, score])
+
+    def dump_profile(self, filename):
+        """Dump profile to disk."""
+        with open(filename, 'w', 1) as f:
+            writer = csv.writer(f)
+            writer.writerow(['frame id', 'gpu time used(s)', 'bytes'])
+            for frame_id in sorted(self.profile):
+                t_used = self.profile[frame_id]
+                bytes_sent = self.bytes_sent[frame_id]
+                writer.writerow([frame_id, t_used, bytes_sent])
 
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
@@ -187,12 +219,30 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
     return pix_change  # , pix_change_obj, pix_change_bg, time_elapsed
 
 
+def parse_args():
+    """Parse arguments."""
+    parser = argparse.ArgumentParser(description="Glimpse Client.")
+    parser.add_argument("--hostname", type=str, required=True,
+                        help="Hostname to connect to.")
+    parser.add_argument("--port", type=int, required=True,
+                        help="Port to connect to.")
+    parser.add_argument("--video_path", type=str, required=True,
+                        help="Path to video file.")
+    parser.add_argument("--config1", type=int, default=10,
+                        help="frame differece thresh = pixel number/config1")
+    parser.add_argument("--output_path", type=str, required=True,
+                        help="output path where output files will be saved to")
+    args = parser.parse_args()
+    return args
+
+
 def main():
     """Perform test."""
-    client = Client('localhost', 10000, '/data/zxxia/videos/test/traffic.mp4',
-                    10, 2)
-    # client.connect('localhost', 10000)
+    args = parse_args()
+    client = Client(args.hostname, args.port, args.video_path, args.config1)
     client.send_stream()
+    client.dump_detections(os.path.join(args.output_path, 'dets.csv'))
+    client.dump_profile(os.path.join(args.output_path, 'profile.csv'))
 
 
 if __name__ == "__main__":
