@@ -1,13 +1,13 @@
 """Server Module."""
 import io
 import json
-import pdb
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import BytesIO
 
 from PIL import Image
 
 from object_detection.model import Model
+import cv2
 
 # device's IP address
 SERVER_HOST = "localhost"
@@ -23,7 +23,6 @@ class Server(HTTPServer):
         # listen to client
         super().__init__((hostname, port), RequestHandler)
         self.model = Model(model_path, device)
-        # model_name = os.path.basename(model_path)
 
 
 class RequestHandler(BaseHTTPRequestHandler):
@@ -36,17 +35,19 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
         response = BytesIO()
+        print(len(body))
         img = Image.open(io.BytesIO(body))
+        if cv2.waitKey(0) & 0xFF == ord('q'):
+            cv2.destroyAllWindows()
         detections, _ = self.server.model.infer(img)
         # parse detections to user-friendly format
         parsed_detections = []
-        # frame_id = 0
         for label, box, score in zip(detections['detection_classes'],
                                      detections['detection_boxes'],
                                      detections['detection_scores']):
             parsed_detections.append(
-                [float(box[1]), float(box[0]), float(box[3]),
-                 float(box[2]), int(label), float(score), 0])
+                [float(box[0]), float(box[1]), float(box[2]),
+                 float(box[3]), int(label), float(score)])
 
         response.write(bytes(json.dumps(parsed_detections), 'ascii'))
         self.wfile.write(response.getvalue())
@@ -54,7 +55,8 @@ class RequestHandler(BaseHTTPRequestHandler):
 
 def main():
     """Simle Test."""
-    model_path = '/data/zxxia/models/research/object_detection/ssd_mobilenet_v2_coco_2018_03_29'
+    # model_path = '/data/zxxia/models/research/object_detection/ssd_mobilenet_v2_coco_2018_03_29'
+    model_path = '/data/zxxia/models/research/object_detection/faster_rcnn_resnet101_coco_2018_01_28'
     server = Server(SERVER_HOST, SERVER_PORT, model_path, 0, '.')
     server.serve_forever()
     # server.run()

@@ -1,7 +1,6 @@
 """Implementation of Glimpse Client."""
 import copy
 import http.client
-# import pdb
 import json
 import subprocess
 
@@ -32,57 +31,73 @@ class Client(object):
             self.video.resolution[1]/config_1
 
         self.trackers_dict = None  # trackers
+        self.frame_detections = {}
 
     def send_stream(self):
         """Send stream to server."""
         cmd = ['ffmpeg', '-i', self.video.video_path,  '-pix_fmt', 'bgr24',
                '-vcodec', 'rawvideo', '-an', '-sn', '-f', 'image2pipe', '-',
                '-hide_banner']
-        pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                bufsize=BUFFER_SIZE)
-        resolution = self.video.resolution
+        try:
+            pipe = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                    bufsize=BUFFER_SIZE)
+            resolution = self.video.resolution
 
-        prev_frame_gray = None
-        prev_triggered_frame_gray = None
-        frame_idx = 0
-        while(True):
-            # read the image from the video file
-            raw_frame = pipe.stdout.read(resolution[0]*resolution[1]*3)
-            if not raw_frame:
-                # file transmitting is done
-                break
+            prev_frame_gray = None
+            prev_triggered_frame_gray = None
+            frame_idx = 0
+            while(True):
+                # read the image from the video file
+                raw_frame = pipe.stdout.read(resolution[0]*resolution[1]*3)
+                if not raw_frame:  # file transmitting is done
+                    break
 
-            # convert read bytes to np
-            frame = np.fromstring(raw_frame, dtype='uint8')
-            frame = frame.reshape((resolution[1], resolution[0], 3))
-            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # convert read bytes to np
+                frame = np.fromstring(raw_frame, dtype='uint8')
+                frame = frame.reshape((resolution[1], resolution[0], 3))
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            if (prev_frame_gray is None and prev_triggered_frame_gray is None)\
-                    or frame_difference(prev_frame_gray, frame_gray, None,
-                                        None) > self.frame_diff_thresh:
-                boxes = self.send_frame(raw_frame)
-                boxes = json.loads(boxes)
-                prev_triggered_frame_gray = copy.deepcopy(frame_gray)
-                self.init_trackers(frame_idx, frame, boxes)
-            else:
-                # TODO: Tracking
-                boxes = self.update_trackers(frame)
+                if (prev_frame_gray is None and
+                    prev_triggered_frame_gray is None)\
+                        or frame_difference(prev_frame_gray, frame_gray, None,
+                                            None) > self.frame_diff_thresh:
+                    boxes = self.send_frame(raw_frame)
+                    boxes = json.loads(boxes)
+                    prev_triggered_frame_gray = copy.deepcopy(frame_gray)
+                    self.init_trackers(frame_idx, frame, boxes)
+                else:
+                    # TODO: Tracking
+                    boxes = self.update_trackers(frame)
 
-            prev_frame_gray = copy.deepcopy(frame_gray)
-            frame_idx += 1
-            print(boxes)
+                prev_frame_gray = copy.deepcopy(frame_gray)
+                self.frame_detections[frame_idx] = boxes
+                frame_idx += 1
+                print('frame {}: {}'.format(frame_idx, len(boxes)))
+                # print(boxes)
 
-        pipe.stdout.flush()
+                # color = yellow = (0, 255, 255)
+                # for box in boxes:
+                #     [xmin, ymin, xmax, ymax] = box[:4]
+                #     cv2.rectangle(frame, (int(xmin), int(ymin)), (int(xmax),
+                # int(ymax)), color, 1)
+                # cv2.imshow(str(frame_idx), frame)
+                # cv2.moveWindow(str(frame_idx), 0, 0)
+                # if cv2.waitKey(0) & 0xFF == ord('q'):
+                #     cv2.destroyAllWindows()
+        finally:
+            pipe.stdout.flush()
 
     def send_frame(self, raw_frame):
         """Send a frame to server."""
+        resolution = self.video.resolution
         headers = {'Content-type': 'application/octet-stream'}
 
         command = ['ffmpeg', '-y', '-f', 'rawvideo', '-vcodec', 'rawvideo',
-                   '-s', '1280x720',  '-pix_fmt', 'bgr24', '-i', '-',
+                   '-s', '{}x{}'.format(resolution[0], resolution[1]),
+                   '-pix_fmt', 'bgr24', '-i', '-',
                    '-an',  # Tells FFMPEG not to expect any audio
                    '-vcodec', 'mjpeg', '-f', 'image2', '-frames:v', '1',
-                   '-qscale:v', '2', '-']
+                   '-qscale:v', '2', '-', '-hide_banner']
         proc = subprocess.Popen(command, stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
@@ -94,33 +109,38 @@ class Client(object):
 
     def init_trackers(self, frame_idx, frame, boxes):
         """Initialize trackers on Glimpose client."""
+        resolution = self.video.resolution
         self.trackers_dict = {}
         frame_copy = cv2.resize(frame, (640, 480))
-        for box in boxes:
-            xmin, ymin, xmax, ymax, t, score, obj_id = box
+        for obj_id, box in enumerate(boxes):
+            xmin, ymin, xmax, ymax, t, score = box
             tracker = cv2.TrackerKCF_create()
             # TODO: double check the definition of box input
             tracker.init(frame_copy,
-                         (xmin*640/1280, ymin*480/720,
-                          (xmax-xmin)*640/1280, (ymax-ymin)*480/720))
+                         (xmin*640/resolution[0], ymin*480/resolution[1],
+                          (xmax-xmin)*640/resolution[0],
+                          (ymax-ymin)*480/resolution[1]))
             self.trackers_dict[str(frame_idx)+'_'+str(obj_id)] = tracker
 
     def update_trackers(self, frame):
         """Return the tracked bounding boxes on new frame."""
+        resolution = self.video.resolution
         frame_copy = cv2.resize(frame, (640, 480))
         # start_t = time.time()
         boxes = []
         to_delete = []
         for obj, tracker in self.trackers_dict.items():
-            obj_id = obj.split('_')[1]
+            # obj_id = obj.split('_')[1]
             ok, bbox = tracker.update(frame_copy)
             if ok:
                 # tracking succeded
                 # TODO: change the box format
                 x, y, w, h = bbox
-                boxes.append([int(x*1280/640), int(y*720/480),
-                              int((x+w)*1280/640), int((y+h)*720/480),
-                              3, 1, int(obj_id)])
+                boxes.append([int(x*resolution[0]/640),
+                              int(y*resolution[1]/480),
+                              int((x+w)*resolution[0]/640),
+                              int((y+h)*resolution[1]/480),
+                              3, 1])  # , int(obj_id)
             else:
                 # tracking failed
                 # record the trackers that need to be deleted
@@ -131,12 +151,15 @@ class Client(object):
 
         return boxes
 
+    def dump_detections(self, filename):
+        """Dump detections to disk."""
+        raise NotImplementedError
+
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
                      thresh=35):
     """Compute the sum of pixel differences which are greater than thresh."""
     # thresh = 35 is used in Glimpse paper
-    # pdb.set_trace()
     # start_t = time.time()
     diff = np.absolute(new_frame.astype(int) - old_frame.astype(int))
     mask = np.greater(diff, thresh)
@@ -167,7 +190,7 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
 def main():
     """Perform test."""
     client = Client('localhost', 10000, '/data/zxxia/videos/test/traffic.mp4',
-                    4, 2)
+                    10, 2)
     # client.connect('localhost', 10000)
     client.send_stream()
 
