@@ -1,10 +1,11 @@
-"""VideoStrom Definition."""
-import csv
+"""VideoStrom Offline Implementation."""
 import copy
+import csv
 from collections import defaultdict
-from benchmarking.utils.model_utils import eval_single_image
-from benchmarking.utils.utils import interpolation, compute_f1
-from benchmarking.constants import MODEL_COST
+
+from constants import MODEL_COST
+from utils.utils import interpolation
+from evaluation.f1 import compute_f1, evaluate_frame
 
 
 class VideoStorm():
@@ -114,7 +115,7 @@ class VideoStorm():
                 triggered_frames.append(img_index)
 
             tpos[img_index], fpos[img_index], fneg[img_index] = \
-                eval_single_image(current_gt, dt_boxes_final)
+                evaluate_frame(current_gt, dt_boxes_final)
 
         tp_total = sum(tpos.values())
         fp_total = sum(fpos.values())
@@ -125,24 +126,24 @@ class VideoStorm():
         return f1_score, gpu_time/original_gpu_time, triggered_frames
 
 
-def load_videostorm_e2e_results(filename):
-    """Load videostorm result file."""
-    videos = []
-    model_list = []
-    gpu_list = []
-    fps_list = []
-    acc_list = []
-    with open(filename, 'r') as f_vs:
-        f_vs.readline()
-        for line in f_vs:
-            line_list = line.strip().split(',')
-            videos.append(line_list[0])
-            model_list.append(line_list[1])
-            gpu_list.append(float(line_list[2]))
-            fps_list.append(float(line_list[3]))
-            acc_list.append(float(line_list[4]))
-
-    return videos, model_list, gpu_list, fps_list, acc_list
+# def load_videostorm_e2e_results(filename):
+#     """Load videostorm result file."""
+#     videos = []
+#     model_list = []
+#     gpu_list = []
+#     fps_list = []
+#     acc_list = []
+#     with open(filename, 'r') as f_vs:
+#         f_vs.readline()
+#         for line in f_vs:
+#             line_list = line.strip().split(',')
+#             videos.append(line_list[0])
+#             model_list.append(line_list[1])
+#             gpu_list.append(float(line_list[2]))
+#             fps_list.append(float(line_list[3]))
+#             acc_list.append(float(line_list[4]))
+#
+#     return videos, model_list, gpu_list, fps_list, acc_list
 
 
 # def load_videostorm_e2e_profile(filename):
@@ -166,38 +167,38 @@ def load_videostorm_e2e_results(filename):
 #     return videos, gpu_dict, fps_dict, acc_dict
 
 
-def load_videostorm_results(filename):
-    """Load videostorm result file."""
-    videos = []
-    perf_list = []
-    acc_list = []
-    with open(filename, 'r') as f_vs:
-        f_vs.readline()
-        for line in f_vs:
-            line_list = line.strip().split(',')
-            videos.append(line_list[0])
-            perf_list.append(float(line_list[1]))
-
-            if len(line_list) == 3:
-                acc_list.append(float(line_list[2]))
-
-    return videos, perf_list, acc_list
-
-
-def load_videostorm_profile(filename):
-    """Load videostorm profiling file."""
-    videos = []
-    perf_dict = defaultdict(list)
-    acc_dict = defaultdict(list)
-    with open(filename, 'r') as f_vs:
-        f_vs.readline()  # remove headers
-        for line in f_vs:
-            line_list = line.strip().split(',')
-            video = line_list[0]
-            if video not in videos:
-                videos.append(video)
-            perf_dict[video].append(float(line_list[1]))
-            # if len(line_list) == 3:
-            acc_dict[video].append(float(line_list[2]))
-
-    return videos, perf_dict, acc_dict
+# def load_videostorm_results(filename):
+#     """Load videostorm result file."""
+#     videos = []
+#     perf_list = []
+#     acc_list = []
+#     with open(filename, 'r') as f_vs:
+#         f_vs.readline()
+#         for line in f_vs:
+#             line_list = line.strip().split(',')
+#             videos.append(line_list[0])
+#             perf_list.append(float(line_list[1]))
+#
+#             if len(line_list) == 3:
+#                 acc_list.append(float(line_list[2]))
+#
+#     return videos, perf_list, acc_list
+#
+#
+# def load_videostorm_profile(filename):
+#     """Load videostorm profiling file."""
+#     videos = []
+#     perf_dict = defaultdict(list)
+#     acc_dict = defaultdict(list)
+#     with open(filename, 'r') as f_vs:
+#         f_vs.readline()  # remove headers
+#         for line in f_vs:
+#             line_list = line.strip().split(',')
+#             video = line_list[0]
+#             if video not in videos:
+#                 videos.append(video)
+#             perf_dict[video].append(float(line_list[1]))
+#             # if len(line_list) == 3:
+#             acc_dict[video].append(float(line_list[2]))
+#
+#     return videos, perf_dict, acc_dict
