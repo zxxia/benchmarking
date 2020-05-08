@@ -1,47 +1,40 @@
 """Definition of Video class."""
 import os
 import subprocess
-import json
+
+import cv2
+
+# from benchmarking.constants import RESOL_DICT, COCOLabels
+from utils.utils import smooth_classification, \
+    convert_detection_to_classification
+
+# , filter_video_detections,
+#     load_full_model_detection, remove_overlappings, )
 
 
-def read_metadata(video_filename):
-    """Return the metadata of a video file(mp4)."""
-    metadata = {}
-    cmd = "ffprobe -v quiet -print_format json -show_format -show_streams "\
-        "-select_streams v {}".format(video_filename).split()
-    output = subprocess.run(
-        cmd, check=True, stdout=subprocess.PIPE).stdout.decode('utf-8')
-    output = json.loads(output)
-    for stream in output['streams']:
-        if stream['codec_type'] == 'video' and stream['codec_name'] == 'h264':
-            metadata['resolution'] = (stream['width'], stream['height'])
-            a, b = stream['avg_frame_rate'].split('/')
-            metadata['frame rate'] = int(round(float(a) / float(b)))
-            metadata['frame count'] = int(stream['nb_frames'])
-            metadata['duration'] = float(stream['duration'])
+class Video:
+    """Base class of Video."""
 
-    return metadata
+    def __init__(self, name, frame_rate, resolution, detections,
+                 detections_nofilter, image_path,
+                 video_type, model, dropped_detections=None):
+        """Constructor."""
+        self._name = name
+        self._frame_rate = frame_rate
+        self._resolution = resolution
+        self._detections_nofilter = detections_nofilter
+        self._detections = detections
+        self._dropped_detections = dropped_detections
+        self._frame_count = len(detections)
+        self._image_path = image_path
+        self._video_type = video_type
+        self._model = model
+        self._quality_level = 23
 
-
-class Video(object):
-    """Class of Video."""
-
-    def __init__(self, video_path, frames_folder=None):
-        """Video Constructor."""
-        # Sanity check
-        if not os.path.exists(video_path):
-            raise Exception(f'No {video_path}.mp4 in {video_path}.')
-
-        self._frames_folder = frames_folder
-        metadata = read_metadata(self.video_path)
-
-        self._video_path = video_path
-        # self._cache = cache
-        self._frame_rate = metadata['frame rate']
-        self._resolution = metadata['resolution']
-        self._frame_count = metadata['frame count']
-        # self._video_type = None
-        self._quality_parameter = None  # quality_parameter
+    @property
+    def video_name(self):
+        """Return video name."""
+        return self._name
 
     @property
     def frame_rate(self):
@@ -59,50 +52,79 @@ class Video(object):
         return self._frame_count
 
     @property
-    def quality_parameter(self):
+    def quality_level(self):
         """Return quality level of the video."""
-        return self._quality_parameter
+        return self.quality_level
 
-    # @property
-    # def video_type(self):
-    #     """Return video type."""
-    #     # TODO: fix
-    #     raise NotImplementedError
-    #     # return self._video_type
+    @property
+    def start_frame_index(self):
+        """Return the minimum frame index of the video."""
+        return min(self._detections)
+
+    @property
+    def end_frame_index(self):
+        """Return the maximum frame index of the video."""
+        return max(self._detections)
+
+    @property
+    def video_type(self):
+        """Return video type."""
+        return self._video_type
 
     @property
     def duration(self):
         """Return video duration in seconds."""
         return self._frame_count / self._frame_rate
 
-    def get_frame_image_name(self, frame_index):
-        """Return the image file name at frame index."""
-        assert 0 <= frame_index < self._frame_count, \
-            f'{frame_index} is not in range [0, {self.count})'
-        if not os.path.exits(self._frames_folder):
-            os.mkdir(self._image_frames_folder)
-        img_file = os.path.join(
-            self._frames_folder, '{:06d}.jpg'.format(frame_index))
-        return img_file
+    @property
+    def model(self):
+        """Return detection model type."""
+        return self._model
 
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
-        img_path = self.get_frame_image_name(frame_index)
-        assert 0 <= frame_index < self._frame_count, \
-            f'{frame_index} is not in range [0, {self.count})'
-        assert os.path.exists(
-            img_path), f"{img_path} does not exist. Please decode first."
-        img = cv2.imread(img_path)
-        assert img.shape[0] == self._resolution[1] and \
-            img.shape[1] == self._resolution[0]
+        img = cv2.imread(self.get_frame_image_name(frame_index))
+
+        if img.shape[0] != self._resolution[1] or \
+                img.shape[1] != self._resolution[0]:
+            img = cv2.resize(img, self._resolution,
+                             interpolation=cv2.INTER_AREA)
         return img
+
+    def get_frame_image_name(self, frame_index):
+        """Return the image file name at frame index."""
+        return None
 
     def get_frame_filesize(self, frame_index):
         """Return the image file size at frame index."""
-        assert 0 <= frame_index < self._frame_count, \
-            f'{frame_index} is not in range [0, {self.count})'
         filename = self.get_frame_image_name(frame_index)
         return os.path.getsize(filename)
+
+    def get_frame_detection(self, frame_index):
+        """Return the object detections at frame index."""
+        return self._detections[frame_index]
+
+    def get_dropped_frame_detection(self, frame_index):
+        """Return the object detections which are dropped at frame index."""
+        if self._dropped_detections is None:
+            return None
+        return self._dropped_detections[frame_index]
+
+    def get_dropped_video_detection(self):
+        """Return the dropped object detections of the video by filter."""
+        return self._dropped_detections
+
+    def get_video_detection(self):
+        """Return the object detections of the video."""
+        return self._detections
+
+    def get_video_classification_label(self):
+        """Return the classification label for each video frame."""
+        classification_labels = convert_detection_to_classification(
+            self._detections_nofilter, self._resolution)
+        smoothed_classification_labels = smooth_classification(
+            classification_labels)
+        return smoothed_classification_labels
 
     def encode(self, output_video_name, target_frame_indices=None,
                target_frame_rate=None, save_video=True, crf=25):
@@ -172,39 +194,3 @@ class Video(object):
         print('finish generating {} and size={}'.format(
             output_video_name, video_size))
         return video_size
-
-    # a better way to create a video
-    def encode_ffmpeg(self, frame_range, every_n_frame, resolution,
-                      quality_parameter, output_video_name):
-        """Create a video using ffmepg."""
-        # TODO: need to add frame rate tuning?
-        # TODO: need to test the functionality
-        assert isinstance(resolution, tuple) and len(resolution) == 2 and \
-            all(isinstance(x, int) for x in resolution), "resolution must " \
-            "be in then format of (int, int)"
-        assert isinstance(quality_parameter, float) and \
-            0 <= quality_parameter <= 51, 'quality_parameter must be a float '\
-            'value in range [0, 51].'
-        # output_video_name = os.path.join(output_path, "{}.mp4".format(name))
-        cmd = "ffmpeg -y -i {} -an -vf " \
-            "select=between(n\,{}\,{})*not(mod(n\,{})),setpts=PTS-STARTPTS " \
-            "-vsync vfr -s {}x{} -crf {} -vcodec libx264 {} -hide_banner"\
-            .format(self._video_path, frame_range[0], frame_range[1],
-                    every_n_frame, resolution[0], resolution[1],
-                    quality_parameter, output_video_name)
-        print(cmd)
-        subprocess.run(cmd.split(' '), check=True)
-
-    def decode(self, resolution, frames_folder=None):
-        """Extract frames from videos."""
-        if frames_folder is not None:
-            output_img_name = os.path.join(frames_folder, "%06d.jpg")
-        else:
-            if not os.path.exists(self._frames_folder):
-                os.mkdir(self._output_path)
-            output_img_name = os.path.join(self._output_path, "%06d.jpg")
-        cmd = "ffmpeg -y -i {} -s {}x{} -start_number 0 -qscale:v 2 " \
-            "-hide_banner {}".format(self._video_path, resolution[0],
-                                     resolution[1], output_img_name)
-        print(cmd)
-        subprocess.run(cmd.split(' '), check=True)
