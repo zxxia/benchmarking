@@ -1,79 +1,76 @@
-# Benchmarking
+# Yoda (A Video analytic pipline Benchmark)
 
-Two parts of the code:
+## Video Download
 
-### 1. Video download, label and profile.
+1. Use [**youtube-dl**](https://ytdl-org.github.io/youtube-dl/index.html) to download
+a video.
+   1. Install youtube-dl. e.g. ```pip install youtube-dl```.
+   2. Use ```youtube-dl -F <youtube URL>``` to list all formats, and choose
+   a format id (e.g. 96, 137, best).
+   3. If it is a live video, use the following command  
+   ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy -t 00:20:00 {VDIEONAME}.ts```
+   4. if not live video, run  
+   ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy {VIDEONAME}.mp4```
+2. Or use [**streamlink**](https://streamlink.github.io/) to download a video.
+3. Use [**ffmpeg**](https://www.ffmpeg.org/) to transform and extract the
+frames e.g. ```ffmpeg -i <Video Filename> %06d.jpg -hide_banner```
 
-To build a dataset from a youtube video:
-1. use **youtube-dl** to download the video.
-  
-   1. Install youtube-dl
-   
-   2. Use ``` youtube-dl -F <youtube URL> ``` to list all formats, and choose a format id (e.g. 96).
-   
-   3.  If it is a live video, use the following command
-      ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy -t 00:20:00 output.ts```
-   
-   4. if not live video, run 
-   
-      ```ffmpeg -i $(youtube-dl -f {format_id} -g <youtube URL>) -c copy {VIDEONAME}.mp4```
-   
-      
-   
-2. use ffmpeg to extract the frames
-   ```ffmpeg -i <Video Filename> %06d.jpg -hide_banner```
+## Model and Label
 
-3. Use metadata_generator.py in new_video folder to generate metadta for the video. Metadata should be generated in the same folder of the input video.
-   ```python3 metadata_generator.py [Path to input video] [Output path of output json metadata file]```
+1. The DNN models used in this project are downloaded from
+[**Tensorflow Model Zoo**](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md).
+2. Models used in this project:
+    * **Golden Model**: [faster_rcnn_resnet101_coco](http://download.tensorflow.org/models/object_detection/rfcn_resnet101_coco_2018_01_28.tar.gz)
+    * [faster_rcnn_inception_v2_coco](http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2018_01_28.tar.gz)
+    * [ssd_mobilenet_v2_coco](http://download.tensorflow.org/models/object_detection/ssd_mobilenet_v2_coco_2018_03_29.tar.gz)
+3. Labels are in [**COCO**](https://tech.amikelive.com/node-718/what-object-categories-labels-are-in-coco-dataset/)
+format. Labels used in this project:
+    * 1 person
+    * 3 car
+    * 6 bus
+    * 8 truck
 
-4. Config new_video/generate_ground_truth.sh to run Faster-RCNN model on extracted frames. 
+## Data Sources
 
-   1. Get this repo https://github.com/tensorflow/models/tree/master/research/object_detection 
-   2. Download this trained model http://download.tensorflow.org/models/object_detection/faster_rcnn_resnet101_coco_2018_01_28.tar.gz, and put it under *models/research/object_detection*, then uncompress the model file.
-   3. Change CODE_PATH, FULL_MODEL_PATH, DATA_PATH, DATASET_LIST to your own path.
+* Youtube Videos
+* [The KITTI Vision Benchmarking](http://www.cvlibs.net/datasets/kitti/)
+* [Multiple Object Tracking Benchmark](https://motchallenge.net/)
+* [Waymo Open Dataset](https://waymo.com/open/)
 
-5. Objects in a typical traffic video (and corresponding label index in COCO)
+## Object-Level Features Covered
 
-   1 person
+* Object Speed
+* Object Size
+* Percentage of Frames with Objects
+* Object Arrival Rate
+* Total Object Size
 
-   2 bicycle
+## Sample Pipelines
 
-   3 car
-
-   4 motorcycle
-
-   6 bus
-
-   8 truck
-
-
-
-
-
-### 2. Individual pipelines
-
-1. VideoStorm (Temporal sampling)
-   1. Use videostorm/VideoStorm_temporal.py 
-   2. VideoStorm reduces video frame rate to reduce cost. However, reducing frame rate could possiblely make the accuracy drop. Therefore, we can get a cost-accuracy curve by varing the sampling rate (=frame rate after sampling/original frame rate). 
-   3. **How to use code:** 
-      1. Change *dataset_list*, *data_path* to your video name and path.
-      2. If plot F1_score_list and frame_rate_list, you can see the cost-accuracy curve.
-      3. We assume there is a requirement for accuracy (F1 score). The target f1 score is 0.9, then we compute the **minimum frame rate** needed to achieve f1=0.9.
-      4. An example result file should be in same format as VideoStorm_result_tmp.csv.
-2. Glimpse
-   1. Use glimpse_youtube.py.
-   2. Key idea of Glimpse is to send selected frames to server for detection, and run tracking on unselected frames. Therefore, there are two important parts of glimpse, **compute frame difference** and **tracking**. We could get the cost-accuracy curve by varing two parameters.
-      1. frame difference threshold.
-      2. Tracking error threshold.
-   3. **How to use code:**
-      1. Change  *video_type*, *path* to your video name and path.
-      2. If plot f1_list and frame_rate_list, you can see the cost-accuracy curve.
-3. NoScope
-4. Fast cascading
-5. AWStream
-   1. Key idea: reduces video frame rate and frame resolution to reduce bandwidth. However, reducing frame rate and frame resolution could possiblely make the accuracy drop. Therefore, we can get a cost (bandwidth)-accuracy curve by varing the sampling rate and sampling rate.
-   2. Before use AWStream code, we need to run full model on different resolution videos. **Run generate_ground_truth.sh** again. I changed the code. Set —resize to True and add RESIZE_RESOL to specify the resulting resolution. 
-   3. (Important!!) I used **resize.py** to resize the original video.  However, the image size becomes larger after resizing. The reason is that cv2.imwrite will write the resized image at quality level 95 (possibly higher than original image). So please check how to use **ffmpeg** to resize images. Check */home/zhujun/video_analytics_pipelines/dataset/Youtube/highway/540p* for example format.
-   4. **Run awstream.py**. Update image_resolution_dict and dataset_list to add your own video. Also, update *path*.
-   5. This code is not finalized. Try this code with a small video. 
-6. HotCloud
+1. **VideoStorm** [paper](https://www.usenix.org/conference/nsdi17/technical-sessions/presentation/zhang),
+[Implementation](/VideoStorm)  
+VideoStorms tunes video frame rate, frame resolution and model complexity to
+save the GPU computing cost required in video analytics tasks. It uses
+offline profiling techinques to choose wise configurations. A scheduling
+algorithm is provided to coordinate jobs across multiple machine.
+2. **Glimpse** [paper](http://people.csail.mit.edu/yuhan/doc/sen060-chenA.pdf),
+[Implementation](/Glimpse)  
+Glimpse client sends selected frames to Glimpse server for object detection,
+and runs tracking on unselected frames in order to save GPU computing cost.
+Glimpse selects frames by measuring the pixel difference across frames and
+tracks objects using optical flow.
+3. **NoScope** [paper](https://arxiv.org/abs/1703.02529),
+[Implementation](/NoScope)  
+NoScope uses cheap and specialized models at the client side and only send the undetermined
+frames or unsured frames to the server for golden model inference.
+4. **Vigil** [paper](https://www.cs.princeton.edu/~kylej/papers/com287-zhang.pdf),
+[Implementation](Vigil)  
+Vigil uses the outputs of a simple model on the client side to crop out useful
+regions. It only encodes the useful regions to send to server for inference.
+This saves the bandwidth of video transimission.
+5. **AWStream** [paper](https://awstream.github.io/paper/awstream.pdf),
+[Implementation](AWStream)  
+AWStream tunes video frame rate, frame resolution and quality
+parameter to save the bandwidth required in video transmission. It uses
+offline and online profiling techinques to choose configurations to save
+bandwith and maintain inference accuracy.
