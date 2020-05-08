@@ -25,7 +25,7 @@ def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
                                      detections['detection_boxes'],
                                      detections['detection_scores']):
             csvwriter.writerow(
-                [frame_id, box[1], box[0], box[3], box[2], label, score])
+                [frame_id, box[0], box[1], box[2], box[3], label, score])
     profile_writer.writerow([frame_id, t_used])
 
 
@@ -41,7 +41,7 @@ def infer(input_path, output_path, device, model_path):
         writer.writerow(['frame id', 'xmin', 'ymin',
                          'xmax', 'ymax', 'class', 'score'])
         profile_writer = csv.writer(f_profile)
-        profile_writer.writerow(['frame id', 'time used(s)'])
+        profile_writer.writerow(['frame id', 'gpu time used(s)'])
         img_paths = sorted(glob.glob(os.path.join(input_path, '*.jpg')))
         for i, img_path in enumerate(img_paths):
             image = np.array(Image.open(img_path))

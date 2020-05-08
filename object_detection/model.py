@@ -14,7 +14,9 @@ class Model(object):
         gpus = tf.config.experimental.list_physical_devices('GPU')
         assert len(gpus) > 0, "Not enough GPU hardware devices available"
         tf.config.experimental.set_visible_devices(gpus[device], 'GPU')
-        tf.config.experimental.set_memory_growth(gpus[device], True)
+        # tf.config.experimental.set_memory_growth(gpus[device], True)
+        tf.config.experimental.set_virtual_device_configuration(
+            gpus[device], [tf.config.experimental.VirtualDeviceConfiguration(memory_limit=3072)])
         model_dir = os.path.join(root, "saved_model")
         model = tf.saved_model.load(str(model_dir))
         self.model = model.signatures['serving_default']
@@ -46,11 +48,15 @@ class Model(object):
         output_dict['num_detections'] = num_detections
 
         updated_boxes = []
-
+        # import pdb
+        # pdb.set_trace()
         for box in output_dict['detection_boxes']:
             updated_boxes.append(
                 [box[1]*resolution[1], box[0]*resolution[0],
                  box[3]*resolution[1], box[2]*resolution[0]])
+            # updated_boxes.append(
+            #     [box[0]*resolution[0], box[1]*resolution[1],
+            #      box[2]*resolution[0], box[3]*resolution[1]])
         output_dict['detection_boxes'] = np.array(updated_boxes)
 
         # detection_classes should be ints.
