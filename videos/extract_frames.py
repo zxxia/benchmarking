@@ -10,8 +10,8 @@ def extract_frames(video, output_path, qscale):
         print(f'mkdir {output_path}')
         os.mkdir(output_path)
     output_img_name = os.path.join(output_path, "%06d.jpg")
-    cmd = "ffmpeg -y -i {} {} -qscale:v {} -hide_banner".format(
-        video, output_img_name, qscale)
+    cmd = "ffmpeg -y -i {} -qscale:v {} {} -hide_banner".format(
+        video, qscale, output_img_name)
     print(cmd)
     subprocess.run(cmd.split(' '), check=True)
 
@@ -24,13 +24,13 @@ def main():
                         help="input video")
     parser.add_argument("--output_image_path", type=str, default=None,
                         help="output image path")
-    parser.add_argument("--qscale", type=int, default=1,
-                        help="qscale in ffmpeg. Range: 1-31.")
+    parser.add_argument("--qscale", type=float, default=1,
+                        help="qscale in ffmpeg. Range: 1-31. Default: 1.")
     args = parser.parse_args()
     video = args.input_video
 
     # extract frames from the input video
-    extract_frames(video, args.output_image_path)
+    extract_frames(video, args.output_image_path, args.qscale)
 
 
 if __name__ == '__main__':
