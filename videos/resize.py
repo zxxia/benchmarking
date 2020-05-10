@@ -3,21 +3,21 @@ import argparse
 import subprocess
 
 
-def resize_video(video_in, video_out, target_size, target_qp=23):
+def resize_video(video_in, video_out, target_width, target_height, target_qp):
     """Resize the video_in to video_out with target size."""
-    cmd = "ffmpeg -y -i {} -hide_banner -vf scale={} -crf {}" \
+    cmd = "ffmpeg -y -i {} -hide_banner -vf scale={}:{} -crf {}" \
         " -vcodec libx264 -max_muxing_queue_size 1024 {}".format(
-            video_in, target_size, target_qp, video_out)
+            video_in, target_width, target_height, target_qp, video_out)
     print(cmd)
     subprocess.run(cmd.split(' '), check=True)
 
 
-def resize_image(image_in, image_out, target_size, target_qp=23):
-    """Resize the image_in to image_out with target size."""
-    cmd = "ffmpeg -y -i {} -vf scale = {} -crf {} {}".format(
-        image_in, target_size, target_qp, image_out)
-    print(cmd)
-    subprocess.run(cmd.split(' '), check=True)
+# def resize_image(image_in, image_out, target_size, target_qp=23):
+#     """Resize the image_in to image_out with target size."""
+#     cmd = "ffmpeg -y -i {} -vf scale = {} -crf {} {}".format(
+#         image_in, target_size, target_qp, image_out)
+#     print(cmd)
+#     subprocess.run(cmd.split(' '), check=True)
 
 
 def main():
@@ -29,18 +29,18 @@ def main():
     parser.add_argument("--output_video", type=str, required=True,
                         help="output video")
     parser.add_argument("--target_width", type=str, required=True,
-                        help="target width")
+                        help="target width, e.g. 1280")
     parser.add_argument("--target_height", type=str, required=True,
-                        help="target height")
+                        help="target height, e.g. 720")
     parser.add_argument("--qp", type=int, default=23,
-                        help="quality parameter")
+                        help="quality parameter with range [0, 51]")
     args = parser.parse_args()
     orig_video = args.input_video
     resized_video = args.output_video
 
     assert args.qp >= 0 and args.qp <= 51
-    resize_video(orig_video, resized_video,
-                 str(args.target_width)+':'+str(args.target_height), args.qp)
+    resize_video(orig_video, resized_video, args.target_width,
+                 args.target_height, args.qp)
 
 
 if __name__ == '__main__':

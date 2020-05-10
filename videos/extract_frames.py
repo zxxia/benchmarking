@@ -7,6 +7,7 @@ import subprocess
 def extract_frames(video, output_path):
     """Extract frames from videos."""
     if not os.path.exists(output_path):
+        print(f'mkdir {output_path}')
         os.mkdir(output_path)
     output_img_name = os.path.join(output_path, "%06d.jpg")
     cmd = "ffmpeg -y -i {} {} -qscale:v 2.0 -hide_banner".format(
