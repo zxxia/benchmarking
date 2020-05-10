@@ -32,9 +32,9 @@ def main():
                         help="target width, e.g. 1280")
     parser.add_argument("--target_height", type=str, required=True,
                         help="target height, e.g. 720")
-    parser.add_argument("--qp", type=int, default=0, help="quality parameter"
-                        "(-crf in ffmpeg) with range [0, 51]. 0 means "
-                        "lossless. 51 means the most compresssion.")
+    parser.add_argument("--qp", type=int, default=23, help="quality parameter"
+                        "(-crf in ffmpeg) with range [0, 51].Default: 23. 0 "
+                        "means lossless. 51 means the most compresssion.")
     args = parser.parse_args()
     orig_video = args.input_video
     resized_video = args.output_video
