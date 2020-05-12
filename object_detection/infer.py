@@ -16,8 +16,7 @@ from object_detection.model import Model
 
 def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
     """Write detetions into a csv file."""
-    # pdb.set_trace()
-    frame_id = int(os.path.basename(os.path.splitext(img_path)[0])) - 1
+    frame_id = int(os.path.basename(os.path.splitext(img_path)[0]))
     if detections['num_detections'] == 0:
         csvwriter.writerow([frame_id, '', '', '', '', '', ''])
     else:
@@ -179,6 +178,8 @@ def smooth_annot(dets, dist_coef=0.45):
     update_gt_file = output_folder + 'updated_gt_FasterRCNN_COCO.csv'.
     """
     for frame_id in dets:
+        if not dets[frame_id]:
+            continue
         boxes = dets[frame_id]
         keep = nms(np.array(boxes), 0.4)
         boxes = [boxes[i] for i in keep]
