@@ -1,4 +1,4 @@
-"""AWStream module main function."""
+"""VideoStorm module main function."""
 from videostorm.parser import parse_args
 from videostorm.run import run
 

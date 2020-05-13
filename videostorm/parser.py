@@ -10,8 +10,8 @@ def parse_args():
     parser.add_argument("--video", type=str, default=None, help="video name")
     parser.add_argument("--data_root", type=str, required=True,
                         help='root path to video mp4/frame data')
-    parser.add_argument("--detection_root", type=str, required=True,
-                        help='root path to video detection data')
+    # parser.add_argument("--detection_root", type=str, required=True,
+    #                     help='root path to video detection data')
     parser.add_argument("--dataset", type=str, default='youtube',
                         choices=['kitti', 'mot15',
                                  'mot16', 'waymo', 'youtube'],
@@ -42,6 +42,13 @@ def parse_args():
                         help="A list of quality parameters. "
                         "More options are not included for now. In ffmpeg, "
                         "23 by default.")
+    parser.add_argument("--classes_interested", nargs="*", type=str,
+                        default=['car', 'bus', 'truck'], help="A list of "
+                        "interesting classes. Other classes will be filtered "
+                        "out. Default ['car', 'bus', 'truck'].")
+    parser.add_argument("--coco_label_file", type=str,
+                        default='mscoco_label_map.pbtxt', help="Path to a coco"
+                        "label map file.")
 
     # IO realted
     parser.add_argument("--profile_filename", type=str, required=True,

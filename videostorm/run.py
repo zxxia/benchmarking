@@ -1,35 +1,10 @@
 """AWStream offline simulation driver."""
 import csv
 import os
-import glob
 
+from videos import get_dataset_class, get_seg_paths
 from videostorm.VideoStorm import VideoStorm
-from videos import get_dataset_class, KittiVideo
-
-
-def get_seg_paths(data_path, dataset_name, video_name):
-    """Return all segment paths in a dataset."""
-    if video_name is not None and video_name:
-        seg_paths = [os.path.join(data_path, video_name)]
-    elif dataset_name == 'kitti':
-        seg_paths = []
-        for loc in KittiVideo.LOCATIONS:
-            for seg_path in sorted(
-                    glob.glob(os.path.join(data_path, loc, '*'))):
-                if not os.path.isdir(seg_path):
-                    continue
-                seg_paths.append(seg_path)
-    elif dataset_name == 'mot15':
-        raise NotImplementedError
-    elif dataset_name == 'mot16':
-        raise NotImplementedError
-    elif dataset_name == 'waymo':
-        seg_paths = glob.glob(os.path.join(data_path, '*', 'FRONT'))
-    elif dataset_name == 'youtube':
-        raise NotImplementedError
-    else:
-        raise NotImplementedError
-    return seg_paths
+from utils.utils import load_COCOlabelmap
 
 
 def run(args):
@@ -42,9 +17,13 @@ def run(args):
     sample_step_list = args.sample_step_list
     short_video_length = args.short_video_length
     profile_length = args.profile_length
-    detection_path = args.detection_root
+    # detection_path = args.detection_root
     profile_filename = args.profile_filename
     output_filename = args.output_filename
+    coco_id2name, coco_name2id = load_COCOlabelmap(args.coco_label_file)
+    classes_interested = {coco_name2id[class_type]
+                          for class_type in args.classes_interested}
+    print(args, seg_paths)
 
     if overfitting:
         assert short_video_length == profile_length, "short_video_length " \
@@ -61,27 +40,17 @@ def run(args):
         for seg_path in seg_paths:
             print(seg_path)
             seg_name = os.path.basename(seg_path)
-            # if seg_name + '.mp4' in saved_videos:
-            #     print('jump over', seg_name)
-            #     continue
             # loading videos
-            img_path = os.path.join(seg_path, 'FRONT')
-            dt_file = os.path.join(
-                detection_path, seg_name, 'FRONT', 'profile',
-                f"updated_gt_FasterRCNN_COCO_no_filter_{original_resolution}.csv")
+            print(dataset_class)
             original_video = dataset_class(
-                seg_path, seg_name, original_resolution, dt_file, img_path,
-                filter_flag=True)
+                seg_path, seg_name, original_resolution, 'faster_rcnn_resnet101',
+                filter_flag=True, classes_interested=classes_interested)
             videos = {}
             for model in model_list:
-                img_path = os.path.join(seg_path, 'FRONT')
-                dt_file = os.path.join(
-                    detection_path, seg_name, 'FRONT', 'profile',
-                    f'updated_gt_{model}_COCO_no_filter_{original_resolution}.csv')
-                video = dataset_class(seg_name, original_resolution, dt_file,
-                                      img_path, filter_flag=True)
+                video = dataset_class(seg_path, seg_name, original_resolution,
+                                      model, filter_flag=True,
+                                      classes_interested=classes_interested)
                 videos[model] = video
-                print('loading {}...'.format(dt_file))
 
             # compute number of short videos can be splitted
             if original_video.duration > short_video_length:
