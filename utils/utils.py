@@ -412,6 +412,7 @@ def smooth_classification(labels):
 
 def load_COCOlabelmap(label_map_path):
     COCO_Labelmap = {}
+    COCO_Labelmap_reverse = {}
     with open(label_map_path, 'r') as f:
         line = f.readline()
         while line:
@@ -420,8 +421,9 @@ def load_COCOlabelmap(label_map_path):
                 line = f.readline()
                 label = line.strip().split(':')[1]
                 COCO_Labelmap[ID] = label.strip().replace('"', '')
+                COCO_Labelmap_reverse[label.strip().replace('"', '')] = ID
                 line = f.readline()
             else:
                 line = f.readline()
 
-    return COCO_Labelmap
+    return COCO_Labelmap, COCO_Labelmap_reverse

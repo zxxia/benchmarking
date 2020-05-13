@@ -34,6 +34,7 @@ CAMERA_TYPES = {
 class COCOLabels(Enum):
     """COCO dataset object labels."""
 
+    PERSON = 1
     CAR = 3
     BUS = 6
     TRAIN = 7
@@ -47,7 +48,9 @@ MODEL_COST = {'mobilenet': 31,
               'resnet50': 89,
               'Resnet50': 89,
               'FasterRCNN50': 89,
-              'FasterRCNN': 106}
+              'FasterRCNN': 106,
+              'faster_rcnn_resnet101': 106,
+              }
 
 babygroot_DT_ROOT = '/mnt/data/zhujun/dataset/'
 babygroot_model_path = '/home/zhujunxiao/video_analytics_pipelines/models/research/object_detection_old/'

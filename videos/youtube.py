@@ -9,26 +9,35 @@ from constants import CAMERA_TYPES, RESOL_DICT, COCOLabels
 from utils.utils import (filter_video_detections, load_full_model_detection)
 # remove_overlappings)
 from videos.video import Video
+from object_detection.infer import load_object_detection_results
 
 
 class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, root, name, resolution_name, model='FasterRCNN',
-                 filter_flag=True, merge_label_flag=False):
+                 filter_flag=True, merge_label_flag=False,
+                 classes_interested={COCOLabels.CAR.value,
+                                     COCOLabels.BUS.value,
+                                     COCOLabels.TRUCK.value}):
         """Youtube Video Constructor."""
         video_path = os.path.join(root, name+'.mp4')
-        detection_file = os.path.join(root, 'detections')
+        detection_file = os.path.join(
+            root, 'profile',
+            f"{RESOL_DICT[resolution_name][0]}x{RESOL_DICT[resolution_name][1]}_23",
+            f"{model}_coco_2018_01_28_detections.csv")
         image_path = os.path.join(root, resolution_name)
         if isinstance(video_path, str) and os.path.exists(video_path):
             vid = cv2.VideoCapture(video_path)
-            fps = vid.get(cv2.CAP_PROP_FPS)
+            fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
             vid.release()
         else:
             fps = 30
 
         if isinstance(detection_file, str) and os.path.exists(detection_file):
-            dets = load_full_model_detection(detection_file)
+            # dets = load_full_model_detection(detection_file)
+            print('loading {}...'.format(detection_file))
+            dets = load_object_detection_results(detection_file)
             dets_nofilter = copy.deepcopy(dets)
             resolution = RESOL_DICT[resolution_name]
 
@@ -39,12 +48,11 @@ class YoutubeVideo(Video):
                     # TODO: change label loading logic
                     dets, dropped_dets = filter_video_detections(
                         dets,
-                        target_types={COCOLabels.CAR.value,
-                                      COCOLabels.BUS.value,
-                                      COCOLabels.TRUCK.value},
+                        target_types=classes_interested,
                         score_range=(0.3, 1.0),
                         width_range=(resolution[0] // 20, resolution[0]/2),
-                        height_range=(resolution[1] // 20, resolution[1]/2))
+                        height_range=(resolution[1] // 20, resolution[1]/2)
+                        )
                     #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
                 else:
                     dropped_dets = None
@@ -54,13 +62,14 @@ class YoutubeVideo(Video):
                 if filter_flag:
                     dets, dropped_dets = filter_video_detections(
                         dets,
-                        target_types={COCOLabels.CAR.value,
-                                      COCOLabels.BUS.value,
-                                      COCOLabels.TRUCK.value},
+                        target_types=classes_interested,
                         height_range=(resolution[1] // 20, resolution[1]))
                     #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
                 else:
                     dropped_dets = None
+            else:
+                camera_type = None
+                dropped_dets = None
 
             if name == 'road_trip':
                 for frame_idx in dets:
@@ -82,6 +91,7 @@ class YoutubeVideo(Video):
                         # Merge all cars and trucks into cars
                         dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
         else:
+            print(detection_file, "does not exist.")
             raise NotImplementedError
 
         super().__init__(name, fps, resolution, dets, dets_nofilter,

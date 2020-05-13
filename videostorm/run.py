@@ -2,9 +2,9 @@
 import csv
 import os
 
+from utils.utils import load_COCOlabelmap
 from videos import get_dataset_class, get_seg_paths
 from videostorm.VideoStorm import VideoStorm
-from utils.utils import load_COCOlabelmap
 
 
 def run(args):

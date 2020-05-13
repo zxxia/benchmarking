@@ -22,11 +22,10 @@ def parse_args():
                         help="Short video length in unit of second.")
     parser.add_argument("--profile_length", type=int, required=True,
                         help="Profile length in unit of second.")
-    parser.add_argument("--overfitting", type=bool, default=False,
+    parser.add_argument("--overfitting", action='store_true',
                         help="Issue when overfitting mode is needed. Only"
-                        " spatial pruning (resolution tuning) is kept. "
-                        "Temporal pruning (frame rate tuning) and quality "
-                        "parameter tuning are dropped.")
+                        " temporal pruning (frame rate tuning) is kept. "
+                        "Model selection is kept with faster_rcnn_resenet101.")
 
     parser.add_argument("--sample_step_list", nargs="*", type=float,
                         default=[20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5,

@@ -9,22 +9,23 @@ motorway park russia russia1 traffic tw tw1 tw_road tw_under_bridge road_trip'
 SHORT_VIDEO_LENGTH=30
 PROFILE_LENGTH=10
 
-for VIDEO in $VIDEOS
-do
-    python awstream_e2e.py \
-        --video $VIDEO \
-        --output awstream_e2e_${VIDEO}.csv \
-        --log awstream_e2e_profile_${VIDEO}.csv \
-        --short_video_length $SHORT_VIDEO_LENGTH \
-        --profile_length $PROFILE_LENGTH &
-        --video_save_path .
-done
 # for VIDEO in $VIDEOS
 # do
-#     python awstream_spatial_overfitting.py \
+#     python awstream_e2e.py \
 #         --video $VIDEO \
-#         --output ./overfitting_results_30s_10s/awstream_spatial_overfitting_results_${VIDEO}.csv \
-#         --log ./overfitting_results_30s_10s/awstream_spatial_overfitting_profile_${VIDEO}.csv \
+#         --output awstream_e2e_${VIDEO}.csv \
+#         --log awstream_e2e_profile_${VIDEO}.csv \
 #         --short_video_length $SHORT_VIDEO_LENGTH \
-#         --profile_length $PROFILE_LENGTH
+#         --profile_length $PROFILE_LENGTH &
+#         --video_save_path .
 # done
+
+for VIDEO in $VIDEOS
+do
+    python awstream \
+        --video $VIDEO \
+        --output ./overfitting_results_30s_10s/awstream_spatial_overfitting_results_${VIDEO}.csv \
+        --log ./overfitting_results_30s_10s/awstream_spatial_overfitting_profile_${VIDEO}.csv \
+        --short_video_length $SHORT_VIDEO_LENGTH \
+        --profile_length $PROFILE_LENGTH
+done

@@ -103,7 +103,7 @@ def main():
             clip = args.video + '_' + str(i)
 
             profile_start = start
-            profile_end = start+args.profile_length * video.frame_rate-1
+            profile_end = start + args.profile_length * video.frame_rate - 1
             test_start = profile_end + 1
             test_end = end
             print("{} {} start={}, end={}".format(clip, img_path, start, end))

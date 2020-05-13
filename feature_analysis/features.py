@@ -1,6 +1,6 @@
 """Functions to compute object-level features."""
 import numpy as np
-from benchmarking.utils.utils import IoU
+from evaluation.f1 import IoU
 
 
 def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):

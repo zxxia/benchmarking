@@ -1,12 +1,13 @@
 """Vigil Implementation."""
-import sys
-from subprocess import Popen
-import time
 import os
+import sys
+import time
+from subprocess import Popen
+
 import cv2
 import numpy as np
-from benchmarking.utils.model_utils import eval_single_image
-from benchmarking.utils.utils import compute_f1
+
+from utils.utils import compute_f1, eval_single_image
 
 
 class Vigil():
@@ -217,17 +218,17 @@ def resize_bbox(bbox, w_delta_percent, h_delta_percent, resolution):
     return ret_bbox
 
 
-def load_vigil_results(filename):
-    """Load vigil result file."""
-    videos = []
-    bw_list = []
-    acc_list = []
-    with open(filename, 'r') as f:
-        f.readline()
-        for line in f:
-            cols = line.strip().split(',')
-            videos.append(cols[0])
-            bw_list.append(float(cols[1]))
-            acc_list.append(float(cols[2]))
-
-    return videos, bw_list, acc_list
+# def load_vigil_results(filename):
+#     """Load vigil result file."""
+#     videos = []
+#     bw_list = []
+#     acc_list = []
+#     with open(filename, 'r') as f:
+#         f.readline()
+#         for line in f:
+#             cols = line.strip().split(',')
+#             videos.append(cols[0])
+#             bw_list.append(float(cols[1]))
+#             acc_list.append(float(cols[2]))
+#
+#     return videos, bw_list, acc_list
