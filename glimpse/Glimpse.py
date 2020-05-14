@@ -9,7 +9,8 @@ from collections import defaultdict
 import cv2
 import numpy as np
 
-from utils.utils import compute_f1, evaluate_frame, interpolation
+from evaluation.f1 import compute_f1, evaluate_frame
+from utils.utils import interpolation
 
 DEBUG = False
 # DEBUG = True
@@ -27,7 +28,7 @@ class Glimpse():
     """Glimpse Pipeline."""
 
     def __init__(self, para1_list, para2_list, profile_log,
-                 profile_traces_save_path, mode='default', target_f1=0.9,
+                 profile_traces_save_path=None, mode='default', target_f1=0.9,
                  mask_flag=True):
         """Load the configs.
 
@@ -62,19 +63,22 @@ class Glimpse():
 
     def init_trackers(self, frame_idx, frame, boxes):
         """Return the tracked bounding boxes on input frame."""
+        resolution = (frame.shape[0], frame.shape[1])
         frame_copy = cv2.resize(frame, (640, 480))
         self.trackers_dict = {}
         for box in boxes:
             xmin, ymin, xmax, ymax, t, score, obj_id = box
             tracker = cv2.TrackerKCF_create()
             # TODO: double check the definition of box input
-            tracker.init(frame_copy, (xmin * 640 / 1280, ymin * 480 / 720,
-                                      (xmax - xmin) * 640 / 1280,
-                                      (ymax - ymin) * 480 / 720))
+            tracker.init(frame_copy, (xmin * 640 / resolution[0],
+                                      ymin * 480 / resolution[1],
+                                      (xmax - xmin) * 640 / resolution[0],
+                                      (ymax - ymin) * 480 / resolution[1]))
             self.trackers_dict[str(frame_idx)+'_'+str(obj_id)] = tracker
 
     def update_trackers(self, frame):
         """Return the tracked bounding boxes on input frame."""
+        resolution = (frame.shape[0], frame.shape[1])
         frame_copy = cv2.resize(frame, (640, 480))
         start_t = time.time()
         boxes = []
@@ -82,13 +86,13 @@ class Glimpse():
         for obj, tracker in self.trackers_dict.items():
             obj_id = obj.split('_')[1]
             ok, bbox = tracker.update(frame_copy)
-            # pdb.set_trace()
             if ok:
                 # tracking succeded
-                # TODO: change the box format
                 x, y, w, h = bbox
-                boxes.append([int(x*1280/640), int(y*720/480), int((x+w)*1280/640), int((y+h)*720/480),
-                              3, 1, obj_id])
+                boxes.append([int(x*resolution[0]/640),
+                              int(y*resolution[1]/480),
+                              int((x+w)*resolution[0]/640),
+                              int((y+h)*resolution[1]/480), 3, 1, obj_id])
             else:
                 # tracking failed
                 # record the trackers that need to be deleted
@@ -145,17 +149,18 @@ class Glimpse():
                 paras_list.append((para1, para2))
 
                 # log the frame details under para1 and para2
-                frames_log_file = os.path.join(
-                    self.profile_traces_save_path,
-                    clip + f'_{para1}_{para2}_frames_profile_log.csv')
-                with open(frames_log_file, 'w') as f:
-                    frames_log_writer = csv.DictWriter(
-                        f, ['frame id', 'frame diff', 'frame diff thresh',
-                            'frame diff trigger', 'tracking error',
-                            'tracking error thresh', 'tracking trigger',
-                            'detection'])
-                    frames_log_writer.writeheader()
-                    frames_log_writer.writerows(frames_log)
+                if self.profile_traces_save_path is not None:
+                    frames_log_file = os.path.join(
+                        self.profile_traces_save_path,
+                        clip + f'_{para1}_{para2}_frames_profile_log.csv')
+                    with open(frames_log_file, 'w') as f:
+                        frames_log_writer = csv.DictWriter(
+                            f, ['frame id', 'frame diff', 'frame diff thresh',
+                                'frame diff trigger', 'tracking error',
+                                'tracking error thresh', 'tracking trigger',
+                                'detection'])
+                        frames_log_writer.writeheader()
+                        frames_log_writer.writerows(frames_log)
 
         best_para1 = None
         best_para2 = None
@@ -285,7 +290,7 @@ class Glimpse():
             # mask out bboxes
             debug_print('last trigger {}, curret {}'.format(
                 last_triggered_frame_idx, i))
-            if self.mask_flag:
+            if self.mask_flag and video.get_dropped_video_detection():
                 mask = np.ones_like(frame_gray)
                 for box in video.get_dropped_frame_detection(
                         last_triggered_frame_idx):
@@ -395,12 +400,12 @@ class Glimpse():
                         frame_log['tracking error'] = tracking_err
             for box in dt_glimpse[i-1]:
                 xmin, ymin, xmax, ymax = box[:4]
-                cv2.rectangle(frame_bgr, (xmin, ymin),
-                              (xmax, ymax), BLACK, 2)
+                cv2.rectangle(frame_bgr, (int(xmin), int(ymin)),
+                              (int(xmax), int(ymax)), BLACK, 2)
             for box in dt_glimpse[i]:
                 xmin, ymin, xmax, ymax = box[:4]
-                cv2.rectangle(frame_bgr, (xmin, ymin),
-                              (xmax, ymax), YELLOW, 2)
+                cv2.rectangle(frame_bgr, (int(xmin), int(ymin)),
+                              (int(xmax), int(ymax)), YELLOW, 2)
             frame_log['detection'] = dt_glimpse[i]
             frames_log.append(frame_log)
             prev_frame_gray = frame_gray.copy()
@@ -408,7 +413,8 @@ class Glimpse():
             color = (255, 0, 0)
             for box in video.get_frame_detection(i):
                 [xmin, ymin, xmax, ymax] = box[:4]
-                cv2.rectangle(frame_bgr, (xmin, ymin), (xmax, ymax), color, 1)
+                cv2.rectangle(frame_bgr, (int(xmin), int(ymin)),
+                              (int(xmax), int(ymax)), color, 1)
             # cv2.imshow(str(i), frame_bgr)
             # cv2.imshow(str(i)+'gray', frame_gray_masked)
             # print(frame_bgr.shape)
@@ -454,10 +460,10 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
     obj_region = np.zeros_like(new_frame)
     for box in bboxes_last_triggered:
         xmin, ymin, xmax, ymax = box[:4]
-        obj_region[ymin:ymax, xmin:xmax] = 1
+        obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
     for box in bboxes:
         xmin, ymin, xmax, ymax = box[:4]
-        obj_region[ymin:ymax, xmin:xmax] = 1
+        obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
     pix_change_obj += np.sum(mask * obj_region)
     pix_change_bg = pix_change - pix_change_obj
 

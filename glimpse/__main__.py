@@ -1,6 +1,6 @@
 """Glimpse module main function."""
 from glimpse.parser import parse_args
-from videostorm.run import run
+from glimpse.run import run
 
 
 if __name__ == '__main__':

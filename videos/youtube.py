@@ -25,7 +25,7 @@ class YoutubeVideo(Video):
         detection_file = os.path.join(
             root, 'profile',
             f"{RESOL_DICT[resolution_name][0]}x{RESOL_DICT[resolution_name][1]}_23",
-            f"{model}_coco_2018_01_28_detections.csv")
+            f"{model}_coco_2018_01_28_smoothed_detections.csv")
         image_path = os.path.join(root, resolution_name)
         if isinstance(video_path, str) and os.path.exists(video_path):
             vid = cv2.VideoCapture(video_path)
