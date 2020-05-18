@@ -20,7 +20,7 @@ class Vigil():
         pass
 
     def evaluate(self, video_name, video, original_video, frame_range,
-                 original_video_save_path, cropped_video_save_path):
+                 video_save_path):
         """Evaluate."""
         tpos = {}
         fpos = {}
@@ -36,12 +36,13 @@ class Vigil():
         fn_total = sum(fneg.values())
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         original_bw = original_video.encode(
-            os.path.join(original_video_save_path, video_name + '.mp4'),
+            os.path.join(video_save_path, video_name + '_original.mp4'),
             list(range(frame_range[0], frame_range[1] + 1)),
             original_video.frame_rate)
-        video_bw = video.encode(os.path.join(cropped_video_save_path, video_name+'.mp4'),
-                          list(range(frame_range[0], frame_range[1] + 1)),
-                          video.frame_rate)
+        video_bw = video.encode(os.path.join(video_save_path,
+                                             video_name+'_cropped.mp4'),
+                                list(range(frame_range[0], frame_range[1]+1)),
+                                video.frame_rate)
         return bw/original_bw, f1_score, video_bw/original_bw, original_bw
 
 

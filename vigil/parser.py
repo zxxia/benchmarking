@@ -25,11 +25,11 @@ def parse_args():
     parser.add_argument("--simple_model", type=str, default='ssd_mobilenet_v2',
                         choices=['faster_rcnn_resnet101', 'ssd_mobilenet_v2'],
                         help="simple model used to crop frames.")
-    # parser.add_argument("--overfitting", action='store_true',
-    #                     help="Issue when overfitting mode is needed. Only"
-    #                     " spatial pruning (resolution tuning) is kept. "
-    #                     "Temporal pruning (frame rate tuning) and quality "
-    #                     "parameter tuning are dropped.")
+    parser.add_argument("--overfitting", action='store_true',
+                        help="Issue when overfitting mode is needed. Only"
+                        " spatial pruning (resolution tuning) is kept. "
+                        "Temporal pruning (frame rate tuning) and quality "
+                        "parameter tuning are dropped.")
     parser.add_argument("--crop", action='store_true',
                         help="Crop frames using the detected bounding boxes.")
 
