@@ -81,6 +81,11 @@ class Video:
         """Return detection model type."""
         return self._model
 
+    @property
+    def image_path(self):
+        """Return detection model type."""
+        return self._image_path
+
     def get_frame_image(self, frame_index):
         """Return the image at frame index."""
         img = cv2.imread(self.get_frame_image_name(frame_index))
