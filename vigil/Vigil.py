@@ -7,7 +7,7 @@ from subprocess import Popen
 import cv2
 import numpy as np
 
-from utils.utils import compute_f1, eval_single_image
+from evaluation.f1 import compute_f1, evaluate_frame
 
 
 class Vigil():
@@ -28,7 +28,7 @@ class Vigil():
         bw = 0
         for i in range(frame_range[0], frame_range[1] + 1):
             bw += video.get_frame_filesize(i)
-            tpos[i], fpos[i], fneg[i] = eval_single_image(
+            tpos[i], fpos[i], fneg[i] = evaluate_frame(
                 original_video.get_frame_detection(i),
                 video.get_frame_detection(i))
         tp_total = sum(tpos.values())
@@ -216,19 +216,3 @@ def resize_bbox(bbox, w_delta_percent, h_delta_percent, resolution):
     ret_bbox[2] = min(xmax+w_delta, resolution[0])
     ret_bbox[3] = min(ymax+h_delta, resolution[1])
     return ret_bbox
-
-
-# def load_vigil_results(filename):
-#     """Load vigil result file."""
-#     videos = []
-#     bw_list = []
-#     acc_list = []
-#     with open(filename, 'r') as f:
-#         f.readline()
-#         for line in f:
-#             cols = line.strip().split(',')
-#             videos.append(cols[0])
-#             bw_list.append(float(cols[1]))
-#             acc_list.append(float(cols[2]))
-#
-#     return videos, bw_list, acc_list
