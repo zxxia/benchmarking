@@ -48,28 +48,28 @@ format. Labels used in this project:
 ## Sample Pipelines
 
 1. **VideoStorm** [paper](https://www.usenix.org/conference/nsdi17/technical-sessions/presentation/zhang),
-[Implementation](/VideoStorm)  
+[Implementation](videostorm)  
 VideoStorms tunes video frame rate, frame resolution and model complexity to
 save the GPU computing cost required in video analytics tasks. It uses
 offline profiling techinques to choose wise configurations. A scheduling
 algorithm is provided to coordinate jobs across multiple machine.
 2. **Glimpse** [paper](http://people.csail.mit.edu/yuhan/doc/sen060-chenA.pdf),
-[Implementation](/Glimpse)  
+[Implementation](glimpse)  
 Glimpse client sends selected frames to Glimpse server for object detection,
 and runs tracking on unselected frames in order to save GPU computing cost.
 Glimpse selects frames by measuring the pixel difference across frames and
 tracks objects using optical flow.
 3. **NoScope** [paper](https://arxiv.org/abs/1703.02529),
-[Implementation](/NoScope)  
+[Implementation](noscope)  
 NoScope uses cheap and specialized models at the client side and only send the undetermined
 frames or unsured frames to the server for golden model inference.
 4. **Vigil** [paper](https://www.cs.princeton.edu/~kylej/papers/com287-zhang.pdf),
-[Implementation](Vigil)  
+[Implementation](vigil)  
 Vigil uses the outputs of a simple model on the client side to crop out useful
 regions. It only encodes the useful regions to send to server for inference.
 This saves the bandwidth of video transimission.
 5. **AWStream** [paper](https://awstream.github.io/paper/awstream.pdf),
-[Implementation](AWStream)  
+[Implementation](awstream)  
 AWStream tunes video frame rate, frame resolution and quality
 parameter to save the bandwidth required in video transmission. It uses
 offline and online profiling techinques to choose configurations to save
