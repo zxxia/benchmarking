@@ -13,7 +13,7 @@ def run(args):
     seg_paths = get_seg_paths(args.data_root, args.dataset, args.video)
     original_resolution = args.original_resolution
     overfitting = args.overfitting
-    model_list = args.model_list if not overfitting else ['FasterRCNN']
+    model_list = args.model_list if not overfitting else ['faster_rcnn_resnet101']
     sample_step_list = args.sample_step_list
     short_video_length = args.short_video_length
     profile_length = args.profile_length
@@ -36,7 +36,7 @@ def run(args):
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(
-            ["video_name", 'model', 'gpu time', "frame_rate", "f1"])
+            ["video_name", 'model', 'gpu time', "f1"])
         for seg_path in seg_paths:
             print(seg_path)
             seg_name = os.path.basename(seg_path)
