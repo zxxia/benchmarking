@@ -30,13 +30,12 @@ def parse_args():
                         "config over the entire short_video_length.")
 
     parser.add_argument("--frame_difference_threshold_divisor_list", nargs="*",
-                        type=float, default=[20, 15, 10, 5, 4, 3, 2.5, 2,
-                                             1.8, 1.5, 1.2, 1],
+                        type=float, default=[20, 15, 10, 5, 4, 3, 2, 1],
                         help="A list of frame difference threshold divisor. "
                         "frame difference threshold = width * height / divior."
                         )
     parser.add_argument("--tracking_error_threshold_list", nargs="*",
-                        type=float, default=[10, 8, 5, 3, 2, 1],
+                        type=float, default=[1],
                         help="A list of tracking error thresholds. Only used"
                         "in optical flow tracking.")
 

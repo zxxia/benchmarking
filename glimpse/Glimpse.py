@@ -74,7 +74,8 @@ class Glimpse():
                                       ymin * 480 / resolution[1],
                                       (xmax - xmin) * 640 / resolution[0],
                                       (ymax - ymin) * 480 / resolution[1]))
-            self.trackers_dict[str(frame_idx)+'_'+str(obj_id)] = tracker
+            key = '_'.join([str(frame_idx), str(obj_id), str(t)])
+            self.trackers_dict[key] = tracker
 
     def update_trackers(self, frame):
         """Return the tracked bounding boxes on input frame."""
@@ -84,7 +85,7 @@ class Glimpse():
         boxes = []
         to_delete = []
         for obj, tracker in self.trackers_dict.items():
-            obj_id = obj.split('_')[1]
+            _, obj_id, t = obj.split('_')
             ok, bbox = tracker.update(frame_copy)
             if ok:
                 # tracking succeded
@@ -92,7 +93,8 @@ class Glimpse():
                 boxes.append([int(x*resolution[0]/640),
                               int(y*resolution[1]/480),
                               int((x+w)*resolution[0]/640),
-                              int((y+h)*resolution[1]/480), 3, 1, obj_id])
+                              int((y+h)*resolution[1]/480), int(float(t)),
+                              1, obj_id])
             else:
                 # tracking failed
                 # record the trackers that need to be deleted
@@ -122,7 +124,7 @@ class Glimpse():
                     pix_change_bg, frame_diff_triggered, tracking_triggered, \
                     frames_log, avg_frame_diff_t_elapesd, \
                     avg_tracking_t_elapsed = self.pipeline(
-                        video, profile_start, profile_end, frame_diff_th,
+                        video, int(profile_start), int(profile_end), frame_diff_th,
                         tracking_error_th)
                 frames_triggered = frame_diff_triggered.union(
                     tracking_triggered)
@@ -191,7 +193,7 @@ class Glimpse():
         ideal_triggered_frame, f1, trigger_f1, pix_change_obj, pix_change_bg, \
             frame_diff_triggered, tracking_triggered, frames_log, \
             avg_frame_diff_t_elapesd, avg_tracking_t_elapsed = \
-            self.pipeline(video, test_start, test_end,
+            self.pipeline(video, int(test_start), int(test_end),
                           frame_diff_th, tracking_error_th)
         return ideal_triggered_frame, f1, trigger_f1, \
             pix_change_obj, pix_change_bg, frame_diff_triggered, \
@@ -271,6 +273,7 @@ class Glimpse():
 
         # run the pipeline for the rest of the frames
         for i in range(frame_start + 1, frame_end + 1):
+            # print('process frame', i)
             frame_log = {
                 'frame id': i,
                 'frame diff': 0,
@@ -408,13 +411,13 @@ class Glimpse():
                               (int(xmax), int(ymax)), YELLOW, 2)
             frame_log['detection'] = dt_glimpse[i]
             frames_log.append(frame_log)
-            prev_frame_gray = frame_gray.copy()
+            # prev_frame_gray = frame_gray.copy()
             # visualize the detection
-            color = (255, 0, 0)
-            for box in video.get_frame_detection(i):
-                [xmin, ymin, xmax, ymax] = box[:4]
-                cv2.rectangle(frame_bgr, (int(xmin), int(ymin)),
-                              (int(xmax), int(ymax)), color, 1)
+            # color = (255, 0, 0)
+            # for box in video.get_frame_detection(i):
+            #     [xmin, ymin, xmax, ymax] = box[:4]
+            #     cv2.rectangle(frame_bgr, (int(xmin), int(ymin)),
+            #                   (int(xmax), int(ymax)), color, 1)
             # cv2.imshow(str(i), frame_bgr)
             # cv2.imshow(str(i)+'gray', frame_gray_masked)
             # print(frame_bgr.shape)
@@ -457,14 +460,14 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered, bboxes,
     time_elapsed = time.time() - start_t
     debug_print('frame difference used: {}'.format(time_elapsed*1000))
     pix_change_obj = 0
-    obj_region = np.zeros_like(new_frame)
-    for box in bboxes_last_triggered:
-        xmin, ymin, xmax, ymax = box[:4]
-        obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
-    for box in bboxes:
-        xmin, ymin, xmax, ymax = box[:4]
-        obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
-    pix_change_obj += np.sum(mask * obj_region)
+    # obj_region = np.zeros_like(new_frame)
+    # for box in bboxes_last_triggered:
+    #     xmin, ymin, xmax, ymax = box[:4]
+    #     obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
+    # for box in bboxes:
+    #     xmin, ymin, xmax, ymax = box[:4]
+    #     obj_region[int(ymin):int(ymax), int(xmin):int(xmax)] = 1
+    # pix_change_obj += np.sum(mask * obj_region)
     pix_change_bg = pix_change - pix_change_obj
 
     # cv2.imshow('frame diff', np.repeat(
@@ -673,7 +676,7 @@ def object_appearance(start, end, gt):
     """
     obj_to_frame_range = dict()
     frame_to_new_obj = dict()
-    for frame_id in range(start, end+1):
+    for frame_id in range(int(start), int(end)+1):
         if frame_id not in gt:
             continue
         boxes = gt[frame_id]
@@ -721,50 +724,3 @@ def compute_target_frame_rate(frame_rate_list, f1_list, target_f1=0.9):
         return target_frame_rate, f1_list_sorted[index - 1], \
             f1_list_sorted[index], frame_rate_list_sorted[index-1], \
             frame_rate_list_sorted[index]
-
-
-# def load_glimpse_profile(filename):
-#     """Load glimplse profile file."""
-#     videos = []
-#     para1_dict = defaultdict(list)
-#     perf_dict = defaultdict(list)
-#     acc_dict = defaultdict(list)
-#     with open(filename, 'r') as f_gl:
-#         f_gl.readline()  # remove headers
-#         for line in f_gl:
-#             cols = line.strip().split(',')
-#             video = cols[0]
-#             if video not in videos:
-#                 videos.append(video)
-#             perf_dict[video].append(float(cols[4]))
-#             acc_dict[video].append(float(cols[3]))
-#             para1_dict[video].append(float(cols[1]))
-#
-#     return videos, perf_dict, acc_dict, para1_dict
-
-
-# def load_glimpse_results(filename):
-#     """Load glimplse result file."""
-#     video_clips = []
-#     f1_score = []
-#     perf = []
-#     ideal_perf = []
-#     trigger_f1 = []
-#     with open(filename, 'r') as f_glimpse:
-#         f_glimpse.readline()
-#         for line in f_glimpse:
-#             # print(line)
-#             cols = line.strip().split(',')
-#             video_clips.append(cols[0])
-#             f1_score.append(float(cols[3]))
-#             perf.append(float(cols[4]))
-#             if len(cols) == 6:
-#                 ideal_perf.append(float(cols[5]))
-#             if len(cols) == 7:
-#                 ideal_perf.append(float(cols[5]))
-#                 trigger_f1.append(float(cols[6]))
-#     # if len(cols) == 6:
-#     #     return video_clips, perf, f1_score, ideal_perf
-#     # if len(cols) == 7:
-#     #     return video_clips, perf, f1_score, ideal_perf, trigger_f1
-#     return video_clips, perf, f1_score
