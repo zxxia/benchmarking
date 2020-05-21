@@ -74,8 +74,20 @@ class YoutubeVideo(Video):
                 else:
                     dropped_dets = None
             else:
+                if filter_flag:
+                    # TODO: change label loading logic
+                    dets, dropped_dets = filter_video_detections(
+                        dets,
+                        target_types=classes_interested,
+                        score_range=(0.3, 1.0),
+                        # width_range=(resolution[0] // 20, resolution[0]/2),
+                        # height_range=(resolution[1] // 20, resolution[1]/2)
+                    )
+                    #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
+                else:
+                    dropped_dets = None
                 camera_type = None
-                dropped_dets = None
+                # dropped_dets = None
 
             if name == 'road_trip':
                 for frame_idx in dets:

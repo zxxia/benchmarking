@@ -132,7 +132,7 @@ class Video:
         return smoothed_classification_labels
 
     def encode(self, output_video_name, target_frame_indices=None,
-               target_frame_rate=None, save_video=True, crf=25):
+               target_frame_rate=None, save_video=True, crf=23):
         """Encode the target frames into a video and return video size."""
         if os.path.exists(output_video_name):
             return os.path.getsize(output_video_name)
