@@ -23,7 +23,9 @@ def parse_args():
     parser.add_argument("--profile_length", type=int, required=True,
                         help="Profile length in unit of second.")
     parser.add_argument("--simple_model", type=str, default='ssd_mobilenet_v2',
-                        choices=['faster_rcnn_resnet101', 'ssd_mobilenet_v2'],
+                        choices=['faster_rcnn_resnet101',
+                                 'faster_rcnn_inception_v2',
+                                 'ssd_mobilenet_v2'],
                         help="simple model used to crop frames.")
     parser.add_argument("--overfitting", action='store_true',
                         help="Issue when overfitting mode is needed. Only"

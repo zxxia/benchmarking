@@ -37,9 +37,11 @@ def run(args):
                                   simple_model, filter_flag=True,
                                   classes_interested=classes_interested)
             cropped_img_path = video.image_path + "_cropped"
+            print(f'Cropping into {cropped_img_path}...')
             if not os.path.exists(cropped_img_path):
                 os.mkdir(cropped_img_path)
             mask_video_ffmpeg(video, 0.1, 0.1, save_path=cropped_img_path)
+        return
 
     pipeline = Vigil()
     with open(output_filename, 'w', 1) as f_out:
