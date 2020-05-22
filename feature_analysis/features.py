@@ -178,9 +178,29 @@ def compute_video_object_size(video_dets, start, end, resolution,
         frame_detections = video_dets[i]
         object_size[i] = compute_frame_object_size(
             frame_detections, resolution)
-        total_object_size[i] = np.sum(object_size[i])
+        total_object_size[i] = compute_frame_total_object_size(
+            frame_detections, resolution)
 
     return object_size, total_object_size
+
+
+def compute_frame_total_object_size(frame_detections, resolution):
+    """Compute the size of all objects detected in a frame.
+
+    Args
+        frame_dets(list): detected bboxes
+        resolution(tuple): (width, height)
+
+    Return
+        total_object_size(int):
+
+    """
+    image_size = resolution[0]*resolution[1]
+    pixels = np.zeros(resolution)
+    for box in frame_detections:
+        xmin, ymin, xmax, ymax = box[:4]
+        pixels[int(xmin):int(xmax), int(ymin):int(ymax)] = 1
+    return np.sum(pixels) / image_size
 
 
 def compute_frame_object_size(frame_detections, resolution):
