@@ -2,8 +2,7 @@
 import copy
 
 from constants import RESOL_DICT, COCOLabels
-from utils.utils import (filter_video_detections,
-                         load_full_model_detection,
+from utils.utils import (filter_video_detections, load_full_model_detection,
                          remove_overlappings)
 from videos.video import Video
 

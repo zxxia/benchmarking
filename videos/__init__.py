@@ -39,9 +39,15 @@ def get_seg_paths(data_path, dataset_name, video_name):
     elif dataset_name == 'mot15':
         raise NotImplementedError
     elif dataset_name == 'mot16':
-        raise NotImplementedError
+        seg_paths = []
+        for folder in ['test', 'train']:
+            for seg_path in sorted(
+                    glob.glob(os.path.join(data_path, folder, '*'))):
+                if not os.path.isdir(seg_path):
+                    continue
+                seg_paths.append(seg_path)
     elif dataset_name == 'waymo':
-        seg_paths = glob.glob(os.path.join(data_path, '*', 'FRONT'))
+        seg_paths = glob.glob(os.path.join(data_path, '*'))
     elif dataset_name == 'youtube':
         seg_paths = glob.glob(os.path.join(data_path, '*'))
     else:

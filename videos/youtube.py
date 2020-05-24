@@ -6,10 +6,10 @@ import subprocess
 import cv2
 
 from constants import CAMERA_TYPES, RESOL_DICT, COCOLabels
-from utils.utils import (filter_video_detections, load_full_model_detection)
+from object_detection.infer import load_object_detection_results
+from utils.utils import filter_video_detections, load_full_model_detection
 # remove_overlappings)
 from videos.video import Video
-from object_detection.infer import load_object_detection_results
 
 
 class YoutubeVideo(Video):
@@ -81,7 +81,7 @@ class YoutubeVideo(Video):
                         target_types=classes_interested,
                         score_range=(0.3, 1.0),
                         # width_range=(resolution[0] // 20, resolution[0]/2),
-                        # height_range=(resolution[1] // 20, resolution[1]/2)
+                        height_range=(resolution[1] // 20, resolution[1])
                     )
                     #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
                 else:

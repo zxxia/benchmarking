@@ -101,9 +101,8 @@ def run(args):
                 print('Evaluate {} start={} end={}'.format(
                     clip, test_start, test_end))
                 f1_score, relative_bw = pipeline.evaluate(
-                    os.path.join(output_path, clip + '.mp4'),
-                    original_video, videos[str(best_resol[1])+'p'], best_fps,
-                    [test_start, test_end])
+                    clip, original_video, videos[str(best_resol[1])+'p'],
+                    best_fps, [test_start, test_end])
 
                 print('{} best fps={}, best resolution={} ==> tested f1={}'
                       .format(clip, best_fps/original_video.frame_rate,

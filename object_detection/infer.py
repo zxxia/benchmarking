@@ -65,7 +65,7 @@ def infer(input_path, output_path, device, model_path, width, height, qp, crop):
         profile_writer = csv.writer(f_profile)
         profile_writer.writerow(['frame id', 'gpu time used(s)'])
         for i, img_path in enumerate(img_paths):
-            image = np.array(Image.open(img_path))
+            image = np.array(Image.open(img_path).resize((width, height)))
             detections, t_used = model.infer(image)
             write_to_file(writer, img_path, detections, profile_writer, t_used)
             if (i+1) % 10 == 0 or (i+1) == len(img_paths):
