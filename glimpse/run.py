@@ -84,8 +84,9 @@ def run(args):
                 ideal_triggered_frame, f1, trigger_f1, pix_change_obj, \
                     pix_change_bg, frame_diff_triggered, tracking_triggered, \
                     frames_log = pipeline.evaluate(
-                        video, best_frame_difference_threshold_divisor,
-                        best_tracking_error_threshold, test_start, test_end)
+                        video, test_start, test_end,
+                        best_frame_difference_threshold_divisor,
+                        best_tracking_error_threshold)
 
                 frames_triggered = frame_diff_triggered.union(
                     tracking_triggered)
