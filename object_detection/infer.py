@@ -10,8 +10,6 @@ import numpy as np
 import pandas as pd
 from PIL import Image
 
-from utils.utils import nms
-
 
 def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
     """Write detetions into a csv file."""
@@ -96,30 +94,6 @@ def infer(input_path, output_path, device, model_path, width, height, qp, crop):
                     writer.writerow([frame_id]+box)
             else:
                 writer.writerow([frame_id, '', '', '', '', '', '', ''])
-
-
-# def load_object_detection_results_old(filename):
-#     """Load object detection results.
-#
-#     Args
-#         filename(string): filename of object detection results in csv format.
-#     Return
-#         dets(dict): a dict mapping frame id to bounding boxes.
-#
-#     """
-#     df = pd.read_csv(filename)
-#     dets = {}
-#     if 'object id' in df.columns:
-#         value_names = ['xmin', 'ymin', 'xmax', 'ymax',
-#                        'class', 'score', 'object id']
-#     else:
-#         value_names = ['xmin', 'ymin', 'xmax', 'ymax', 'class', 'score']
-#     for k, g in df.groupby("frame id"):
-#         if g.isna().any().any():
-#             dets[k] = []
-#         else:
-#             dets[k] = g[value_names].values.tolist()
-#     return dets
 
 
 def load_object_detection_results(filename):
@@ -329,3 +303,34 @@ def smooth_annot(dets, dist_coef=0.45):
     #             dets[frame_id] = current_boxes
 
     return dets
+
+
+def nms(dets, thresh):
+    """Perform nms."""
+    x1 = dets[:, 0]
+    y1 = dets[:, 1]
+    x2 = dets[:, 2]
+    y2 = dets[:, 3]
+    scores = dets[:, 5]
+
+    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
+    order = scores.argsort()[::-1]
+
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
+        xx1 = np.maximum(x1[i], x1[order[1:]])
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = w * h
+        ovr = inter / (areas[i] + areas[order[1:]] - inter)
+
+        inds = np.where(ovr <= thresh)[0]
+        order = order[inds + 1]
+
+    return keep

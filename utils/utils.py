@@ -1,63 +1,12 @@
+"""Commonly Used functions."""
 import json
-import os
-from collections import Counter, defaultdict
-
-import numpy as np
-
-# from utils.utils import IoU
-
-
-def resol_str_to_int(resol_str):
-    """Convert a human readable resolution to integer.
-
-    e.g. "720p" -> 720
-    """
-    return int(resol_str.strip('p'))
-
-
-def create_dir(path):
-    if not os.path.exists(path):
-        print('create path ', path)
-        os.makedirs(path)
-    else:
-        print(path, 'already exists!')
+from collections import Counter
 
 
 def load_metadata(filename):
     with open(filename) as f:
         metadata = json.load(f)
     return metadata
-
-
-def nms(dets, thresh):
-    """Perform nms."""
-    x1 = dets[:, 0]
-    y1 = dets[:, 1]
-    x2 = dets[:, 2]
-    y2 = dets[:, 3]
-    scores = dets[:, 5]
-
-    areas = (x2 - x1 + 1) * (y2 - y1 + 1)
-    order = scores.argsort()[::-1]
-
-    keep = []
-    while order.size > 0:
-        i = order[0]
-        keep.append(i)
-        xx1 = np.maximum(x1[i], x1[order[1:]])
-        yy1 = np.maximum(y1[i], y1[order[1:]])
-        xx2 = np.minimum(x2[i], x2[order[1:]])
-        yy2 = np.minimum(y2[i], y2[order[1:]])
-
-        w = np.maximum(0.0, xx2 - xx1 + 1)
-        h = np.maximum(0.0, yy2 - yy1 + 1)
-        inter = w * h
-        ovr = inter / (areas[i] + areas[order[1:]] - inter)
-
-        inds = np.where(ovr <= thresh)[0]
-        order = order[inds + 1]
-
-    return keep
 
 
 def interpolation(point_a, point_b, target_x):
@@ -257,84 +206,6 @@ def compute_intersection_area(box_i, box_j):
     return inter_area
 
 
-def eval_video_object_detections(true_dets, pred_dets, iou_thresh=0.5):
-    assert len(true_dets) == len(pred_dets)
-    tp_tot = 0
-    fp_tot = 0
-    fn_tot = 0
-    for frame_idx in sorted(true_dets):
-        tp, fp, fn = eval_frame_detections(
-            true_dets[frame_idx], pred_dets[frame_idx], iou_thresh=iou_thresh)
-        tp_tot += tp
-        fp_tot += fp
-        fn_tot += fn
-    f1 = compute_f1(tp_tot, fp_tot, fn_tot)
-
-    return f1
-
-
-def eval_single_image_single_type(gt_boxes, pred_boxes, iou_thresh):
-    gt_idx_thr = []
-    pred_idx_thr = []
-    ious = []
-    for ipb, pred_box in enumerate(pred_boxes):
-        for igb, gt_box in enumerate(gt_boxes):
-            iou = IoU(pred_box, gt_box)
-            if iou > iou_thresh:
-                gt_idx_thr.append(igb)
-                pred_idx_thr.append(ipb)
-                ious.append(iou)
-
-    args_desc = np.argsort(ious)[::-1]
-    if len(args_desc) == 0:
-        # No matches
-        tpos = 0
-        fpos = len(pred_boxes)
-        fneg = len(gt_boxes)
-    else:
-        gt_match_idx = []
-        pred_match_idx = []
-        for idx in args_desc:
-            gt_idx = gt_idx_thr[idx]
-            pr_idx = pred_idx_thr[idx]
-            # If the boxes are unmatched, add them to matches
-            if (gt_idx not in gt_match_idx) and (pr_idx not in pred_match_idx):
-                gt_match_idx.append(gt_idx)
-                pred_match_idx.append(pr_idx)
-        tpos = len(gt_match_idx)
-        fpos = len(pred_boxes) - len(pred_match_idx)
-        fneg = len(gt_boxes) - len(gt_match_idx)
-    return tpos, fpos, fneg
-
-
-def eval_frame_detections(true_dets, pred_dets, iou_thresh=0.5):
-    tp_dict = {}
-    fp_dict = {}
-    fn_dict = {}
-    gt = defaultdict(list)
-    dt = defaultdict(list)
-    for box in true_dets:
-        gt[box[4]].append(box[0:4])
-    for box in pred_dets:
-        dt[box[4]].append(box[0:4])
-
-    for t in gt.keys():
-        current_gt = gt[t]
-        current_dt = dt[t]
-        tp_dict[t], fp_dict[t], fn_dict[t] = \
-            eval_single_image_single_type(current_gt, current_dt, iou_thresh)
-
-    tp = sum(tp_dict.values())
-    fp = sum(fp_dict.values())
-    fn = sum(fn_dict.values())
-    extra_t = [t for t in dt.keys() if t not in gt]
-    for t in extra_t:
-        # print('extra type', t)
-        fp += len(dt[t])
-    # print(tp, fp, fn)
-    return tp, fp, fn
-
-
 def convert_detection_to_classification(video_detections,
                                         resolution,
                                         size_thresh=0.005,
@@ -347,14 +218,16 @@ def convert_detection_to_classification(video_detections,
     COCO_map = load_COCOlabelmap(cocomap_file)
     video_classification_label = {}
     for frame_idx in video_detections:
-        frame_label = convert_frame_label(video_detections[frame_idx], COCO_map, resolution,
-                                          size_thresh, confidence_thresh)
+        frame_label = convert_frame_label(
+            video_detections[frame_idx], COCO_map, resolution, size_thresh,
+            confidence_thresh)
         video_classification_label[frame_idx] = frame_label
 
     return video_classification_label
 
 
-def convert_frame_label(boxes, COCO_map, resolution, size_thresh, confidence_thresh):
+def convert_frame_label(boxes, COCO_map, resolution, size_thresh,
+                        confidence_thresh):
     """Return the label of largest box.
     Arguments:
         boxes {[dict]} -- detection boxes for current frame.
