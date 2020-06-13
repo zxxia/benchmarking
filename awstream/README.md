@@ -1,19 +1,13 @@
-```bash
-VIDEO=tv_show
-SHORT_VIDEO_LENGTH=30
-PROFILE_LENGTH=10
-OUTPUT=person_videos
-DATASET_TYPE=youtube
-DATASET_ROOT=/data/zxxia/videos
-
+```sh
+cd {PathToBenchmarking}/benchmarking
 python awstream \
-    --video $VIDEO \
-    --dataset ${DATASET_TYPE} \
-    --data_root ${DATASET_ROOT}\
-    --short_video_length $SHORT_VIDEO_LENGTH \
-    --profile_length $PROFILE_LENGTH \
-    --output_filename ${OUTPUT}/awstream_results_${VIDEO}.csv \
-    --profile_filename ${OUTPUT}/awstream_profile_${VIDEO}.csv \
+    --video tv_show \
+    --dataset youtube \
+    --data_root {PathToDataset} \
+    --short_video_length 30 \
+    --profile_length 10 \
+    --output_filename {PathToSaveOutput}/awstream_results_tv_show.csv \
+    --profile_filename {PathToSaveOutput}/awstream_profile_tv_show.csv \
     --classes_interested person \
-    --video_save_path ${OUTPUT}
+    --video_save_path {PathToSaveOutput}
 ```
