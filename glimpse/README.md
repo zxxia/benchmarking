@@ -1,4 +1,5 @@
 ```sh
+cd {PathToBenchmarking}/benchmarking
 python glimpse \
     --video tv_show \
     --dataset youtube \
