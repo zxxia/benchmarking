@@ -74,3 +74,18 @@ AWStream tunes video frame rate, frame resolution and quality
 parameter to save the bandwidth required in video transmission. It uses
 offline and online profiling techinques to choose configurations to save
 bandwith and maintain inference accuracy.
+
+
+## TODO
+- [ ] Add mscoco_label_map.pbtxt loading mechanism in dataset/video wrappers.
+Avoid using the hardcoded label names.
+- [ ] Refactor the KITTI wrapper. Use new object detection file format.
+- [ ] Refactor NoScope. Classification module should be taken out from NoScope.
+Make classification a callable module. NoScope module should be more automatic
+and it should be able to be called like other VAPs.
+- [ ] The dataset file structure should be reorganized.
+- [ ] **VideoStorm, AWStream, Glimpse, Vigil, and NoScope should be
+reimplemented using the interface.**
+- [ ] **Feature analysis module should be refactored. The feature generation,
+feature selection, and feature scanning should be callable and automatic.
+Performance estimation should also be in the same module?**
