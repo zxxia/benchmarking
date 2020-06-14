@@ -16,23 +16,24 @@ class YoutubeVideo(Video):
     """Class of YoutubeVideo."""
 
     def __init__(self, root, name, resolution_name,
-                 model='faster_rcnn_resnet101', filter_flag=True,
+                 model='faster_rcnn_resnet101', qp=23, filter_flag=True,
                  merge_label_flag=False,
                  classes_interested={COCOLabels.CAR.value,
                                      COCOLabels.BUS.value,
                                      COCOLabels.TRUCK.value}, cropped=False):
         """Youtube Video Constructor."""
+        resolution = RESOL_DICT[resolution_name]
         video_path = os.path.join(root, name+'.mp4')
         if cropped:
             image_path = os.path.join(root, resolution_name+'_cropped')
             detection_file = os.path.join(
                 root, 'profile',
-                f"{model}_{RESOL_DICT[resolution_name][0]}x{RESOL_DICT[resolution_name][1]}_23_cropped_smoothed_detections.csv")
+                f"{model}_{resolution[0]}x{resolution[1]}_{qp}_cropped_smoothed_detections.csv")
         else:
             image_path = os.path.join(root, resolution_name)
             detection_file = os.path.join(
                 root, 'profile',
-                f"{model}_{RESOL_DICT[resolution_name][0]}x{RESOL_DICT[resolution_name][1]}_23_smoothed_detections.csv")
+                f"{model}_{resolution[0]}x{resolution[1]}_{qp}_smoothed_detections.csv")
         if isinstance(video_path, str) and os.path.exists(video_path):
             vid = cv2.VideoCapture(video_path)
             fps = int(round(vid.get(cv2.CAP_PROP_FPS)))
@@ -45,7 +46,6 @@ class YoutubeVideo(Video):
             print('loading {}...'.format(detection_file))
             dets = load_object_detection_results(detection_file)
             dets_nofilter = copy.deepcopy(dets)
-            resolution = RESOL_DICT[resolution_name]
 
             # TODO: handle overlapping boxes
             if name in CAMERA_TYPES['static']:

@@ -14,8 +14,9 @@ class KittiVideo(Video):
 
     LOCATIONS = ['City', 'Residential', 'Road']
 
-    def __init__(self, root, name, resolution_name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True, merge_label_flag=False,
+    def __init__(self, root, name, resolution_name,
+                 model='faster_rcnn_resnet101', qp=23, filter_flag=True,
+                 merge_label_flag=False,
                  classes_interested={COCOLabels.CAR.value,
                                      COCOLabels.BUS.value,
                                      COCOLabels.TRUCK.value}, cropped=False):

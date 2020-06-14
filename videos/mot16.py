@@ -13,7 +13,7 @@ class MOT16Video(Video):
     """Class of MOT16Video."""
 
     def __init__(self, root, video_name, resolution_name,
-                 model='faster_rcnn_resnet101', filter_flag=True,
+                 model='faster_rcnn_resnet101', qp=23, filter_flag=True,
                  merge_label_flag=False,
                  classes_interested={COCOLabels.CAR.value,
                                      COCOLabels.BUS.value,
@@ -24,12 +24,12 @@ class MOT16Video(Video):
             image_path = os.path.join(root, resolution_name+'_cropped')
             detection_file = os.path.join(
                 root, 'profile',
-                f"{model}_{resolution[0]}x{resolution[1]}_23_cropped_smoothed_detections.csv")
+                f"{model}_{resolution[0]}x{resolution[1]}_{qp}_cropped_smoothed_detections.csv")
         else:
             image_path = os.path.join(root, resolution_name)
             detection_file = os.path.join(
                 root, 'profile',
-                f"{model}_{resolution[0]}x{resolution[1]}_23_smoothed_detections.csv")
+                f"{model}_{resolution[0]}x{resolution[1]}_{qp}_smoothed_detections.csv")
         print('loading {}...'.format(detection_file))
         dets = load_object_detection_results(detection_file)
         dets_nofilter = copy.deepcopy(dets)
