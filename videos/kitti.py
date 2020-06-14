@@ -3,8 +3,9 @@ import copy
 import os
 
 from constants import RESOL_DICT, COCOLabels
-from utils.utils import (filter_video_detections, load_full_model_detection,
-                         remove_overlappings)
+from object_detection.infer import load_object_detection_results
+from utils.utils import filter_video_detections, remove_overlappings
+# load_full_model_detection ,
 from videos.video import Video
 
 
@@ -14,7 +15,10 @@ class KittiVideo(Video):
     LOCATIONS = ['City', 'Residential', 'Road']
 
     def __init__(self, root, name, resolution_name, detection_file, image_path,
-                 model='FasterRCNN', filter_flag=True, merge_label_flag=False):
+                 model='FasterRCNN', filter_flag=True, merge_label_flag=False,
+                 classes_interested={COCOLabels.CAR.value,
+                                     COCOLabels.BUS.value,
+                                     COCOLabels.TRUCK.value}, cropped=False):
         """Kitti Video Constructor."""
         dets, num_of_frames = load_full_model_detection(detection_file)
         dets_nofilter = copy.deepcopy(dets)
@@ -36,7 +40,8 @@ class KittiVideo(Video):
                 for frame_idx, boxes in dets.items():
                     for box_idx, _ in enumerate(boxes):
                         # Merge all cars and trucks into cars
-                        dets[frame_idx][box_idx][4] = COCOLabels.CAR.value
+                        dets[frame_idx][box_idx][4] = min(classes_interested)
+                        # COCOLabels.CAR.value
                 #     dets[frame_idx] = remove_overlappings(boxes, 0.3)
         else:
             dropped_dets = None

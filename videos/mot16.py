@@ -4,16 +4,13 @@ import copy
 import os
 
 from constants import RESOL_DICT, COCOLabels
-from utils.utils import (filter_video_detections, load_full_model_detection,
-                         remove_overlappings)
+from utils.utils import (filter_video_detections, remove_overlappings)
 from videos.video import Video
 from object_detection.infer import load_object_detection_results
 
 
 class MOT16Video(Video):
     """Class of MOT16Video."""
-
-    # TODO: finish MOT16 dataset abstraction
 
     def __init__(self, root, video_name, resolution_name,
                  model='faster_rcnn_resnet101', filter_flag=True,
@@ -22,7 +19,6 @@ class MOT16Video(Video):
                                      COCOLabels.BUS.value,
                                      COCOLabels.TRUCK.value}, cropped=False):
         """MOT16Video Constructor."""
-        # dets, num_of_frames = load_full_model_detection(detection_file)
         resolution = RESOL_DICT[resolution_name]
         if cropped:
             image_path = os.path.join(root, resolution_name+'_cropped')
