@@ -3,7 +3,6 @@ import os
 from videos.kitti import KittiVideo
 from videos.mot15 import MOT15Video
 from videos.mot16 import MOT16Video
-from videos.video import Video
 from videos.waymo import WaymoVideo
 from videos.youtube import YoutubeVideo
 
@@ -37,7 +36,13 @@ def get_seg_paths(data_path, dataset_name, video_name):
                     continue
                 seg_paths.append(seg_path)
     elif dataset_name == 'mot15':
-        raise NotImplementedError
+        seg_paths = []
+        for folder in ['test', 'train']:
+            for seg_path in sorted(
+                    glob.glob(os.path.join(data_path, folder, '*'))):
+                if not os.path.isdir(seg_path):
+                    continue
+                seg_paths.append(seg_path)
     elif dataset_name == 'mot16':
         seg_paths = []
         for folder in ['test', 'train']:

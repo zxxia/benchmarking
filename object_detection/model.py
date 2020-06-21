@@ -21,6 +21,13 @@ class Model(object):
         model = tf.saved_model.load(str(model_dir))
         self.model = model.signatures['serving_default']
 
+    def train(self):
+        """Train object detection model."""
+        # TODO: provide a method to fine tune the model
+        # Would like to use tensorflow object detection API with tf2.0
+        # Need to wait for their release......
+        raise NotImplementedError
+
     def infer(self, image):
         # TODO: support batch inference
         """Run object detection on a single image."""
@@ -48,15 +55,10 @@ class Model(object):
         output_dict['num_detections'] = num_detections
 
         updated_boxes = []
-        # import pdb
-        # pdb.set_trace()
         for box in output_dict['detection_boxes']:
             updated_boxes.append(
                 [box[1]*resolution[1], box[0]*resolution[0],
                  box[3]*resolution[1], box[2]*resolution[0]])
-            # updated_boxes.append(
-            #     [box[0]*resolution[0], box[1]*resolution[1],
-            #      box[2]*resolution[0], box[3]*resolution[1]])
         output_dict['detection_boxes'] = np.array(updated_boxes)
 
         # detection_classes should be ints.
