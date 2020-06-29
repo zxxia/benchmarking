@@ -14,20 +14,18 @@ RESOL_DICT = {'180p': (320, 180),
               '2160p': (3840, 2160)}
 
 CAMERA_TYPES = {
-    'static': ['crossroad', 'crossroad2', 'crossroad3',
-               'crossroad4', 'crossroad5',
-               'crossroad5_night', 'crossroad6', 'crossroad7',
-                'drift', 'highway', 'highway1', 'highway_normal_traffic',
-                'highway_no_traffic',
-                'jp', 'jp_hw', 'motorway', 'russia',
-               'russia1', 'traffic', 'tw', 'tw1', 'tw_road',
-               'tw_under_bridge', 't_crossroad', 'canada_crossroad',
-               'cropped_crossroad4', 'cropped_crossroad4_2', 'cropped_crossroad4_3',  'cropped_crossroad3',
-               'cropped_crossroad5', 'cropped_crossroad5_night',
-                'crossroad2_night'],
-    'moving': ['driving1', 'driving2', 'driving_downtown', 'park', 'motor', 'nyc',
-                'reckless_driving', 'street_racing',
-               'lane_split', 'road_trip', 'cropped_driving1', 'cropped_driving2']
+    'static': ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4',
+               'crossroad5', 'crossroad5_night', 'crossroad6', 'crossroad7',
+               'drift', 'highway', 'highway1', 'highway_normal_traffic',
+               'highway_no_traffic', 'jp', 'jp_hw', 'motorway', 'russia',
+               'russia1', 'traffic', 'tw', 'tw1', 'tw_road', 'tw_under_bridge',
+               't_crossroad', 'canada_crossroad', 'cropped_crossroad4',
+               'cropped_crossroad4_2', 'cropped_crossroad4_3',
+               'cropped_crossroad3', 'cropped_crossroad5',
+               'cropped_crossroad5_night', 'crossroad2_night'],
+    'moving': ['driving1', 'driving2', 'driving_downtown', 'park', 'motor',
+               'nyc', 'reckless_driving', 'street_racing', 'lane_split',
+               'road_trip', 'cropped_driving1', 'cropped_driving2']
 }
 
 
@@ -40,6 +38,7 @@ class COCOLabels(Enum):
     TRAIN = 7
     TRUCK = 8
 
+
 OFFSET = 0
 
 MODEL_COST = {'mobilenet': 31,
@@ -51,14 +50,6 @@ MODEL_COST = {'mobilenet': 31,
               'FasterRCNN': 106,
               'faster_rcnn_resnet101': 106,
               }
-
-babygroot_DT_ROOT = '/mnt/data/zhujun/dataset/'
-babygroot_model_path = '/home/zhujunxiao/video_analytics_pipelines/models/research/object_detection_old/'
-MODEL_PATH = {'FasterRCNN': 'faster_rcnn_resnet101_coco_2018_01_28',
-              'FasterRCNN50': 'faster_rcnn_resnet50_coco_2018_01_28',
-              'Inception': 'faster_rcnn_inception_v2_coco_2018_01_28',
-              'mobilenet': 'ssd_mobilenet_v2_coco_2018_03_29'
-}
 
 
 RESOL_LIST = ['360p', '480p', '540p', '720p']

@@ -77,15 +77,35 @@ bandwith and maintain inference accuracy.
 
 
 ## TODO
-- [ ] Add mscoco_label_map.pbtxt loading mechanism in dataset/video wrappers.
-Avoid using the hardcoded label names.
-- [ ] Refactor the KITTI wrapper. Use new object detection file format.
-- [ ] Refactor NoScope. Classification module should be taken out from NoScope.
-Make classification a callable module. NoScope module should be more automatic
-and it should be able to be called like other VAPs.
+- [ ] Implement VideoStorm using [Yoda interface](interface.py) in folder 
+[videostorm\_interface](videostorm_interface).
+    1. Input: video frames 
+    2. Output: 
+       - a csv file stores bounding boxes on all frames
+       - a csv file stores f1 score, bandwidth, and gpu compute cost of 
+       compressed video segments transmitted from client to server.
+- [ ] Implement AWStream using [Yoda interface](interface.py) in folder 
+[awstream\_interface](awstream_interface).
+    1. Input: video frames 
+    2. Output: 
+       - a csv file stores bounding boxes on all frames
+       - a csv file stores f1 score, bandwidth, and gpu compute cost of 
+       compressed video segments transmitted from client to server.
+- [ ] Implement Vigil using [Yoda interface](interface.py) in folder 
+[vigil\_interface](vigil_interface).
+    1. Input: video frames 
+    2. Output: 
+       - a csv file stores bounding boxes on all frames
+       - a csv file stores f1 score, bandwidth, and gpu compute cost of 
+       compressed video segments transmitted from client to server.
+- [ ] Refactor feature\_analysis module.
+    1. The feature generation script.
+    2. Feature vs. performance mapping generation script.
+    3. Performance estimation from feature script.
 - [ ] The dataset file structure should be reorganized.
-- [ ] **VideoStorm, AWStream, Glimpse, Vigil, and NoScope should be
-reimplemented using the interface.**
-- [ ] **Feature analysis module should be refactored. The feature generation,
-feature selection, and feature scanning should be callable and automatic.
-Performance estimation should also be in the same module?**
+- [ ] Add an elegant independce checking module. Or add this to the interface?
+Need to discuss.
+- [ ] Add an elegant feature selection module? Or add this to the interface?
+Need to discuss.
+- [ ] Implement [training function](https://github.com/zxxia/benchmarking/blob/5154527388fe1a73f31ca8bebce19a39fb028e25/object_detection/model.py#L24) 
+using tensorflow 2.0 in object\_detection module.
