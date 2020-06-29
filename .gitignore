@@ -3,7 +3,6 @@
 *.jpg
 *.json
 *.mp4
-*.txt
 *.pyc
 .tags
 .pylintrc
