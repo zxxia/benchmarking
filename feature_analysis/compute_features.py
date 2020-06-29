@@ -1,3 +1,4 @@
+import argparse
 import csv
 import glob
 import os
@@ -12,8 +13,12 @@ from feature_analysis.features import (
     compute_percentage_frame_with_new_object,
     compute_percentage_frame_with_object, compute_velocity,
     compute_video_object_size, count_unique_class)
-from utils.utils import load_full_model_detection
 from videos import get_dataset_class, get_seg_paths
+
+
+def parse_args():
+    # TODO: create parser and return args
+    raise NotImplementedError
 
 VIDEOS = ['crossroad', 'crossroad2', 'crossroad3', 'crossroad4', 'drift',
           'driving1', 'driving_downtown', 'highway',
@@ -27,12 +32,12 @@ SHORT_VIDEO_LENGTH = 30
 ROOT = '/data/zxxia/videos'
 
 HEADER = ['Video_name', 'object count median', 'object count avg',
-          'object count mode',
-          'object count var', 'object count std', 'object count skewness',
-          'object count kurtosis', 'object count second_moment',
-          'object count percentile10', 'object count percentile25',
-          'object count percentile75', 'object count percentile90',
-          'object count iqr', 'object count entropy',
+          'object count mode', 'object count var', 'object count std',
+          'object count skewness', 'object count kurtosis',
+          'object count second_moment', 'object count percentile10',
+          'object count percentile25', 'object count percentile75',
+          'object count percentile90', 'object count iqr',
+          'object count entropy',
 
           'object area median', 'object area avg', 'object area mode',
           'object area var', 'object area std', 'object area skewness',
@@ -66,6 +71,7 @@ HEADER = ['Video_name', 'object count median', 'object count avg',
 # OUTPUT_FILE = 'video_features_{}s/allvideo_features_long_add_width_20_filter.csv'.format(SHORT_VIDEO_LENGTH)
 OUTPUT_FILE = f'person_videos/person_video_features_{SHORT_VIDEO_LENGTH}.csv'
 
+
 def feature_gen(data):
     if data == []:
         return list(np.zeros((1, 14))[0])
@@ -88,9 +94,10 @@ def feature_gen(data):
                   percentile90, iqr, entropy]
     return statistics
 
+
 roots = len(VIDEOS) * [ROOT] + ['/data/zxxia/MOT16']
 dataset_names = len(VIDEOS) * ['youtube'] + ['mot16']
-video_names  = VIDEOS + [None]
+video_names = VIDEOS + [None]
 
 with open(OUTPUT_FILE, 'w', 1) as f:
     writer = csv.writer(f)
@@ -128,7 +135,8 @@ with open(OUTPUT_FILE, 'w', 1) as f:
                 clip = seg_name + '_' + str(i)
                 start_frame = i * chunk_frame_cnt + video.start_frame_index
                 end_frame = (i + 1) * chunk_frame_cnt
-                end_frame = min((i + 1) * chunk_frame_cnt, video.end_frame_index)
+                end_frame = min((i + 1) * chunk_frame_cnt,
+                                video.end_frame_index)
                 features = []
 
                 velo = []
