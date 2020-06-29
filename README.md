@@ -1,5 +1,9 @@
 # Yoda (A Video analytic pipeline Benchmark)
 
+## Dependency
+Please set up a python virtual environement and install the packages listed in 
+[requirements.txt](requirements.txt).
+
 ## Video Download
 
 1. Use [**youtube-dl**](https://ytdl-org.github.io/youtube-dl/index.html) to download
@@ -30,12 +34,16 @@ format. Labels used in this project:
     * 6 bus
     * 8 truck
 
-## Data Sources
+## Data Sources and file structure
 
+### Data Sources
 * Youtube Videos
 * [The KITTI Vision Benchmarking](http://www.cvlibs.net/datasets/kitti/)
 * [Multiple Object Tracking Benchmark](https://motchallenge.net/)
 * [Waymo Open Dataset](https://waymo.com/open/)
+
+### File Structure
+Please check [here](videos/README.md).
 
 ## Object-Level Features Covered
 
