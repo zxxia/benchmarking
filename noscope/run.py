@@ -1,14 +1,14 @@
-"""VideoStorm offline simulation driver."""
+"""NoScope offline simulation driver."""
 import csv
 import os
 
 from utils.utils import load_COCOlabelmap
 from videos import get_dataset_class, get_seg_paths
-from videostorm.VideoStorm import VideoStorm
+from noscope.NoScope import NoScope
 
 
 def run(args):
-    """Run VideoStorm simulation."""
+    """Run NoScope simulation."""
     dataset_class = get_dataset_class(args.dataset)
     seg_paths = get_seg_paths(args.data_root, args.dataset, args.video)
     original_resolution = args.original_resolution
@@ -33,7 +33,7 @@ def run(args):
         assert short_video_length >= profile_length, "short_video_length " \
             "should no less than profile_length."
 
-    pipeline = VideoStorm(sample_step_list, model_list, profile_filename)
+    pipeline = NoScope(sample_step_list, model_list, profile_filename)
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(
