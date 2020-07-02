@@ -1,4 +1,4 @@
-# Videos and Dataset Abstration
+# Videos and Dataset Abstraction
 
 ## Base Class
 ```video.py``` is the base class of all dataset wrapper. 
@@ -18,3 +18,24 @@
 ## Youtube
 ```youtube.py``` is the wrapper of a youtube downloaded video. 
 
+### Directory Tree
+
+``` text
+tv_show
+|   tv_show.mp4
+|   tv_show_1280x720_23.mp4
+|   tv_show_960x540_23.mp4
+|   ...
+|
+----profile
+|   | faster_rcnn_resenet101_1280x720_23_detections.csv
+|   | faster_rcnn_resenet101_1280x720_23_smoothed_detections.csv
+|   | faster_rcnn_resenet101_1280x720_23_profile.csv
+|   | ...
+|
+|---720p
+|   | 1280x720 frame images ...
+|   |
+|---540p
+|   | 960x540 frame images ...
+```
