@@ -73,8 +73,9 @@ def feature_gen(data):
                   percentile90, iqr, entropy]
     return statistics
 
+
 def compute_features(args):
-    roots = len(VIDEOS) * [ROOT] + ['/data/zxxia/MOT16']
+    roots = args.root
     dataset_names = len(VIDEOS) * ['youtube'] + ['mot16']
     video_names = VIDEOS + [None]
 
@@ -88,23 +89,24 @@ def compute_features(args):
             seg_paths = get_seg_paths(root, dataset_name, name)
             for seg_path in seg_paths:
                 seg_name = os.path.basename(seg_path)
-                video = dataset_class(seg_path, name, '720p',
-                                      'faster_rcnn_resnet101', filter_flag=True,
-                                      classes_interested=classes_interested)
+                video = dataset_class(
+                    seg_path, name, '720p', 'faster_rcnn_resnet101',
+                    filter_flag=True, classes_interested=classes_interested)
                 # load full model's detection results as ground truth
                 gt = video.get_video_detection()
-                velocity = compute_velocity(gt, video.start_frame_index,
-                                            video.end_frame_index, video.frame_rate)
-                arrival_rate = compute_arrival_rate(gt, video.start_frame_index,
-                                                    video.end_frame_index,
-                                                    video.frame_rate)
+                velocity = compute_velocity(
+                    gt, video.start_frame_index, video.end_frame_index,
+                    video.frame_rate)
+                arrival_rate = compute_arrival_rate(
+                    gt, video.start_frame_index, video.end_frame_index,
+                    video.frame_rate)
                 obj_size, tot_obj_size = compute_video_object_size(
                     gt, video.start_frame_index, video.end_frame_index,
                     video.resolution)
-                nb_object = compute_nb_object_per_frame(gt, video.start_frame_index,
-                                                        video.end_frame_index)
+                nb_object = compute_nb_object_per_frame(
+                    gt, video.start_frame_index, video.end_frame_index)
 
-                chunk_frame_cnt = SHORT_VIDEO_LENGTH * video.frame_rate
+                chunk_frame_cnt = args.short_video_length * video.frame_rate
                 nb_chunks = video.frame_count // chunk_frame_cnt
                 if nb_chunks == 0:
                     nb_chunks = 1
@@ -148,5 +150,5 @@ def compute_features(args):
                         output_row = [clip] + features
                         writer.writerow(output_row)
                     else:
-                        output_row = [clip] + [None] * 73
+                        output_row = [clip] + [None] * (len(HEADER) - 1)
                         writer.writerow(output_row)

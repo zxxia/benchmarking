@@ -21,12 +21,6 @@ def parse_args():
                         choices=['high', 'med', 'low'],
                         help="granularity of feature scan")
 
-    parser.add_argument("--sample_step_list", nargs="*", type=float,
-                        default=[20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5,
-                                 1.2, 1], help="A list of sample steps. A "
-                        "frame is sampled every sample_step frames. This is"
-                        "used to change frame rate. Default "
-                        "[20, 15, 10, 5, 4, 3, 2.5, 2, 1.8, 1.5, 1.2, 1].")
     parser.add_argument("--classes_interested", nargs="*", type=str,
                         default=['car', 'bus', 'truck'], help="A list of "
                         "interesting classes. Other classes will be filtered "
