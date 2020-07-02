@@ -1,6 +1,6 @@
 ```sh
 cd {PathToBenchmarking}/benchmarking
-python vigil \
+python feature_scanner \
     --video tv_show \
     --dataset youtube \
     --data_root {PathToDataset} \
