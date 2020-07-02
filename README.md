@@ -132,6 +132,6 @@ using TensorFlow 2.0 in object\_detection module.
 - [ ] Construct the website.
 
 - [ ] Add an example of a real profile of a pipeline.
-- [ ] change the def profile to profiling
+- [x] change the def profile to profiling
 - [ ] feature scanner interface needs to be changed
-- [ ] Add profile class and pipeline class
+- [x] Add profile class and pipeline class
