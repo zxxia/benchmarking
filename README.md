@@ -3,6 +3,10 @@
 ## Dependency
 Please set up a python virtual environment and install the packages listed in 
 [requirements.txt](requirements.txt).
+```bash
+# set up a python3 virtualenv environment
+pip install -r requirements.txt
+```
 
 ## Video Download
 
@@ -85,6 +89,13 @@ inference accuracy.
 
 
 ## TODO
+
+- [ ] Warm-up: Use the existing VideoStorm module and feature scanner module to 
+generate this figure. ![Warmup](simple_work.png)
+    1. Run VideoStorm on person-videos.
+    2. Compute features on person-videos.
+    3. Plot feature vs\. VideoStorm performance.
+
 - [ ] Implement VideoStorm using [Yoda interface](interface.py) in folder 
 [videostorm\_interface](videostorm_interface).
     1. Input: video frames 
@@ -132,6 +143,3 @@ using TensorFlow 2.0 in object\_detection module.
 - [ ] Construct the website.
 
 - [ ] Add an example of a real profile of a pipeline.
-- [x] change the def profile to profiling
-- [ ] feature scanner interface needs to be changed
-- [x] Add profile class and pipeline class
