@@ -68,5 +68,5 @@ python videos/resize.py \
     --output ${OUTPUT} \
     --target_width ${WIDTH} \
     --target_height ${HEIGHT} \
-    --qp ${QP} &
+    --qp ${QP} 
 ```
