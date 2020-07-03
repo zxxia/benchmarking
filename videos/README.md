@@ -44,7 +44,6 @@ tv_show
 ```bash
 WIDTH=640
 HEIGHT=360
-QP=23
 VIDEO=tv_show
 
 INPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}_${WIDTH}x${HEIGHT}_${QP}.mp4
@@ -60,6 +59,7 @@ python videos/extract_frames.py \
 ```bash
 WIDTH=1280
 HEIGHT=720
+QP=23
 VIDEO=tv_show
 INPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}.mp4
 OUTPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}_${WIDTH}x${HEIGHT}_${QP}.mp4
