@@ -19,8 +19,7 @@
 ```youtube.py``` is the wrapper of a youtube downloaded video. 
 
 ### Directory Tree
-
-``` text
+```text
 tv_show
 |   tv_show.mp4
 |   tv_show_1280x720_23.mp4
@@ -38,4 +37,36 @@ tv_show
 |   |
 |---540p
 |   | 960x540 frame images ...
+```
+
+## Video Operations
+### Extract frames from a video
+```bash
+WIDTH=640
+HEIGHT=360
+QP=23
+VIDEO=tv_show
+
+INPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}_${WIDTH}x${HEIGHT}_${QP}.mp4
+OUTPUT=/data/zxxia/videos/${VIDEO}/${HEIGHT}p
+
+python videos/extract_frames.py \
+    --input_video ${INPUT} \
+    --output_image_path ${OUTPUT} \
+    --qscale 2
+```
+
+### Resize a video
+```bash
+WIDTH=1280
+HEIGHT=720
+VIDEO=tv_show
+INPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}.mp4
+OUTPUT=/data/zxxia/videos/${VIDEO}/${VIDEO}_${WIDTH}x${HEIGHT}_${QP}.mp4
+python videos/resize.py \
+    --input ${INPUT} \
+    --output ${OUTPUT} \
+    --target_width ${WIDTH} \
+    --target_height ${HEIGHT} \
+    --qp ${QP} &
 ```
