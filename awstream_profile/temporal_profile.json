@@ -1,0 +1,1010 @@
+{
+    "1": [
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ]
+    ],
+    "2": [
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ]
+    ],
+    "4": [
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ]
+    ],
+    "10": [
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.25,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.5,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 0.75,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 1.6
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.4
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ],
+        [
+            {
+                "percentage": 1,
+                "velocity_avg": 2.8
+            },
+            {
+                "bandwidth": 0.5,
+                "f1 score": 0.9
+            }
+        ]
+    ]
+}

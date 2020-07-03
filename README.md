@@ -92,8 +92,8 @@ inference accuracy.
 
 - [ ] Warm-up: Use the existing VideoStorm module and feature scanner module to 
 generate this figure. ![Warmup](simple_work.png)
-    1. Run VideoStorm on person-videos.
-    2. Compute features on person-videos.
+    1. Run [VideoStorm](videostorm) on person-videos.
+    2. Compute features on person-videos using [feature_scanner](feature_scanner).
     3. Plot feature vs\. VideoStorm performance.
 
 - [ ] Implement VideoStorm using [Yoda interface](interface.py) in folder 
