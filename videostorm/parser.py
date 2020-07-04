@@ -10,8 +10,6 @@ def parse_args():
     parser.add_argument("--video", type=str, default=None, help="video name")
     parser.add_argument("--data_root", type=str, required=True,
                         help='root path to video mp4/frame data')
-    # parser.add_argument("--detection_root", type=str, required=True,
-    #                     help='root path to video detection data')
     parser.add_argument("--dataset", type=str, default='youtube',
                         choices=['kitti', 'mot15',
                                  'mot16', 'waymo', 'youtube'],
@@ -37,10 +35,10 @@ def parse_args():
                         default='720p', help="The resolution used to "
                         "generate groundtruth.")
     parser.add_argument("--model_list", nargs="*", type=str,
-                        default=['FasterRCNN', 'inception', 'mobilenet'],
-                        help="A list of quality parameters. "
-                        "More options are not included for now. In ffmpeg, "
-                        "23 by default.")
+                        default=['faster_rcnn_resnet101',
+                                 'faster_rcnn_inception_v2'
+                                 'ssd_mobilenet_v2'],
+                        help="A list of DNN models.")
     parser.add_argument("--classes_interested", nargs="*", type=str,
                         default=['car', 'bus', 'truck'], help="A list of "
                         "interesting classes. Other classes will be filtered "

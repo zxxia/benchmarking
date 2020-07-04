@@ -23,7 +23,7 @@ a video.
 3. Use [**ffmpeg**](https://www.ffmpeg.org/) to transform and extract the
 frames e.g. ```ffmpeg -i <Video Filename> %06d.jpg -hide_banner```
 
-## Model and Label
+## Object Detection, DNN Model and COCO Label
 
 1. The DNN models used in this project are downloaded from
 [**Tensorflow Model Zoo**](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md).
@@ -37,9 +37,10 @@ format. Labels used in this project:
     * 3 car
     * 6 bus
     * 8 truck
+4. The object detection results can be generated using [object_detection](object_detection).
 
 ## Data Sources and file structure
-
+The video dataset wrapper and frame extract scripts are in [videos](videos)
 ### Data Sources
 * Youtube Videos
 * [The KITTI Vision Benchmarking](http://www.cvlibs.net/datasets/kitti/)

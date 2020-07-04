@@ -44,8 +44,9 @@ def run(args):
             # loading videos
             print(dataset_class)
             original_video = dataset_class(
-                seg_path, seg_name, original_resolution, 'faster_rcnn_resnet101',
-                filter_flag=True, classes_interested=classes_interested)
+                seg_path, seg_name, original_resolution,
+                'faster_rcnn_resnet101', filter_flag=True,
+                classes_interested=classes_interested)
             videos = {}
             for model in model_list:
                 video = dataset_class(seg_path, seg_name, original_resolution,

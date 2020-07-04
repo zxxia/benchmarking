@@ -1,11 +1,11 @@
-"""VideoStorm Simulation Parser."""
+"""Glimpse Simulation Parser."""
 import argparse
 
 
 def parse_args():
     """Parse args."""
     parser = argparse.ArgumentParser(
-        description="VideoStorm offline simulation.")
+        description="Glimpse offline simulation.")
     # data related
     parser.add_argument("--video", type=str, default=None, help="video name")
     parser.add_argument("--data_root", type=str, required=True,
