@@ -50,7 +50,7 @@ pickleshare==0.7.5
 Pillow==7.1.1
 prompt-toolkit==3.0.5
 protobuf==3.11.3
-psutil==5.7.0
+psutil
 ptyprocess==0.6.0
 pyasn1==0.4.8
 pyasn1-modules==0.2.8
@@ -80,9 +80,9 @@ tensorflow-estimator==2.2.0
 termcolor==1.1.0
 tf-slim==1.1.0
 toml==0.10.0
-torch==1.5.0
+torch
 torch-summary==1.1.8
-torchvision==0.6.0
+torchvision
 traitlets==4.3.3
 typed-ast==1.4.1
 urllib3==1.25.9
