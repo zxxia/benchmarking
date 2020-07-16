@@ -19,6 +19,9 @@ def parse_args():
     parser.add_argument("--original_resolution", type=str,
                         default='720p', help="The resolution used to "
                         "generate groundtruth.")
+    parser.add_argument("--coco_label_file", type=str,
+                        default='mscoco_label_map.pbtxt', help="Path to a coco"
+                        "label map file.")
 
     # Pipeline configurations
     parser.add_argument("--short_video_length", type=int, required=True,
@@ -38,7 +41,10 @@ def parse_args():
                         type=float, default=[1],
                         help="A list of tracking error thresholds. Only used"
                         "in optical flow tracking.")
-
+    parser.add_argument("--classes_interested", nargs="*", type=str,
+                        default=['car', 'bus', 'truck'], help="A list of "
+                        "interesting classes. Other classes will be filtered "
+                        "out. Default ['car', 'bus', 'truck'].")
     # IO realted
     parser.add_argument("--profile_filename", type=str, required=True,
                         help="profile filename (csv). e.g. profile.csv")

@@ -13,6 +13,7 @@ from evaluation.f1 import compute_f1, evaluate_frame
 from utils.utils import interpolation
 import interface
 from pipeline import Pipeline
+from tqdm import tqdm
 
 def debug_print(msg):
     print(msg)
@@ -42,9 +43,9 @@ class Glimpse_Temporal(interface.Temporal):
             frame_diffs.append(frame_diff)
             prev_frame_gray = frame_gray.copy()
         min_diff = 0
-        max_diff = video.resolution()[0]*video.resolution()[1]
+        max_diff = video.resolution[0]*video.resolution[1]
         selected_frames = []
-        while(min_diff < max_diff + 1):
+        while(min_diff < max_diff - 1):
             mid_diff = (min_diff + max_diff)//2
             selected_frames = []
             selected_nb = 0
@@ -54,16 +55,22 @@ class Glimpse_Temporal(interface.Temporal):
                 if total_diff > mid_diff:
                     selected_frames.append(frame_start + i + 1)
                     selected_nb += 1
+                    total_diff = 0
             if selected_nb > num_frame:
                 min_diff = mid_diff + 1
             else:
                 max_diff = mid_diff
-        target_frames = selected_frames
+        total_diff = 0
+        for i, diff in enumerate(frame_diffs):
+            total_diff += diff
+            if total_diff > max_diff:
+                target_frames.append(frame_start + i + 1)
+                total_diff = 0
         return target_frames
 
     def run(self, video, start_frame, end_frame):
         target_frames = [start_frame]
-        for i in range(start_frame, end_frame + 1, self.cache_size):
+        for i in tqdm(range(start_frame, end_frame + 1, self.cache_size)):
             target_frames.extend(self.selecting_frame(video, i,
                                              min(i + self.cache_size - 1, end_frame), 
                                              int(self.cache_size//self.sample_rate)))
@@ -78,22 +85,28 @@ class Glimpse_Model(interface.Model):
         assert len(target_frames) >= 2, 'frames to detect must more than 2'
         prev_frame_gray = get_video_frame_gray(video, start_frame)
         prev_boxes = video.get_frame_detection(start_frame)
+        print(prev_boxes)
         last_tracking_frame = copy.deepcopy(prev_frame_gray)
         detection_results = [prev_boxes]
-        for i in range(start_frame + 1, end_frame + 1):
+        trggered_frame = 0
+        tracked_frame = len(target_frames)
+        for i in tqdm(range(start_frame + 1, end_frame + 1)):
             frame_gray = get_video_frame_gray(video, i)
             frame_bgr = video.get_frame_image(i)
             frame_diff, _, _, _ = frame_difference(prev_frame_gray, frame_gray)
             if frame_diff > self.frame_diff_thres:
                 prev_boxes = video.get_frame_detection(i)
                 last_tracking_frame = copy.deepcopy(frame_gray)
+                trggered_frame += 1
             elif i in target_frames:
-                tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame, frame_gray, i, prev_boxes, self.tracking_err_thres)
+                tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame,                                           frame_gray, i, prev_boxes, self.tracking_err_thres)
                 if not tracking_status:
                     prev_boxes = video.get_frame_detection(i)
+                    trggered_frame += 1
                 last_tracking_frame = copy.deepcopy(frame_gray)
             prev_frame_gray = copy.deepcopy(frame_gray)
             detection_results.append(prev_boxes)
+        print("triggered frame {}, tracked frame {}".format(trggered_frame, tracked_frame))
         return detection_results
 
 class Glimpse(Pipeline):
@@ -101,9 +114,21 @@ class Glimpse(Pipeline):
         self.temporal_prune = temporal_prune
         self.model_prune = model_prune
 
-    def run(self, video, start_frame, end_frame):
+    def run(self, video, start_frame, end_frame, output_file):
+        print("Selecting frames to be tracked ...")
         target_frames = self.temporal_prune.run(video, start_frame, end_frame)
-        return self.model_prune.run(video, start_frame, end_frame, target_frames)
+        #target_frames = [3,4]
+        frame_results = None
+        with open(output_file, 'w', 1) as f_out:
+            writer = csv.writer(f_out)
+            writer.writerow(['frame id', 'xmin', 'ymin', 'xmax', 
+                            'ymax', 'class' ,' score', 'object id'])
+            print("Start detecting")
+            frame_results = self.model_prune.run(video, start_frame, end_frame, target_frames)
+            for i, result in enumerate(frame_results):
+                for box in result:
+                    writer.writerow([i+1] + box)
+        return frame_results
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered = None, bboxes = None,
                      thresh=35):
@@ -115,7 +140,7 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered = None, bboxes 
     mask = np.greater(diff, thresh)
     pix_change = np.sum(mask)
     time_elapsed = time.time() - start_t
-    debug_print('frame difference used: {}'.format(time_elapsed*1000))
+    #debug_print('frame difference used: {}'.format(time_elapsed*1000))
     pix_change_obj = 0
     # obj_region = np.zeros_like(new_frame)
     # for box in bboxes_last_triggered:
@@ -171,6 +196,7 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
     old_corners = []
     for x, y, xmax, ymax, t, score, obj_id in old_boxes:
         # mask[y:ymax, x:xmax] = 255
+        x, y, xmax, ymax = int(x), int(y), int(xmax), int(ymax)
         corners = cv2.goodFeaturesToTrack(oldFrameGray[y:ymax, x:xmax],
                                           **feature_params)
         if corners is not None:
