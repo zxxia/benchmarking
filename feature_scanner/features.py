@@ -282,20 +282,22 @@ def compute_percentage_frame_with_object(video_dets, start, end,
     return cnt / (end-start+1)
 
 
-def compute_percentage_frame_with_new_object(video_dets, start, end):
+def compute_percentage_frame_with_new_object(video_dets, start, end,sample_step=1):
     """Compute the percentage of frames with new object in a video.
 
     Args
         video_dets(dict): a dict mapping frame index to a list of bboxes
         start(int): start frame
         end(int): end frame
-
+        sample_step(int): sample every sample_step steps
     Return
         percentage
 
     """
     object_first_frame = {}
-    for i in range(start, end+1):
+    num_of_frame_sampled=0
+    for i in range(start, end+1,sample_step):
+        num_of_frame_sampled+=1
         boxes = video_dets[i]
         for box in boxes:
             _id = box[6]
@@ -303,4 +305,4 @@ def compute_percentage_frame_with_new_object(video_dets, start, end):
             if _id not in object_first_frame:
                 object_first_frame[_id] = i
 
-    return len(set(object_first_frame.values())) / (end-start+1)
+    return len(set(object_first_frame.values())) / num_of_frame_sampled
