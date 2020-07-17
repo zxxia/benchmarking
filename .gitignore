@@ -8,5 +8,8 @@
 *.tar
 *.tar.gz
 *.zip
+/data/*
+/output_tmp/*
 .DS_Store
 __pycache__
+.vscode

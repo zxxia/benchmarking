@@ -42,7 +42,9 @@ class COCOLabels(Enum):
 OFFSET = 0
 
 MODEL_COST = {'mobilenet': 31,
+              'ssd_mobilenet_v2':31,
               'inception': 58,
+              'faster_rcnn_inception_v2':58,
               'Inception': 58,
               'resnet50': 89,
               'Resnet50': 89,
