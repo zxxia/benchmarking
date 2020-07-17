@@ -3,7 +3,7 @@ import os
 
 import numpy as np
 from scipy import stats
-
+from utils.utils import load_COCOlabelmap
 from feature_scanner.features import (compute_arrival_rate,
                                       compute_nb_object_per_frame,
                                       compute_percentage_frame_with_new_object,
@@ -75,36 +75,47 @@ def feature_gen(data):
 
 
 def compute_features(args):
-    roots = args.root
-    dataset_names = len(VIDEOS) * ['youtube'] + ['mot16']
-    video_names = VIDEOS + [None]
-
+    roots = [args.data_root]
+    VIDEOS=[args.video]
+    dataset_names = [args.dataset]
+    video_names = VIDEOS
+    OUTPUT_FILE=args.output_filename
+    if args.granularity=='high':
+        model_use='faster_rcnn_resnet101'
+        sample_frame_rate = 1 #compute the feature every "sample_frame_rate" frame(note that since the full frame .csv is computed offline, this does not save time while testing this code, but when deployed in real scene, the detection csv can only contain the "information frame" needed, therefore saving time )
+    elif args.granularity=='med':
+        model_use='ssd_mobilenet_v2'
+        sample_frame_rate = 5 
+    elif args.granularity=='low':
+        model_use='ssd_mobilenet_v2'
+        sample_frame_rate = 10 
     with open(OUTPUT_FILE, 'w', 1) as f:
         writer = csv.writer(f)
         writer.writerow(HEADER)
         for root, name, dataset_name in zip(roots, video_names, dataset_names):
             print(name)
-            classes_interested = {1}
+            coco_id2name, coco_name2id = load_COCOlabelmap(args.coco_label_file)
+            classes_interested = {coco_name2id[class_type] for class_type in args.classes_interested}
             dataset_class = get_dataset_class(dataset_name)
             seg_paths = get_seg_paths(root, dataset_name, name)
             for seg_path in seg_paths:
                 seg_name = os.path.basename(seg_path)
                 video = dataset_class(
-                    seg_path, name, '720p', 'faster_rcnn_resnet101',
+                    seg_path, name, '720p', model_use,
                     filter_flag=True, classes_interested=classes_interested)
-                # load full model's detection results as ground truth
-                gt = video.get_video_detection()
+                
+                detection = video.get_video_detection()
                 velocity = compute_velocity(
-                    gt, video.start_frame_index, video.end_frame_index,
+                    detection, video.start_frame_index, video.end_frame_index,
                     video.frame_rate)
                 arrival_rate = compute_arrival_rate(
-                    gt, video.start_frame_index, video.end_frame_index,
+                    detection, video.start_frame_index, video.end_frame_index,
                     video.frame_rate)
                 obj_size, tot_obj_size = compute_video_object_size(
-                    gt, video.start_frame_index, video.end_frame_index,
+                    detection, video.start_frame_index, video.end_frame_index,
                     video.resolution)
                 nb_object = compute_nb_object_per_frame(
-                    gt, video.start_frame_index, video.end_frame_index)
+                    detection, video.start_frame_index, video.end_frame_index)
 
                 chunk_frame_cnt = args.short_video_length * video.frame_rate
                 nb_chunks = video.frame_count // chunk_frame_cnt
@@ -126,18 +137,23 @@ def compute_features(args):
                     tot_sizes = []
                     nb_obj = []
                     percent_with_obj = compute_percentage_frame_with_object(
-                        gt, start_frame, end_frame)
+                        detection, start_frame, end_frame,sample_step=sample_frame_rate)
                     percent_with_new_obj = compute_percentage_frame_with_new_object(
-                        gt, start_frame, end_frame)
+                        detection, start_frame, end_frame,sample_step=sample_frame_rate)
                     nb_distinct_classes = count_unique_class(
-                        video.get_video_detection(), start_frame, end_frame)
+                        video.get_video_detection(), start_frame, end_frame,sample_step=sample_frame_rate)
 
-                    for j in range(start_frame, end_frame+1):
+                    for j in range(start_frame, end_frame+1, sample_frame_rate):
                         velo.extend(velocity[j])
                         arr_rate.append(arrival_rate[j])
                         sizes.extend(obj_size[j])
                         tot_sizes.append(tot_obj_size[j])
                         nb_obj.append(nb_object[j])
+                    velo*=sample_frame_rate
+                    arr_rate*=sample_frame_rate
+                    sizes*=sample_frame_rate
+                    tot_sizes*=sample_frame_rate
+                    nb_obj*=sample_frame_rate
                     if velo and arr_rate and sizes and tot_sizes and nb_obj:
                         features += feature_gen(nb_obj)
                         features += feature_gen(sizes)
