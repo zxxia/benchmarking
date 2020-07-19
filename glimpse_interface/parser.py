@@ -32,15 +32,21 @@ def parse_args():
                         help="Issue when overfitting mode is needed. Tuning "
                         "config over the entire short_video_length.")
 
-    parser.add_argument("--frame_difference_threshold_divisor_list", nargs="*",
-                        type=float, default=[20, 15, 10, 5, 4, 3, 2, 1],
-                        help="A list of frame difference threshold divisor. "
+    parser.add_argument("--frame_difference_threshold_divisor",
+                        type=float, default=2,
+                        help="frame difference threshold divisor. "
                         "frame difference threshold = width * height / divior."
                         )
-    parser.add_argument("--tracking_error_threshold_list", nargs="*",
-                        type=float, default=[1],
-                        help="A list of tracking error thresholds. Only used"
+    parser.add_argument("--tracking_error_threshold",
+                        type=float, default=1,
+                        help="tracking error thresholds. Only used"
                         "in optical flow tracking.")
+    parser.add_argument("--cache_size",
+                        type=int, default=30,
+                        help="size of active cache.")
+    parser.add_argument("--sample_rate",
+                        type=int, default=5,
+                        help="the sample rate of frames in active cache.")
     parser.add_argument("--classes_interested", nargs="*", type=str,
                         default=['car', 'bus', 'truck'], help="A list of "
                         "interesting classes. Other classes will be filtered "

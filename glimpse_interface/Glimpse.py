@@ -27,7 +27,8 @@ def get_video_frame_gray(video, frame_id):
         return frame_gray
 
 class Glimpse_Temporal(interface.Temporal):
-    def __init__(self, cache_size, sample_rate, frame_diff_thres, tracking_err_thres):
+    def __init__(self, Config):
+        cache_size, sample_rate, frame_diff_thres, tracking_err_thres = Config["cache_size"], Config["sample_rate"], Config["frame_diff_thres"], Config["tracking_error_thres"]
         self.cache_size = cache_size
         self.sample_rate = sample_rate
         self.frame_diff_thres = frame_diff_thres
@@ -71,21 +72,43 @@ class Glimpse_Temporal(interface.Temporal):
                 total_diff = 0
         return target_frames
 
-    def run(self, video, start_frame, end_frame):
+    def run(self, Seg, Config, Decision, Result = None):
         target_frames = []
+        video, start_frame, end_frame = Seg["video"], Seg["start_frame"], Seg["end_frame"]
+        cache_size, sample_rate, frame_diff_thres, tracking_err_thres = Config["cache_size"], Config["sample_rate"], Config["frame_diff_thres"], Config["tracking_error_thres"]
+        self.cache_size = cache_size
+        self.sample_rate = sample_rate
+        self.frame_diff_thres = frame_diff_thres
+        self.tracking_err_thres = tracking_err_thres
         for i in tqdm(range(start_frame, end_frame + 1, self.cache_size)):
             target_frames.append(i)
             target_frames.extend(self.selecting_frame(video, i+1,
                                              min(i + self.cache_size, end_frame), 
                                              int(self.cache_size//self.sample_rate)))
-        return target_frames
+        for i in range(start_frame, end_frame + 1):
+            if i not in Decision["Frame_Decision"]:
+                Decision["Frame_Decision"][i] = {"skip":True}
+            Decision["Frame_Decision"][i]["skip"] = True
+            if i in target_frames:
+                Decision["Frame_Decision"][i]["skip"] = False
+        
+        return Seg, Decision, Result
 
 class Glimpse_Model(interface.Model):
-    def __init__(self, frame_diff_thres, tracking_err_thres):
+    def __init__(self, Config):
+        frame_diff_thres, tracking_err_thres = Config["frame_diff_thres"], Config["tracking_error_thres"]
         self.frame_diff_thres = frame_diff_thres
         self.tracking_err_thres = tracking_err_thres
 
-    def run(self, video, start_frame, end_frame, target_frames):
+    def run(self, Seg, Config, Decision, Results = None):
+        video, start_frame, end_frame = Seg["video"], Seg["start_frame"], Seg["end_frame"]
+        frame_diff_thres, tracking_err_thres = Config["frame_diff_thres"], Config["tracking_error_thres"]
+        self.frame_diff_thres = frame_diff_thres
+        self.tracking_err_thres = tracking_err_thres
+        target_frames = []
+        for frame_id in Decision["Frame_Decision"]:
+            if not Decision["Frame_Decision"][frame_id]["skip"]:
+                target_frames.append(frame_id)
         assert len(target_frames) >= 2, 'frames to detect must more than 2'
         prev_frame_gray = get_video_frame_gray(video, start_frame)
         prev_boxes = video.get_frame_detection(start_frame)
@@ -98,65 +121,38 @@ class Glimpse_Model(interface.Model):
             frame_gray = get_video_frame_gray(video, i)
             frame_bgr = video.get_frame_image(i)
             frame_diff, _, _, _ = frame_difference(prev_frame_gray, frame_gray)
-            assert i in target_frames
+            if i not in Decision["Frame_Decision"]:
+                Decision["Frame_Decision"][i] = {"skip":True}
+            Decision["Frame_Decision"][i]["skip"] = True
             if frame_diff > self.frame_diff_thres:
                 prev_boxes = video.get_frame_detection(i)
                 last_tracking_frame = copy.deepcopy(frame_gray)
+                Decision["Frame_Decision"][i]["skip"] = False
                 trggered_frame += 1
             elif i in target_frames:
                 tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame,                                           frame_gray, i, detection_results[-1],self.tracking_err_thres)
                 if not tracking_status:
                     prev_boxes = video.get_frame_detection(i)
                     trggered_frame += 1
+                    Decision["Frame_Decision"][i]["skip"] = False
                 last_tracking_frame = copy.deepcopy(frame_gray)
             prev_frame_gray = copy.deepcopy(frame_gray)
             detection_results.append(prev_boxes)
         print("triggered frame {}, tracked frame {}".format(trggered_frame, tracked_frame))
-        return detection_results, trggered_frame
+        return Seg, Decision, detection_results
 
 class Glimpse(Pipeline):
     def __init__(self, temporal_prune:Glimpse_Temporal, model_prune:Glimpse_Model):
         self.temporal_prune = temporal_prune
         self.model_prune = model_prune
 
-    def run(self, video, start_frame, end_frame, output_file, vis_video=False, output_video=None):
+    def run(self, Seg, Config, Decision = None, Results = None):
+        Decision = {"Frame_Decision":{}}
         print("Selecting frames to be tracked ...")
-        target_frames = self.temporal_prune.run(video, start_frame, end_frame)
+        Seg, Decision, _ = self.temporal_prune.run(Seg, Config, Decision)
         #target_frames = [3,4]
-        frame_results = None
-        with open(output_file, 'w', 1) as f_out:
-            writer = csv.writer(f_out)
-            writer.writerow(['frame id', 'xmin', 'ymin', 'xmax', 
-                            'ymax', 'class' ,' score', 'object id'])
-            print("Start detecting")
-            frame_results, triggered_frame = self.model_prune.run(video, start_frame, end_frame, target_frames)
-            yellow = (0, 255, 255)
-            videoWriter = None
-            if vis_video and output_video is not None:
-                fps = 30
-                size = (video.resolution[0],video.resolution[1])
-                fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
-                videoWriter = cv2.VideoWriter(output_video, fourcc, fps, size) 
-            print("saving results ...") 
-            total_tp, total_fp, total_fn = 0,0,0
-            for i, result in enumerate(frame_results):
-                tp, fp, fn = evaluate_frame(video.get_frame_detection(start_frame + i), result)
-                total_tp += tp
-                total_fp += fp
-                total_fn += fn
-                if vis_video and output_video is not None:
-                    frame = video.get_frame_image(start_frame + i)
-                for box in result:
-                    writer.writerow([i+1] + box)
-                    if vis_video and output_video is not None:
-                        cv2.rectangle(frame, (int(box[0]),int(box[1])), 
-                                    (int(box[2]),int(box[3])), yellow, 2)
-                if vis_video and output_video is not None:
-                    videoWriter.write(frame)
-            if vis_video and output_video is not None:
-                videoWriter.release()
-            f1_score = compute_f1(total_tp, total_fp, total_fn)
-        return frame_results, triggered_frame, f1_score
+        print("Detecting frames")
+        return self.model_prune.run(Seg, Config, Decision)
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered = None, bboxes = None,
                      thresh=35):

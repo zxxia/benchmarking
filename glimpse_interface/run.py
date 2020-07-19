@@ -5,6 +5,7 @@ import os
 from glimpse_interface.Glimpse import Glimpse, Glimpse_Temporal, Glimpse_Model
 from videos import get_dataset_class, get_seg_paths
 from utils.utils import load_COCOlabelmap
+from evaluation.f1 import evaluate_frame, compute_f1
 
 
 def run(args):
@@ -16,9 +17,9 @@ def run(args):
     classes_interested = {coco_name2id[class_type]
                           for class_type in set(args.classes_interested)}
     overfitting = args.overfitting
-    tracking_error_threshold_list = args.tracking_error_threshold_list
-    frame_difference_divisor_list = \
-        args.frame_difference_threshold_divisor_list
+    tracking_error_threshold = args.tracking_error_threshold
+    frame_difference_divisor = \
+        args.frame_difference_threshold_divisor
     short_video_length = args.short_video_length
     profile_length = args.profile_length
     # detection_path = args.detection_root
@@ -26,6 +27,8 @@ def run(args):
     output_filename = args.output_filename
     vis_video = args.vis_video
     output_video = args.output_video
+    cache_size = args.cache_size
+    sample_rate = args.sample_rate
 
     if overfitting:
         assert short_video_length == profile_length, "short_video_length " \
@@ -33,9 +36,12 @@ def run(args):
     else:
         assert short_video_length >= profile_length, "short_video_length " \
             "should no less than profile_length."
+    
+    Config = {"cache_size":cache_size, "sample_rate":sample_rate,
+            "tracking_error_thres":tracking_error_threshold, "frame_diff_thres":0}
 
-    glimpse_temporal = Glimpse_Temporal(1, 5, 1280*720//2, 10)
-    glimpse_model = Glimpse_Model(1280*720//2, 10)
+    glimpse_temporal = Glimpse_Temporal(Config)
+    glimpse_model = Glimpse_Model(Config)
 
     pipeline = Glimpse(glimpse_temporal, glimpse_model)
     with open(profile_filename, 'w', 1) as f_out:
@@ -45,14 +51,12 @@ def run(args):
         for seg_path in seg_paths:
              # compute number of short videos can be splitted
             seg_name = os.path.basename(seg_path)
-            # video = dataset_class(
-            #             seg_path, seg_name, original_resolution,
-            #             'faster_rcnn_resnet101', filter_flag=True,
-            #             classes_interested=classes_interested)
             video = dataset_class(
-                        seg_path, seg_name, original_resolution,
-                        'faster_rcnn_resnet101', filter_flag=False)
+                         seg_path, seg_name, original_resolution,
+                         'faster_rcnn_resnet101', filter_flag=True,
+                         classes_interested=classes_interested)
             nb_short_videos = 0
+            Config["frame_diff_thres"] = (video.resolution[0]*video.resolution[1])//frame_difference_divisor
             if video.duration > short_video_length:
                 nb_short_videos = video.frame_count // (
                     short_video_length*video.frame_rate)
@@ -79,8 +83,46 @@ def run(args):
 
                 print('profile {} start={} end={}'.format(
                     clip, profile_start, profile_end))
-                _, triggered_frame, f1 = pipeline.run(video, profile_start, profile_end, output_filename, vis_video=vis_video, output_video=output_video)
-                bw = 1.0*triggered_frame/(profile_end-profile_start + 1)
-                writer.writerow([clip, f1, bw])
+                Seg = {"video":video, "start_frame":start_frame, "end_frame":end_frame}
+                _, decision_results, detection_results = pipeline.run(Seg, Config)
+                with open(output_filename, 'a', 1) as o_out:
+                    result_writer = csv.writer(o_out)
+                    result_writer.writerow(['frame id', 'xmin', 'ymin', 'xmax', 
+                            'ymax', 'class' ,' score', 'object id'])
+                    yellow = (0, 255, 255)
+                    videoWriter = None
+                    if vis_video and output_video is not None:
+                        fps = 30
+                        size = (video.resolution[0],video.resolution[1])
+                        fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
+                        videoWriter = cv2.VideoWriter(output_video, fourcc, fps, size) 
+                    print("saving results ...") 
+                    total_tp, total_fp, total_fn = 0,0,0
+                    for i, result in enumerate(detection_results):
+                        tp, fp, fn = evaluate_frame(video.get_frame_detection(start_frame + i), result)
+                        total_tp += tp
+                        total_fp += fp
+                        total_fn += fn
+                        if vis_video and output_video is not None:
+                            frame = video.get_frame_image(start_frame + i)
+                        for box in result:
+                            result_writer.writerow([i+1] + box)
+                            if vis_video and output_video is not None:
+                                cv2.rectangle(frame, (int(box[0]),int(box[1])), 
+                                            (int(box[2]),int(box[3])), yellow, 2)
+                        if vis_video and output_video is not None:
+                            videoWriter.write(frame)
+                    if vis_video and output_video is not None:
+                        videoWriter.release()
+                f1_score = compute_f1(total_tp, total_fp, total_fn)
+                origin_filesize = 0
+                filesize = 0
+                for i in range(profile_start, profile_end + 1):
+                    origin_filesize += video.get_frame_filesize(i)
+                    if i in decision_results["Frame_Decision"]:
+                        if not decision_results["Frame_Decision"][i]["skip"]:
+                            filesize += video.get_frame_filesize(i)
+                bw = 1.0*filesize/origin_filesize
+                writer.writerow([clip, f1_score, bw])
 
         
