@@ -50,5 +50,8 @@ def parse_args():
                         help="profile filename (csv). e.g. profile.csv")
     parser.add_argument("--output_filename", type=str, required=True,
                         help="output filename (csv). e.g. output.csv")
+    parser.add_argument("--output_video", type=str, default="output.avi",
+                        help="the video name if need to visualize the result")
+    parser.add_argument("--vis_video", action='store_true', help="visualize the results in video")
     args = parser.parse_args()
     return args
