@@ -65,10 +65,12 @@ def run(args):
                     profile_start = start_frame
                     profile_end = start_frame + original_video.frame_rate * profile_length - 1
                 print('profile {} start={} end={}'.format(clip, profile_start, profile_end))
+                '''
                 print('Check params clip: ', clip, videos, original_video, [profile_start, profile_end])
                 print('Check params videos: ', videos)
                 print('Check params original_video: ', original_video)
                 print('Check params range: ',[profile_start, profile_end])
+                '''
                 best_frame_rate, best_model = pipeline.Server(clip, videos, original_video, [profile_start, profile_end])
                 best_sample_rate = original_video.frame_rate / best_frame_rate
 

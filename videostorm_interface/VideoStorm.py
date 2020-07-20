@@ -114,7 +114,11 @@ class VideoStorm(Pipeline):
             if f1_list[-1] < self.target_f1:
                 target_frame_rate = None
             else:
-                index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
+                try:
+                    print(f1_list)
+                    index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
+                except:
+                    index = 0
 
                 if index == 0:
                     target_frame_rate = frame_rate_list[0]
