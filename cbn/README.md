@@ -2,4 +2,4 @@
 
 - `pics/`: generated feature vs. VideoStorm performance pics
 - `output/`: source files
-- `draw.py`: script to generate picstures
+- `draw.py`: script to generate pictures
