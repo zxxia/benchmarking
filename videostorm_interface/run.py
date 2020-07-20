@@ -8,7 +8,7 @@ from videostorm_interface.VideoStorm import VideoStorm, VideoStorm_Temporal, Vid
 def run(args):
     """Run VideoStorm simulation."""
     dataset_class = get_dataset_class(args.dataset)
-    seg_paths = get_seg_paths(args.data_root, args.dataset, args.vedio)
+    seg_paths = get_seg_paths(args.data_root, args.dataset, args.video)
     original_resolution = args.original_resolution
     overfitting = args.overfitting
     model_list = args.module_list if not overfitting else ['fastre_rcnn_resnet101']
@@ -39,10 +39,11 @@ def run(args):
         writer.writerow(['video_name', 'model', 'gpu time', 'frame_rate', 'f1'])
         for seg_path in seg_paths:
             seg_name = os.path.basename(seg_path)
-            original_video = dataset_class(seg_path, seg_name, original_resolution, 'faster_rcnn_resnet101', filter_flag=true, classes_interested=classes_interested)
+            original_video = dataset_class(seg_path, seg_name, original_resolution, 'faster_rcnn_resnet101', filter_flag=True, classes_interested=classes_interested)
             videos = {}
             for model in pipeline.videostorm_model.model_list:
-                video = dataset_class(seg_path, seg_name, pipeline.videostorm_spacial.resolution, model, filter_flag=true, classes_interested=classes_interested)
+                print(pipeline.videostorm_spacial.resolution, original_resolution)
+                video = dataset_class(seg_path, seg_name, pipeline.videostorm_spacial.resolution, model, filter_flag=True, classes_interested=classes_interested)
                 videos[model] = video
 
             if original_video.duration > short_video_length:
@@ -64,7 +65,11 @@ def run(args):
                     profile_start = start_frame
                     profile_end = start_frame + original_video.frame_rate * profile_length - 1
                 print('profile {} start={} end={}'.format(clip, profile_start, profile_end))
-                best_frame_rate, best_model = pipeline.Source(clip, videos, original_video, [profile_start, profile_end])
+                print('Check params clip: ', clip, videos, original_video, [profile_start, profile_end])
+                print('Check params videos: ', videos)
+                print('Check params original_video: ', original_video)
+                print('Check params range: ',[profile_start, profile_end])
+                best_frame_rate, best_model = pipeline.Server(clip, videos, original_video, [profile_start, profile_end])
                 best_sample_rate = original_video.frame_rate / best_frame_rate
 
                 if overfitting:

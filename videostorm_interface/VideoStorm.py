@@ -49,7 +49,7 @@ class VideoStorm_Model(Model):
         if videostorm_spacial_flag:
             self.model_list = model_list
         else:
-            self.model_list = ['FasterRCNN', 'inception', 'mobilenet']
+            self.model_list = ['faster_rcnn_resnet101', 'faster_rcnn_inception_v2', 'ssd_mobilenet_v2']
 
     def run(self, segment, decision, results):
         pass
