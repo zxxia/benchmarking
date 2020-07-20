@@ -17,6 +17,7 @@ def run(args):
     profile_length = args.profile_length
     profile_filename = args.profile_filename
     output_filename = args.output_filename
+
     videostorm_temporal_flag = args.videostorm_temporal_flag
     videostorm_spacial_flag = args.videostorm_spacial_flag
     videostorm_model_flag = args.videostorm_model_flag

@@ -36,6 +36,10 @@ def parse_args():
     parser.add_argument("--original_resolution", type=str,
                         default='720p', help="The resolution used to "
                         "generate groundtruth.")
+    # spacial resolution
+    parser.add_argument("--spacial_resolution", type=str,
+                        default='720p', help="The resolution used to "
+                                             "generate testing.")
     parser.add_argument("--model_list", nargs="*", type=str,
                         default=['FasterRCNN', 'inception', 'mobilenet'],
                         help="A list of quality parameters. "
@@ -54,5 +58,14 @@ def parse_args():
                         help="profile filename (csv). e.g. profile.csv")
     parser.add_argument("--output_filename", type=str, required=True,
                         help="output filename (csv). e.g. output.csv")
+
+    # pruned flags: Temporal, Spacial, Model
+    parser.add_argument("--videostorm_temporal_flag", type=int, required=True,
+                        help="whether to use videostorm_temporal pruning")
+    parser.add_argument("--videostorm_spacial_flag", type=int, required=True,
+                        help="whether to use videostorm_spacial pruning")
+    parser.add_argument("--videostorm_model_flag", type=int, required=True,
+                        help="whether to use videostorm_model pruning")
+
     args = parser.parse_args()
     return args
