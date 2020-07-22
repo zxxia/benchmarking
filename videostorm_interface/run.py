@@ -11,7 +11,7 @@ def run(args):
     seg_paths = get_seg_paths(args.data_root, args.dataset, args.video)
     original_resolution = args.original_resolution
     overfitting = args.overfitting
-    model_list = args.module_list if not overfitting else ['fastre_rcnn_resnet101']
+    model_list = args.module_list if not overfitting else ['faster_rcnn_resnet101']
     sample_step_list = args.sample_step_list
     short_video_length = args.short_video_length
     profile_length = args.profile_length
@@ -33,7 +33,9 @@ def run(args):
     # videostorm_temporal = VideoStorm_Temporal(sample_step_list, )
     # videostorm_spacial = VideoStorm_Spacial(original_resolution, dataset_class)
     # videostorm_model = VideoStorm_Model(model_list)
+    # print("INPUT MODEL_LIST!!!!!!!!!!!!!!!!!!:", model_list)
     pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, profile_filename, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
+
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(['video_name', 'model', 'gpu time', 'frame_rate', 'f1'])
@@ -41,6 +43,8 @@ def run(args):
             seg_name = os.path.basename(seg_path)
             original_video = dataset_class(seg_path, seg_name, original_resolution, 'faster_rcnn_resnet101', filter_flag=True, classes_interested=classes_interested)
             videos = {}
+            print("")
+            #print("MODEL_LIST!!!!!!!!!!!!!!!!!!!!!:", pipeline.videostorm_model.model_list)
             for model in pipeline.videostorm_model.model_list:
                 print(pipeline.videostorm_spacial.resolution, original_resolution)
                 video = dataset_class(seg_path, seg_name, pipeline.videostorm_spacial.resolution, model, filter_flag=True, classes_interested=classes_interested)
@@ -72,7 +76,7 @@ def run(args):
                 print('Check params range: ',[profile_start, profile_end])
                 '''
                 best_frame_rate, best_model = pipeline.Server(clip, videos, original_video, [profile_start, profile_end])
-                best_sample_rate = original_video.frame_rate / best_frame_rate
+                best_sample_rate = original_video.frame_rate/best_frame_rate
 
                 if overfitting:
                     test_start = start_frame

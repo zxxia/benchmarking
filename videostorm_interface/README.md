@@ -48,9 +48,9 @@ person
 --coco_label_file
 ../mscoco_label_map.pbtxt
 --profile_filename
-/Users/apple/Desktop/video/benchmarking/cbn/output/videostorm_interface_profile_tv_show.csv
+/Users/apple/Desktop/video/benchmarking/cbn/output/compare/videostorm_interface_profile_tv_show.csv
 --output_filename
-/Users/apple/Desktop/video/benchmarking/cbn/output/videostorm_interface_results_tv_show.csv
+/Users/apple/Desktop/video/benchmarking/cbn/output/compare/videostorm_interface_results_tv_show.csv
 --videostorm_temporal_flag
 1
 --videostorm_spacial_flag

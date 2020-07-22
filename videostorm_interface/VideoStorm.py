@@ -46,17 +46,20 @@ class VideoStorm_Spacial(Spatial):
 class VideoStorm_Model(Model):
     '''use different model'''
     def __init__(self, model_list, videostorm_spacial_flag):
+        print(videostorm_spacial_flag)
         if videostorm_spacial_flag:
             self.model_list = model_list
+            print("VideoStorm_Model SELECTED!!!!!!!!!!!!!!!!!!!!!!")
         else:
             self.model_list = ['faster_rcnn_resnet101', 'faster_rcnn_inception_v2', 'ssd_mobilenet_v2']
+            print("VideoStorm_Model NOT SELECTED!!!!!!!!!!!!!!!!!!!!!!")
 
     def run(self, segment, decision, results):
         pass
 
 
 class VideoStorm(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, profile_log, target_f1 = 0.9, videostorm_temporal_flag = 0, videostorm_spacial_flag = 0, videostorm_model_flag = 0):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, profile_log, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag, target_f1 = 0.9 ):
         '''
         Load the configs and initialize VideoStorm_interface pipeline.
         :param temporal_sampling_list: a list of sample rates
@@ -105,7 +108,7 @@ class VideoStorm(Pipeline):
             f1_list = []
             for sample_rate in self.videostorm_temporal.temporal_sampling_list:
                 f1_score, relative_gpu_time, _ = self.evaluate(video, original_video, sample_rate, frame_range)
-                print('{}, relative fps={:.3f}, f1={:.3f}'.format(model, 1 / sample_rate, f1_score))
+                #print('{}, relative fps={:.3f}, f1={:.3f}'.format(model, 1 / sample_rate, f1_score))
                 f1_list.append(f1_score)
                 self.profile_writer.writerow([clip, video.model, 1 / sample_rate, relative_gpu_time, f1_score])
 
@@ -114,11 +117,14 @@ class VideoStorm(Pipeline):
             if f1_list[-1] < self.target_f1:
                 target_frame_rate = None
             else:
+                '''
                 try:
                     print(f1_list)
                     index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
                 except:
                     index = 0
+                '''
+                index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
 
                 if index == 0:
                     target_frame_rate = frame_rate_list[0]
