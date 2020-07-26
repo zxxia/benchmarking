@@ -2,7 +2,25 @@
 import numpy as np
 from evaluation.f1 import IoU
 
+def get_confidence_score(video_dets, start, end):
+    """get each frame's detection's confidence score in to a dict of lists"""
+    """Compute the size of each object detected in a video.
 
+    Args
+        video_dets(dict): video detections mapping frame index to a list boxes class confidence score and object id
+        start(int): start frame index
+        end(int): end frame index
+
+    Return
+        object_size(dict): mapping frame index to a list of confidence scores
+
+    """
+    confidence_score_dic={}
+    for i in range(start, end+1):
+        confidence_score_dic[i]=[]
+        for det in video_dets[i]:
+            confidence_score_dic[i].append(det[5])
+    return confidence_score_dic
 def compute_velocity(video_dets, start, end, fps, step=0.1, sample_step=1):
     """Compute object velocity.
 
@@ -276,10 +294,12 @@ def compute_percentage_frame_with_object(video_dets, start, end,
 
     """
     cnt = 0
+    num_of_frame_sampled = 0
     for i in range(start, end+1, sample_step):
+        num_of_frame_sampled+=1
         if video_dets[i]:
             cnt += 1
-    return cnt / (end-start+1)
+    return cnt / num_of_frame_sampled
 
 
 def compute_percentage_frame_with_new_object(video_dets, start, end,sample_step=1):

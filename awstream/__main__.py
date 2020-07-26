@@ -1,3 +1,6 @@
+import sys  
+sys.path.append('./') 
+# print('\n'.join(sys.path))
 """AWStream module main function."""
 from awstream.parser import parse_args
 from awstream.run import run

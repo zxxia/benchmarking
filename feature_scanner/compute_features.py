@@ -10,7 +10,9 @@ from feature_scanner.features import (compute_arrival_rate,
                                       compute_percentage_frame_with_object,
                                       compute_velocity,
                                       compute_video_object_size,
-                                      count_unique_class)
+                                      count_unique_class,
+                                      get_confidence_score
+                                      )
 from videos import get_dataset_class, get_seg_paths
 
 HEADER = ['Video_name', 'object count median', 'object count avg',
@@ -48,7 +50,7 @@ HEADER = ['Video_name', 'object count median', 'object count avg',
           'total area percentile75', 'total area percentile90',
           'total area iqr', 'total area entropy',
           'percent_of_frame_w_object', 'percent_of_frame_w_new_object',
-          'nb_distinct_classes']
+          'nb_distinct_classes', 'avg confidence score']
 
 
 def feature_gen(data):
@@ -76,18 +78,19 @@ def feature_gen(data):
 
 def compute_features(args):
     roots = [args.data_root]
+    print(roots)
     VIDEOS=[args.video]
     dataset_names = [args.dataset]
     video_names = VIDEOS
-    OUTPUT_FILE=args.output_filename
+    OUTPUT_FILE=args.feature_output_filename
     if args.granularity=='high':
         model_use='faster_rcnn_resnet101'
         sample_frame_rate = 1 #compute the feature every "sample_frame_rate" frame(note that since the full frame .csv is computed offline, this does not save time while testing this code, but when deployed in real scene, the detection csv can only contain the "information frame" needed, therefore saving time )
     elif args.granularity=='med':
-        model_use='ssd_mobilenet_v2'
-        sample_frame_rate = 5 
+        model_use='faster_rcnn_resnet101'#model_use='ssd_mobilenet_v2'
+        sample_frame_rate = 5
     elif args.granularity=='low':
-        model_use='ssd_mobilenet_v2'
+        model_use='faster_rcnn_resnet101'#model_use='ssd_mobilenet_v2'
         sample_frame_rate = 10 
     with open(OUTPUT_FILE, 'w', 1) as f:
         writer = csv.writer(f)
@@ -105,6 +108,7 @@ def compute_features(args):
                     filter_flag=True, classes_interested=classes_interested)
                 
                 detection = video.get_video_detection()
+                # print(detection)
                 velocity = compute_velocity(
                     detection, video.start_frame_index, video.end_frame_index,
                     video.frame_rate)
@@ -116,12 +120,12 @@ def compute_features(args):
                     video.resolution)
                 nb_object = compute_nb_object_per_frame(
                     detection, video.start_frame_index, video.end_frame_index)
-
+                confidence_score=get_confidence_score(detection, video.start_frame_index, video.end_frame_index)
                 chunk_frame_cnt = args.short_video_length * video.frame_rate
                 nb_chunks = video.frame_count // chunk_frame_cnt
                 if nb_chunks == 0:
                     nb_chunks = 1
-
+                # print(video.start_frame_index, video.end_frame_index)
                 for i in range(nb_chunks):
 
                     clip = seg_name + '_' + str(i)
@@ -136,6 +140,7 @@ def compute_features(args):
                     sizes = []
                     tot_sizes = []
                     nb_obj = []
+                    conf=[] #list of confidence scores of objects
                     percent_with_obj = compute_percentage_frame_with_object(
                         detection, start_frame, end_frame,sample_step=sample_frame_rate)
                     percent_with_new_obj = compute_percentage_frame_with_new_object(
@@ -149,12 +154,18 @@ def compute_features(args):
                         sizes.extend(obj_size[j])
                         tot_sizes.append(tot_obj_size[j])
                         nb_obj.append(nb_object[j])
+                        conf.extend(confidence_score[j])
                     velo*=sample_frame_rate
                     arr_rate*=sample_frame_rate
+                    # print("before len(sizes): ", len(sizes))
                     sizes*=sample_frame_rate
+                    # print("after len(sizes): ", len(sizes))
                     tot_sizes*=sample_frame_rate
                     nb_obj*=sample_frame_rate
-                    if velo and arr_rate and sizes and tot_sizes and nb_obj:
+                    conf*=sample_frame_rate
+                    # print(conf)
+                    # exit(0)
+                    if velo and arr_rate and sizes and tot_sizes and nb_obj and conf:
                         features += feature_gen(nb_obj)
                         features += feature_gen(sizes)
                         features += feature_gen(arr_rate)
@@ -163,7 +174,7 @@ def compute_features(args):
                         features.append(percent_with_obj)
                         features.append(percent_with_new_obj)
                         features.append(nb_distinct_classes)
-                        output_row = [clip] + features
+                        output_row = [clip] + features+ [float(np.mean(conf))]
                         writer.writerow(output_row)
                     else:
                         output_row = [clip] + [None] * (len(HEADER) - 1)

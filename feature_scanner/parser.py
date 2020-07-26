@@ -30,7 +30,7 @@ def parse_args():
                         "label map file.")
 
     # IO realted
-    parser.add_argument("--output_filename", type=str, required=True,
-                        help="output filename (csv). e.g. output.csv")
+    parser.add_argument("--feature_output_filename", type=str, required=True,
+                        help="feature_output_filename (csv). e.g. output.csv")
     args = parser.parse_args()
     return args

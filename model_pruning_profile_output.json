@@ -1,0 +1,62 @@
+{
+    "faster_rcnn_resnet101": [
+        {
+            "object area percentile10": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.18777223714705882,
+                "var": 0.00497248750208827
+            },
+            "gpu time": {
+                "mean": 0.04000000000000002,
+                "var": 4.333342374871281e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "faster_rcnn_inception_v2": [
+        {
+            "object area percentile10": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.15156031958823532,
+                "var": 0.0033369917427974963
+            },
+            "gpu time": {
+                "mean": 0.021886792000000026,
+                "var": 7.703719777548943e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "ssd_mobilenet_v2": [
+        {
+            "object area percentile10": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.1305961974411764,
+                "var": 0.0027010888746941816
+            },
+            "gpu time": {
+                "mean": 0.011698113000000007,
+                "var": 4.81482486096809e-35
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ]
+}

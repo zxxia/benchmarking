@@ -1,3 +1,6 @@
+import sys  
+sys.path.append('./') 
+# print('\n'.join(sys.path))
 """Vigil module main function."""
 from vigil.parser import parse_args
 from vigil.run import run

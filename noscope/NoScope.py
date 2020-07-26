@@ -27,7 +27,7 @@ class NoScope():
 
     def profile(self, video_name, original_video, small_model_video,
                 frame_range, profile_video_savepath, cost='gpu'):
-        """Profile to get the confidence score threhold for target f1.
+        """Profile to get the confidence score threshold for target f1.
 
         Return
             a list of config that satisfys the requirements.

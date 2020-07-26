@@ -1,3 +1,6 @@
+import sys  
+sys.path.append('./') 
+# print('\n'.join(sys.path))
 """VideoStorm module main function."""
 from videostorm.parser import parse_args
 from videostorm.run import run

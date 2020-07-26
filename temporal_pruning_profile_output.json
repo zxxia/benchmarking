@@ -1,0 +1,938 @@
+{
+    "1": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.280637171,
+                "var": 0.015329209839750314
+            },
+            "gpu time": {
+                "mean": 0.039999999999999994,
+                "var": 4.81482486096809e-35
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.17163904284313727,
+                "var": 0.00039758445441198095
+            },
+            "gpu time": {
+                "mean": 0.040000000000000015,
+                "var": 1.925929944387236e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.131456877,
+                "var": 3.509243454427802e-05
+            },
+            "gpu time": {
+                "mean": 0.04,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.12645212900000002,
+                "var": 4.7386977792400175e-07
+            },
+            "gpu time": {
+                "mean": 0.04,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "20": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9900328372499999,
+                "var": 4.234170748225815e-06
+            },
+            "gpu time": {
+                "mean": 0.7999999999999999,
+                "var": 1.232595164407831e-32
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9894053213333333,
+                "var": 2.1661788729323212e-06
+            },
+            "gpu time": {
+                "mean": 0.7999999999999997,
+                "var": 1.1093356479670479e-31
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.987321154,
+                "var": 6.797518671439759e-07
+            },
+            "gpu time": {
+                "mean": 0.8000000000000002,
+                "var": 1.232595164407831e-32
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9888419024999999,
+                "var": 1.051846129620201e-06
+            },
+            "gpu time": {
+                "mean": 0.8,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "15": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9814966936666667,
+                "var": 1.5932236774336122e-05
+            },
+            "gpu time": {
+                "mean": 0.5999999999999999,
+                "var": 1.232595164407831e-32
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9800318804509804,
+                "var": 5.993694641954967e-06
+            },
+            "gpu time": {
+                "mean": 0.6000000000000005,
+                "var": 3.0814879110195774e-31
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9793224543333333,
+                "var": 3.474647730613636e-06
+            },
+            "gpu time": {
+                "mean": 0.6,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9766998060000001,
+                "var": 1.2087025689601758e-07
+            },
+            "gpu time": {
+                "mean": 0.6,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "10": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9399623951666665,
+                "var": 8.009958751228232e-05
+            },
+            "gpu time": {
+                "mean": 0.39999999999999997,
+                "var": 3.0814879110195774e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9257455959019607,
+                "var": 6.135449684321464e-05
+            },
+            "gpu time": {
+                "mean": 0.39999999999999986,
+                "var": 2.7733391199176196e-32
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9006694196666666,
+                "var": 9.224453145415539e-05
+            },
+            "gpu time": {
+                "mean": 0.4000000000000001,
+                "var": 3.0814879110195774e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.9052115325000001,
+                "var": 5.697609072122136e-06
+            },
+            "gpu time": {
+                "mean": 0.4,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "5": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.8046063825833333,
+                "var": 0.0016003031030667168
+            },
+            "gpu time": {
+                "mean": 0.19999999999999998,
+                "var": 7.703719777548943e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.684548514235294,
+                "var": 0.001166620100528928
+            },
+            "gpu time": {
+                "mean": 0.19999999999999993,
+                "var": 6.933347799794049e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.5768770193333334,
+                "var": 0.0002528431153915096
+            },
+            "gpu time": {
+                "mean": 0.20000000000000004,
+                "var": 7.703719777548943e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.5869551115,
+                "var": 0.000165302616141042
+            },
+            "gpu time": {
+                "mean": 0.2,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "4": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.7182866675833334,
+                "var": 0.0046288637098576705
+            },
+            "gpu time": {
+                "mean": 0.15999999999999998,
+                "var": 7.703719777548943e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.5754757799607841,
+                "var": 0.0011441831394870359
+            },
+            "gpu time": {
+                "mean": 0.16000000000000006,
+                "var": 3.0814879110195774e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.47478476633333333,
+                "var": 0.00015833835293178018
+            },
+            "gpu time": {
+                "mean": 0.16,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.46623888950000003,
+                "var": 5.976042152668217e-05
+            },
+            "gpu time": {
+                "mean": 0.16,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "3": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.6094332073333333,
+                "var": 0.009458139975664009
+            },
+            "gpu time": {
+                "mean": 0.12000000000000004,
+                "var": 1.7333369499485123e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.4562937625490197,
+                "var": 0.001073319575008161
+            },
+            "gpu time": {
+                "mean": 0.12000000000000009,
+                "var": 9.437056727497456e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.370579298,
+                "var": 0.00022541488548725067
+            },
+            "gpu time": {
+                "mean": 0.12,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.366412179,
+                "var": 2.5366513564323898e-05
+            },
+            "gpu time": {
+                "mean": 0.12,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "2.5": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.541025949,
+                "var": 0.011843262282046916
+            },
+            "gpu time": {
+                "mean": 0.09999999999999999,
+                "var": 1.925929944387236e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.3912934892156863,
+                "var": 0.0010048817975178428
+            },
+            "gpu time": {
+                "mean": 0.09999999999999996,
+                "var": 1.7333369499485123e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.31488329099999995,
+                "var": 0.00014266794790912207
+            },
+            "gpu time": {
+                "mean": 0.10000000000000002,
+                "var": 1.925929944387236e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.3080899925,
+                "var": 1.6458441666900153e-05
+            },
+            "gpu time": {
+                "mean": 0.1,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "2": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.4659220101666666,
+                "var": 0.014080971614471206
+            },
+            "gpu time": {
+                "mean": 0.07999999999999999,
+                "var": 1.925929944387236e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.3224912846862744,
+                "var": 0.0009880531119231654
+            },
+            "gpu time": {
+                "mean": 0.08000000000000003,
+                "var": 7.703719777548943e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.2538321666666667,
+                "var": 0.00019479572548275056
+            },
+            "gpu time": {
+                "mean": 0.08,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.240814991,
+                "var": 3.694199320900073e-08
+            },
+            "gpu time": {
+                "mean": 0.08,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "1.8": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.43476525425,
+                "var": 0.014534889939734272
+            },
+            "gpu time": {
+                "mean": 0.07199999999999998,
+                "var": 1.925929944387236e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.2947054667647059,
+                "var": 0.0008354755208650173
+            },
+            "gpu time": {
+                "mean": 0.07200000000000004,
+                "var": 1.7333369499485123e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.23564252200000002,
+                "var": 0.0001406522830674609
+            },
+            "gpu time": {
+                "mean": 0.072,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.21848861,
+                "var": 1.4722346454840959e-05
+            },
+            "gpu time": {
+                "mean": 0.072,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "1.5": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.38097382583333333,
+                "var": 0.015501940067938244
+            },
+            "gpu time": {
+                "mean": 0.06000000000000002,
+                "var": 4.333342374871281e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.24967689888235284,
+                "var": 0.0007132989677027871
+            },
+            "gpu time": {
+                "mean": 0.060000000000000046,
+                "var": 2.359264181874364e-33
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.19505474666666667,
+                "var": 7.332219245243356e-05
+            },
+            "gpu time": {
+                "mean": 0.06,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.18373004450000002,
+                "var": 4.611249961254222e-05
+            },
+            "gpu time": {
+                "mean": 0.06,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ],
+    "1.2": [
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 0,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.3233005020833333,
+                "var": 0.01643559950807427
+            },
+            "gpu time": {
+                "mean": 0.047999999999999994,
+                "var": 4.81482486096809e-35
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 1,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.20223599101960787,
+                "var": 0.0005214217850646722
+            },
+            "gpu time": {
+                "mean": 0.04800000000000002,
+                "var": 4.333342374871281e-34
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 2,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.160150578,
+                "var": 6.172240825938202e-05
+            },
+            "gpu time": {
+                "mean": 0.04800000000000001,
+                "var": 4.81482486096809e-35
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        },
+        {
+            "percent_of_frame_w_object": 1,
+            "velocity avg": 2,
+            "avg confidence score": 1
+        },
+        {
+            "f1": {
+                "mean": 0.15039109350000002,
+                "var": 2.444579155224961e-08
+            },
+            "gpu time": {
+                "mean": 0.048,
+                "var": 0.0
+            },
+            "bandwidth": {
+                "mean": null,
+                "var": null
+            }
+        }
+    ]
+}

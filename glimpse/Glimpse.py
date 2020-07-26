@@ -120,6 +120,7 @@ class Glimpse():
                 frame_diff_th = resolution[0]*resolution[1]/para1
                 tracking_error_th = para2
                 # images start from index 1
+                print("tracking_error_th", tracking_error_th)
                 ideal_triggered_frame, f1, trigger_f1, pix_change_obj, \
                     pix_change_bg, frame_diff_triggered, tracking_triggered, \
                     frames_log, avg_frame_diff_t_elapesd, \
@@ -298,11 +299,20 @@ class Glimpse():
                 for box in video.get_dropped_frame_detection(
                         last_triggered_frame_idx):
                     xmin, ymin, xmax, ymax, t = box[:5]
+                    #print(ymin,ymax, xmin, xmax)
+                    xmin=int(xmin)
+                    ymin=int(ymin)
+                    xmax=int(xmax)
+                    ymax=int(ymax)
                     mask[ymin:ymax, xmin:xmax] = 0
 
                 # mask off the non-viechle objects in current frame
                 for box in video.get_dropped_frame_detection(i):
                     xmin, ymin, xmax, ymax, t = box[:5]
+                    xmin=int(xmin)
+                    ymin=int(ymin)
+                    xmax=int(xmax)
+                    ymax=int(ymax)
                     mask[ymin:ymax, xmin:xmax] = 0
                 lastTriggeredFrameGray_masked = \
                     lastTriggeredFrameGray.copy() * mask

@@ -1,3 +1,6 @@
+import sys  
+sys.path.append('./') 
+# print('\n'.join(sys.path))
 """Glimpse module main function."""
 from glimpse.parser import parse_args
 from glimpse.run import run

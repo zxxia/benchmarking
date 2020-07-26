@@ -1,7 +1,7 @@
 """Commonly Used functions."""
 import json
 from collections import Counter
-
+import pickle
 
 def load_metadata(filename):
     with open(filename) as f:
@@ -313,3 +313,15 @@ def write_json_file(filename, content):
     """Dump into a json file."""
     with open(filename, 'w') as f:
         json.dump(content, f, indent=4)
+
+def read_pickle_file(filename):
+    """Load pickle object from a file."""
+    with open(filename, 'rb') as f:
+        content = pickle.load(f)
+    return content
+
+
+def write_pickle_file(filename, content):
+    """Dump into a pickle file."""
+    with open(filename, 'wb') as f:
+        pickle.dump(content, f)
