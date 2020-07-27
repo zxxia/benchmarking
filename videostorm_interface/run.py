@@ -18,6 +18,9 @@ def run(args):
     profile_filename = args.profile_filename
     output_filename = args.output_filename
 
+    qp_list = args.quality_parameter_list
+    output_filename = args.output_filename
+
     videostorm_temporal_flag = args.videostorm_temporal_flag
     videostorm_spacial_flag = args.videostorm_spacial_flag
     videostorm_model_flag = args.videostorm_model_flag
@@ -34,7 +37,7 @@ def run(args):
     # videostorm_spacial = VideoStorm_Spacial(original_resolution, dataset_class)
     # videostorm_model = VideoStorm_Model(model_list)
     # print("INPUT MODEL_LIST!!!!!!!!!!!!!!!!!!:", model_list)
-    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, profile_filename, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
+    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, qp_list, profile_filename, output_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
 
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
@@ -76,6 +79,7 @@ def run(args):
                 print('Check params range: ',[profile_start, profile_end])
                 '''
                 best_frame_rate, best_model = pipeline.Server(clip, videos, original_video, [profile_start, profile_end])
+                # 输入参数的是分母
                 best_sample_rate = original_video.frame_rate/best_frame_rate
 
                 if overfitting:
@@ -86,7 +90,7 @@ def run(args):
                     test_end = end_frame
 
                 print('Evaluate {} start={} end={}'.format(clip, test_start, test_end))
-                f1_score, relative_gpu_time, triggered_frame_tmp = pipeline.evaluate(videos[best_model], original_video, best_sample_rate, [test_start, test_end])
+                f1_score, relative_gpu_time, relative_bandwith = pipeline.evaluate(clip, videos[best_model], original_video, best_frame_rate, [test_start, test_end])
                 print('Evaluate each frame result: clip={}, best_model={}, relative_gpu_time={}, best_frame_rate / original_video.frame_rate={}, f1_score={}'.format(clip, best_model, relative_gpu_time, best_frame_rate / original_video.frame_rate, f1_score))
                 writer.writerow([clip, best_model, relative_gpu_time, best_frame_rate / original_video.frame_rate, f1_score])
 

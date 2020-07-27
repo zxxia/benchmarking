@@ -1,5 +1,7 @@
 import copy
 import csv
+import os
+import pdb
 import sys
 from collections import defaultdict
 
@@ -59,7 +61,7 @@ class VideoStorm_Model(Model):
 
 
 class VideoStorm(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, profile_log, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag, target_f1 = 0.9 ):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, quantizer_list, profile_log, video_save_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag, target_f1 = 0.9 ):
         '''
         Load the configs and initialize VideoStorm_interface pipeline.
         :param temporal_sampling_list: a list of sample rates
@@ -71,7 +73,10 @@ class VideoStorm(Pipeline):
         :param model_prune: Model prune instance for Videostorm
         '''
         self.target_f1 = target_f1
+        self.temporal_sampling_list = temporal_sampling_list
+        self.quantizer_list = quantizer_list
         self.profile_writer = csv.writer(open(profile_log, 'w', 1))
+        self.video_save_path = video_save_path
         # Add header
         self.profile_writer.writerow(['video_name', 'model', 'frame_rate', 'gpu time', 'f1'])
         # pruning flags
@@ -142,13 +147,17 @@ class VideoStorm(Pipeline):
 
         return best_frame_rate, best_model
 
-    def evaluate(self, video, original_video, sample_rate, frame_range):
+    def evaluate(self, clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range):
         '''evaluation'''
         triggered_frames = []
         tpos = defaultdict(int)
         fpos = defaultdict(int)
         fneg = defaultdict(int)
         save_dt = []
+
+        video_save_name = os.path.join(self.video_save_path, )
+        original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
+        sample_rate = original_video.frame_rate / best_frame_rate
 
         original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
         for img_index in range(frame_range[0], frame_range[1] + 1):
@@ -173,4 +182,7 @@ class VideoStorm(Pipeline):
 
         f1_score = compute_f1(tp_total, fp_total, fn_total)
         gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
-        return f1_score, gpu_time / original_gpu_time, triggered_frames
+
+        video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
+        bandwidth = video.encode_iframe_control(video_save_name, triggered_frames, best_frame_rate)
+        return f1_score, gpu_time / original_gpu_time, bandwidth / original_bw

@@ -5,6 +5,7 @@ import os
 import pdb
 import sys
 from collections import defaultdict
+from constants import MODEL_COST
 
 from evaluation.f1 import compute_f1, evaluate_frame
 from utils.utils import interpolation
@@ -45,11 +46,11 @@ class Awstream_Spacial(Spatial):
 
 
 class Awstream(Pipeline):
-    def __init__(self, temporal_sampling_list, resolution_list, spacial_resolution_list, quantizer_list, profile_log, video_save_path, awstream_temporal_flag, awstream_spacial_flag, target_f1=0.9):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution_list, quantizer_list, profile_log, video_save_path, awstream_temporal_flag, awstream_spacial_flag, awstream_model_flag, target_f1=0.9):
         '''Load the configs'''
         self.target_f1 = target_f1
         self.temporal_sampling_list = temporal_sampling_list
-        self.resolution_list = resolution_list
+        self.resolution_list = original_resolution
         self.quantizer_list = quantizer_list
         self.profile_writer = csv.writer(open(profile_log, 'w', 1))
         self.profile_writer.writerow(['video_name', 'resolution', 'frame_rate', 'f1', 'tp', 'fp', 'fn'])
@@ -59,7 +60,7 @@ class Awstream(Pipeline):
         self.awstream_spacial_flag = awstream_spacial_flag
         # use these to get temporal_sampling_list, resolution
         self.awstream_temporal = Awstream_Temporal(temporal_sampling_list, awstream_temporal_flag)
-        self.awstream_spacial = Awstream_Spacial(resolution_list, spacial_resolution_list, awstream_spacial_flag)
+        self.awstream_spacial = Awstream_Spacial(original_resolution, spacial_resolution_list, awstream_spacial_flag)
 
     def Source(self, clip, video_dict, original_video, frame_range):
         """Profile the combinations of fps and resolution.
@@ -123,7 +124,7 @@ class Awstream(Pipeline):
         best_relative_bw = min_bw / original_bw
         return best_resol, best_fps, best_relative_bw
 
-    def evaluate(self, clip, original_video, video, best_frame_rate, frame_range):
+    def evaluate(self, clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range):
         """Evaluate the performance of best config."""
         video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
         original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
@@ -138,7 +139,9 @@ class Awstream(Pipeline):
         bandwidth = video.encode_iframe_control(video_save_name, target_frame_indices, best_frame_rate)
         tp_total, fp_total, fn_total = eval_images(frame_range, original_video, video, sample_rate)
 
-        return compute_f1(tp_total, fp_total, fn_total), bandwidth / original_bw
+        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
+        gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
+        return compute_f1(tp_total, fp_total, fn_total),gpu_time / original_gpu_time , bandwidth / original_bw
 
 
 def find_target_fps(f1_list, fps_list, target_f1):

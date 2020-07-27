@@ -45,6 +45,10 @@ def parse_args():
                         help="A list of quality parameters. "
                         "More options are not included for now. In ffmpeg, "
                         "23 by default.")
+    parser.add_argument("--quality_parameter_list", nargs="*", type=int,
+                        default=[23], help="A list of quality parameters. "
+                                           "More options are not included for now. In ffmpeg, "
+                                           "23 by default.")
     parser.add_argument("--classes_interested", nargs="*", type=str,
                         default=['car', 'bus', 'truck'], help="A list of "
                         "interesting classes. Other classes will be filtered "
@@ -58,6 +62,9 @@ def parse_args():
                         help="profile filename (csv). e.g. profile.csv")
     parser.add_argument("--output_filename", type=str, required=True,
                         help="output filename (csv). e.g. output.csv")
+    parser.add_argument("--video_save_path", type=str, required=True,
+                        help="Video save path where encoded videos will "
+                             "be saved to.")
 
     # pruned flags: Temporal, Spacial, Model
     parser.add_argument("--videostorm_temporal_flag", type=int, required=True,

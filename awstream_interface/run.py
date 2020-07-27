@@ -23,6 +23,8 @@ def run(args):
     awstream_temporal_flag = args.awstream_temporal_flag
     awstream_spacial_flag = args.awstream_spacial_flag
 
+    # spacial_resolution_list = args.spacial_resolution_list
+
     output_path = args.video_save_path
     coco_id2name, coco_name2id = load_COCOlabelmap(args.coco_label_file)
     classes_interested = {coco_name2id[class_type] for class_type in args.classes_interested}
@@ -33,7 +35,7 @@ def run(args):
         assert short_video_length >= profile_length, "short_video_length should no less than profile_length"
 
 
-    pipeline = Awstream(sample_step_list, resolution_list, qp_list, profile_filename, output_path, awstream_temporal_flag, awstream_spacial_flag)
+    pipeline = Awstream(sample_step_list, ['faster_rcnn_resnet101'], original_resolution, resolution_list, qp_list, profile_filename, output_path, awstream_temporal_flag, awstream_spacial_flag)
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(['dataset', 'best_resolution', 'f1', 'frame_rate', 'bandwidth'])

@@ -15,10 +15,16 @@ python videostorm_interface \
     --coco_label_file ../mscoco_label_map.pbtxt \
     --profile_filename {PathToSaveOutput}/videostorm_interface_profile_tv_show.csv \
     --output_filename {PathToSaveOutput}/videostorm_interface_results_tv_show.csv \
+    --video_save_path {PathToSaveOutput} \
     --videostorm_temporal_flag 1 \
     --videostorm_spacial_flag 1 \
     --videostorm_model_flag 1
 ```
+
+- videostorm interface params
+1. `pipeline init`: `temporal_sampling_list, model_list, original_resolution, spacial_resolution, quantizer_list, profile_log, video_save_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag`
+2. `Source/Server`: input-`clip, pruned_video_dict, original_video, frame_range`, return-`best_frame_rate, best_model`
+3. `evaluate`: input-`clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range`, return-`f1_score, relative_gpu_time, relative_bandwidth`
 
 - Pycharm Config example
 ```sh
@@ -51,6 +57,8 @@ person
 /Users/apple/Desktop/video/benchmarking/cbn/output/compare/videostorm_interface_profile_tv_show.csv
 --output_filename
 /Users/apple/Desktop/video/benchmarking/cbn/output/compare/videostorm_interface_results_tv_show.csv
+--video_save_path 
+/Users/apple/Desktop/video/benchmarking/cbn/output/save
 --videostorm_temporal_flag
 1
 --videostorm_spacial_flag
