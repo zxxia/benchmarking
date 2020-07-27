@@ -37,6 +37,10 @@ def parse_args():
                         help="frame difference threshold divisor. "
                         "frame difference threshold = width * height / divior."
                         )
+    parser.add_argument("--tracking_method",
+                        type=str, default="sift",
+                        help="way to track objects between different frames. "
+                        "chosen from sift, corner, for K")
     parser.add_argument("--tracking_error_threshold",
                         type=float, default=1,
                         help="tracking error thresholds. Only used"

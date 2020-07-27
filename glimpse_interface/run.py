@@ -29,6 +29,7 @@ def run(args):
     output_video = args.output_video
     cache_size = args.cache_size
     sample_rate = args.sample_rate
+    tracking_method = args.tracking_method
 
     if overfitting:
         assert short_video_length == profile_length, "short_video_length " \
@@ -37,16 +38,16 @@ def run(args):
         assert short_video_length >= profile_length, "short_video_length " \
             "should no less than profile_length."
     
-    Config = {"cache_size":cache_size, "sample_rate":sample_rate,
+    Config = {"cache_size":cache_size, "sample_rate":sample_rate, "tracking_method":tracking_method,
             "tracking_error_thres":tracking_error_threshold, "frame_diff_thres":0}
 
     glimpse_temporal = Glimpse_Temporal(Config)
     glimpse_model = Glimpse_Model(Config)
 
     pipeline = Glimpse(glimpse_temporal, glimpse_model)
-    with open(profile_filename, 'w', 1) as f_out:
+    with open(profile_filename+"_"+tracking_method+"_"+str(cache_size)+".csv", 'w', 1) as f_out:
         writer = csv.writer(f_out)
-        writer.writerow(["video_name", "f1", "bw"])
+        writer.writerow(["video_name", "f1", "bw", "gpu"])
         
         for seg_path in seg_paths:
              # compute number of short videos can be splitted
@@ -117,12 +118,17 @@ def run(args):
                 f1_score = compute_f1(total_tp, total_fp, total_fn)
                 origin_filesize = 0
                 filesize = 0
+                frame_num = 0
+                original_frame_num = 0
                 for i in range(profile_start, profile_end + 1):
                     origin_filesize += video.get_frame_filesize(i)
+                    original_frame_num += 1
                     if i in decision_results["Frame_Decision"]:
                         if not decision_results["Frame_Decision"][i]["skip"]:
                             filesize += video.get_frame_filesize(i)
+                            frame_num += 1
                 bw = 1.0*filesize/origin_filesize
-                writer.writerow([clip, f1_score, bw])
+                gpu = 1.0*frame_num/original_frame_num
+                writer.writerow([clip, f1_score, bw, gpu])
 
         

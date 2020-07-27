@@ -99,10 +99,56 @@ class Glimpse_Model(interface.Model):
         frame_diff_thres, tracking_err_thres = Config["frame_diff_thres"], Config["tracking_error_thres"]
         self.frame_diff_thres = frame_diff_thres
         self.tracking_err_thres = tracking_err_thres
+        self.trackers_dict = {}
+
+    def init_trackers(self, frame_idx, frame, boxes):
+        """Return the tracked bounding boxes on input frame."""
+        resolution = (frame.shape[0], frame.shape[1])
+        frame_copy = cv2.resize(frame, (640, 480))
+        self.trackers_dict = {}
+        for box in boxes:
+            xmin, ymin, xmax, ymax, t, score, obj_id = box
+            tracker = cv2.TrackerKCF_create()
+            # TODO: double check the definition of box input
+            tracker.init(frame_copy, (xmin * 640 / resolution[0],
+                                      ymin * 480 / resolution[1],
+                                      (xmax - xmin) * 640 / resolution[0],
+                                      (ymax - ymin) * 480 / resolution[1]))
+            key = '_'.join([str(frame_idx), str(obj_id), str(t)])
+            self.trackers_dict[key] = tracker
+
+    def update_trackers(self, frame):
+        """Return the tracked bounding boxes on input frame."""
+        resolution = (frame.shape[0], frame.shape[1])
+        frame_copy = cv2.resize(frame, (640, 480))
+        start_t = time.time()
+        boxes = []
+        to_delete = []
+        for obj, tracker in self.trackers_dict.items():
+            _, obj_id, t = obj.split('_')
+            ok, bbox = tracker.update(frame_copy)
+            if ok:
+                # tracking succeded
+                x, y, w, h = bbox
+                boxes.append([int(x*resolution[0]/640),
+                              int(y*resolution[1]/480),
+                              int((x+w)*resolution[0]/640),
+                              int((y+h)*resolution[1]/480), int(float(t)),
+                              1, obj_id])
+            else:
+                # tracking failed
+                # record the trackers that need to be deleted
+                to_delete.append(obj)
+        for obj in to_delete:
+            self.trackers_dict.pop(obj)
+        #debug_print("tracking used: {}s".format(time.time()-start_t))
+
+        return boxes
 
     def run(self, Seg, Config, Decision, Results = None):
         video, start_frame, end_frame = Seg["video"], Seg["start_frame"], Seg["end_frame"]
         frame_diff_thres, tracking_err_thres = Config["frame_diff_thres"], Config["tracking_error_thres"]
+        tracking_method = Config["tracking_method"]
         self.frame_diff_thres = frame_diff_thres
         self.tracking_err_thres = tracking_err_thres
         target_frames = []
@@ -129,8 +175,17 @@ class Glimpse_Model(interface.Model):
                 last_tracking_frame = copy.deepcopy(frame_gray)
                 Decision["Frame_Decision"][i]["skip"] = False
                 trggered_frame += 1
+                if tracking_method == "KCF":
+                    self.init_trackers(i, video.get_frame_image(i),
+                                    prev_boxes)
             elif i in target_frames:
-                tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame,                                           frame_gray, i, detection_results[-1],self.tracking_err_thres)
+                tracking_status = True
+                
+                if tracking_method == "KCF":
+                    prev_boxes = self.update_trackers(frame_bgr)
+                else:
+                    tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame,                                           frame_gray, i, detection_results[-1],self.tracking_err_thres, tracking_method)
+                
                 if not tracking_status:
                     prev_boxes = video.get_frame_detection(i)
                     trggered_frame += 1
@@ -187,7 +242,7 @@ def frame_difference(old_frame, new_frame, bboxes_last_triggered = None, bboxes 
 
 
 def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
-                   tracking_error_thresh):
+                   tracking_error_thresh, tracking_method):
     """
     Tracking the bboxes between frames via optical flow.
 
@@ -218,14 +273,27 @@ def tracking_boxes(vis, oldFrameGray, newFrameGray, new_frame_id, old_boxes,
     # mask = np.zeros_like(oldFrameGray)
     start_t = time.time()
     old_corners = []
+    sift = cv2.xfeatures2d.SIFT_create()
     for x, y, xmax, ymax, t, score, obj_id in old_boxes:
         # mask[y:ymax, x:xmax] = 255
-        corners = cv2.goodFeaturesToTrack(oldFrameGray[int(y):int(ymax), int(x):int(xmax)],
+        corners = None
+        if tracking_method == "sift":
+            kps, des = sift.detectAndCompute(oldFrameGray[int(y):int(ymax), int(x):int(xmax)],None)
+        #corners = cv2.goodFeaturesToTrack(oldFrameGray[int(y):int(ymax), int(x):int(xmax)],
+        #                                  **feature_params)
+            if len(kps) > 0:
+                corners = np.zeros((len(kps),1,2), dtype=np.float32)
+            for i, p in enumerate(kps):
+                corners[i,0,0] = p.pt[0]
+                corners[i,0,1] = p.pt[1]
+        if tracking_method == "corner":
+            corners = cv2.goodFeaturesToTrack(oldFrameGray[int(y):int(ymax), int(x):int(xmax)],
                                           **feature_params)
         if corners is not None:
             corners[:, 0, 0] = corners[:, 0, 0] + x
             corners[:, 0, 1] = corners[:, 0, 1] + y
             old_corners.append(corners)
+        
     # print('compute feature {}seconds'.format(time.time() - start_t))
     if not old_corners:
         # cannot find available corners and treat as objects disappears
