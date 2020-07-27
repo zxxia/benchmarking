@@ -46,8 +46,8 @@ person
 /Users/apple/Desktop/video/benchmarking/cbn/output/compare/awstream_profile_tv_show.csv
 --video_save_path 
 /Users/apple/Desktop/video/benchmarking/cbn/output/save
---awstream_temporal_flag 
+--awstream_temporal_flag
 1
---awstream_spacial_flag 
+--awstream_spacial_flag
 1
 ```

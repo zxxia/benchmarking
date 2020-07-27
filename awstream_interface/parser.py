@@ -54,6 +54,12 @@ def parse_args():
                         default='mscoco_label_map.pbtxt', help="Path to a coco"
                         "label map file.")
 
+    # pruned flags: Temporal, Spacial, Model
+    parser.add_argument("--awstream_temporal_flag", type=int, required=True,
+                        help="whether to use awstream_temporal pruning")
+    parser.add_argument("--awstream_spacial_flag", type=int, required=True,
+                        help="whether to use awstream_spacial pruning")
+
     # IO realted
     parser.add_argument("--profile_filename", type=str, required=True,
                         help="profile filename (csv). e.g. profile.csv")
@@ -62,11 +68,5 @@ def parse_args():
     parser.add_argument("--video_save_path", type=str, required=True,
                         help="Video save path where encoded videos will "
                         "be saved to.")
-    # pruned flags: Temporal, Spacial, Model
-    parser.add_argument("--awstream_temporal_flag", type=int, required=True,
-                        help="whether to use videostorm_temporal pruning")
-    parser.add_argument("--awstream_spacial_flag", type=int, required=True,
-                        help="whether to use videostorm_spacial pruning")
-
     args = parser.parse_args()
     return args

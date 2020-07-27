@@ -2,14 +2,14 @@
 import csv
 import os
 
-from awstream.Awstream import Awstream
+from awstream_interface.Awstream import Awstream
 from utils.utils import load_COCOlabelmap
 from videos import get_dataset_class, get_seg_paths
 
 def run(args):
     '''Run AWStream simulation'''
     dataset_class = get_dataset_class(args.dataset)
-    seg_paths = get_dataset_class(args.data_root, args.dataset, args.video)
+    seg_paths = get_seg_paths(args.data_root, args.dataset, args.video)
     original_resolution = args.original_resolution
     resolution_list = args.resolution_list
     overfitting = args.overfitting
@@ -35,7 +35,7 @@ def run(args):
         assert short_video_length >= profile_length, "short_video_length should no less than profile_length"
 
 
-    pipeline = Awstream(sample_step_list, ['faster_rcnn_resnet101'], original_resolution, resolution_list, qp_list, profile_filename, output_path, awstream_temporal_flag, awstream_spacial_flag)
+    pipeline = Awstream(sample_step_list, ['faster_rcnn_resnet101'], original_resolution, resolution_list, qp_list, profile_filename, output_path, awstream_temporal_flag, awstream_spacial_flag, 1)
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
         writer.writerow(['dataset', 'best_resolution', 'f1', 'frame_rate', 'bandwidth'])
