@@ -4,6 +4,7 @@ import csv
 import os
 import pdb
 import sys
+import subprocess
 from collections import defaultdict
 from constants import MODEL_COST
 
@@ -29,8 +30,13 @@ class Awstream_Temporal(Temporal):
             # no sampling
             self.temporal_sampling_list = [sys.maxsize]
 
-    def run(self, segment, decision, results):
-        pass
+    def run(self, sample_rate, frame_range):
+        triggered_frames = []
+        for i in range(frame_range[0], frame_range[1] + 1):
+            if i % sample_rate == 0:
+                triggered_frames.append(i)
+        return triggered_frames
+
 
 
 class Awstream_Spacial(Spatial):
@@ -127,12 +133,15 @@ class Awstream(Pipeline):
     def evaluate(self, clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range):
         """Evaluate the performance of best config."""
         video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
+
         original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
         sample_rate = original_video.frame_rate / best_frame_rate
-        target_frame_indices = []
+        # temporal pruning
+        target_frame_indices = self.awstream_temporal.run(sample_rate, frame_range)
+
         for img_index in range(frame_range[0], frame_range[1]+1):
             # based on sample rate,decide whether this frame is sampled
-            if img_index % sample_rate >= 1:
+            if img_index not in target_frame_indices:
                 continue
             target_frame_indices.append(img_index)
         video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
@@ -143,6 +152,15 @@ class Awstream(Pipeline):
         gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
         return compute_f1(tp_total, fp_total, fn_total),gpu_time / original_gpu_time , bandwidth / original_bw
 
+
+def generate_pics(video_path, pic_save_path, video_name):
+    ''' generate pics
+        :param video_path: path for video source
+        :param pic_save_path: path for generated pics
+        :param video_name: video source name
+        '''
+    cmd = 'ffmpeg -i {} {} -hide_banner'.format(os.path.join(video_path, video_name+'.mp4'), os.path.join(pic_save_path, '%06d.jpg'))
+    subprocess.run(cmd.split(' '), check=True)
 
 def find_target_fps(f1_list, fps_list, target_f1):
     """Use interpolation to find the ideal fps at target f1."""

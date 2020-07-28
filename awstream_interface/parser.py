@@ -37,11 +37,16 @@ def parse_args():
     parser.add_argument("--original_resolution", type=str,
                         default='720p', help="The resolution used to "
                         "generate groundtruth.")
+    #parser.add_argument("--resolution_list", nargs="*", type=str,
+    #                    default=['720p', '540p', '480p', '360p'], help="A "
+    #                    "list of resolutions. 720p = (1280, 720). The aspect "
+    #                    "ratio is 16:9 by default. Default "
+    #                    "['720p', '540p', '480p', '360p']")
     parser.add_argument("--resolution_list", nargs="*", type=str,
-                        default=['720p', '540p', '480p', '360p'], help="A "
-                        "list of resolutions. 720p = (1280, 720). The aspect "
-                        "ratio is 16:9 by default. Default "
-                        "['720p', '540p', '480p', '360p']")
+                         default=['720p'], help="A "
+                         "list of resolutions. 720p = (1280, 720). The aspect "
+                         "ratio is 16:9 by default. Default "
+                         "['720p', '540p', '480p', '360p']")
     parser.add_argument("--quality_parameter_list", nargs="*", type=int,
                         default=[23], help="A list of quality parameters. "
                         "More options are not included for now. In ffmpeg, "

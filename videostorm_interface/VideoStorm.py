@@ -3,6 +3,7 @@ import csv
 import os
 import pdb
 import sys
+import subprocess
 from collections import defaultdict
 
 from constants import MODEL_COST
@@ -29,8 +30,12 @@ class VideoStorm_Temporal(Temporal):
             # no sampling
             self.temporal_sampling_list = [sys.maxsize]
 
-    def run(self, segment, decision, results):
-        pass
+    def run(self, sample_rate, frame_range):
+        triggered_frames = []
+        for i in range(frame_range[0], frame_range[1] + 1):
+            if i % sample_rate == 0:
+                triggered_frames.append(i)
+        return triggered_frames
 
 
 class VideoStorm_Spacial(Spatial):
@@ -51,10 +56,10 @@ class VideoStorm_Model(Model):
         print(videostorm_spacial_flag)
         if videostorm_spacial_flag:
             self.model_list = model_list
-            print("VideoStorm_Model SELECTED!!!!!!!!!!!!!!!!!!!!!!")
+            # print("VideoStorm_Model SELECTED!!!!!!!!!!!!!!!!!!!!!!")
         else:
             self.model_list = ['faster_rcnn_resnet101', 'faster_rcnn_inception_v2', 'ssd_mobilenet_v2']
-            print("VideoStorm_Model NOT SELECTED!!!!!!!!!!!!!!!!!!!!!!")
+            # print("VideoStorm_Model NOT SELECTED!!!!!!!!!!!!!!!!!!!!!!")
 
     def run(self, segment, decision, results):
         pass
@@ -112,7 +117,7 @@ class VideoStorm(Pipeline):
             video = pruned_video_dict[model]
             f1_list = []
             for sample_rate in self.videostorm_temporal.temporal_sampling_list:
-                f1_score, relative_gpu_time, _ = self.evaluate(video, original_video, sample_rate, frame_range)
+                f1_score, relative_gpu_time, _ = self.evaluate(clip, video, original_video, sample_rate, self.videostorm_spacial.resolution, frame_range)
                 #print('{}, relative fps={:.3f}, f1={:.3f}'.format(model, 1 / sample_rate, f1_score))
                 f1_list.append(f1_score)
                 self.profile_writer.writerow([clip, video.model, 1 / sample_rate, relative_gpu_time, f1_score])
@@ -155,24 +160,27 @@ class VideoStorm(Pipeline):
         fneg = defaultdict(int)
         save_dt = []
 
-        video_save_name = os.path.join(self.video_save_path, )
+        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
+        video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
         original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
         sample_rate = original_video.frame_rate / best_frame_rate
 
-        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
+        # temporal pruning
+        triggered_frames = self.videostorm_temporal.run(sample_rate, frame_range)
+        print('triggered_frames: ', )
         for img_index in range(frame_range[0], frame_range[1] + 1):
             dt_box_final = []
             current_full_model_dt = video.get_frame_detection(img_index)
             current_gt = original_video.get_frame_detection(img_index)
             # based on sample rate, decide whether this frame is sampled
-            if img_index % sample_rate >= 1:
+            if img_index not in triggered_frames:
                 # this frame is not sampled, so reuse the last saved detection result
                 dt_box_final = copy.deepcopy(save_dt)
             else:
                 # this frame is sampled, so use the full model result
                 dt_box_final = copy.deepcopy(current_full_model_dt)
                 save_dt = copy.deepcopy(dt_box_final)
-                triggered_frames.append(img_index)
+                # triggered_frames.append(img_index)
             # each frame has different types to calculate
             tpos[img_index], fpos[img_index], fneg[img_index] = evaluate_frame(current_gt, dt_box_final)
 
@@ -186,3 +194,12 @@ class VideoStorm(Pipeline):
         video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
         bandwidth = video.encode_iframe_control(video_save_name, triggered_frames, best_frame_rate)
         return f1_score, gpu_time / original_gpu_time, bandwidth / original_bw
+
+def generate_pics(video_path, pic_save_path, video_name):
+    ''' generate pics
+    :param video_path: path for video source
+    :param pic_save_path: path for generated pics
+    :param video_name: video source name
+    '''
+    cmd = 'ffmpeg -i {} {} -hide_banner'.format(os.path.join(video_path, video_name+'.mp4'), os.path.join(pic_save_path, '%06d.jpg'))
+    subprocess.run(cmd.split(' '), check=True)

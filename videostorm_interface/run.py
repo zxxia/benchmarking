@@ -37,7 +37,7 @@ def run(args):
     # videostorm_spacial = VideoStorm_Spacial(original_resolution, dataset_class)
     # videostorm_model = VideoStorm_Model(model_list)
     # print("INPUT MODEL_LIST!!!!!!!!!!!!!!!!!!:", model_list)
-    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, qp_list, profile_filename, output_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
+    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, qp_list, profile_filename, '/Users/apple/Desktop/video/benchmarking/cbn/tv_show/720p', videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
 
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
@@ -90,7 +90,7 @@ def run(args):
                     test_end = end_frame
 
                 print('Evaluate {} start={} end={}'.format(clip, test_start, test_end))
-                f1_score, relative_gpu_time, relative_bandwith = pipeline.evaluate(clip, videos[best_model], original_video, best_frame_rate, [test_start, test_end])
+                f1_score, relative_gpu_time, relative_bandwith = pipeline.evaluate(clip, videos[best_model], original_video, best_frame_rate, ['720p'], [test_start, test_end])
                 print('Evaluate each frame result: clip={}, best_model={}, relative_gpu_time={}, best_frame_rate / original_video.frame_rate={}, f1_score={}'.format(clip, best_model, relative_gpu_time, best_frame_rate / original_video.frame_rate, f1_score))
                 writer.writerow([clip, best_model, relative_gpu_time, best_frame_rate / original_video.frame_rate, f1_score])
 
