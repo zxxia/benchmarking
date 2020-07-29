@@ -11,7 +11,7 @@ from constants import MODEL_COST
 from evaluation.f1 import compute_f1, evaluate_frame
 from utils.utils import interpolation
 
-from interface import Temporal, Spatial, Model
+from interface import Temporal, Spatial, Model, Decision
 from pipeline import Pipeline
 
 
@@ -30,12 +30,22 @@ class Awstream_Temporal(Temporal):
             # no sampling
             self.temporal_sampling_list = [sys.maxsize]
 
-    def run(self, sample_rate, frame_range):
-        triggered_frames = []
+    def run(self, segment, config, decision, results):
+        Seg = []
+        Decision_list = []
+        frame_range = config['frame_range']
+        sample_rate = config['sample_rate']
         for i in range(frame_range[0], frame_range[1] + 1):
             if i % sample_rate == 0:
-                triggered_frames.append(i)
-        return triggered_frames
+                Seg.append(i)
+
+        for i in range(frame_range[0], frame_range[1] + 1):
+            if i in Seg:
+                Decision_list.append(Decision(skip=True))
+            else:
+                Decision_list.append(Decision(skip=False))
+
+        return Seg, Decision_list, results
 
 
 
@@ -47,19 +57,27 @@ class Awstream_Spacial(Spatial):
         else:
             self.resolution = original_resolution
 
-    def run(self, segment, decision, results):
-        pass
+    def run(self, segment, config, decision, results):
+        for seg_info in decision:
+            seg_info.resolution = config['resolution']
+        return segment, decision, results
+
+class Awstream_Model(Model):
+    def __init__(self, model):
+        self.model = model
+    def run(self, segment, config, decision, results):
+        for seg_info in decision:
+            seg_info.dnn = config['model']
+        return segment, decision, results
 
 
 class Awstream(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution_list, quantizer_list, profile_log, video_save_path, awstream_temporal_flag, awstream_spacial_flag, awstream_model_flag, target_f1=0.9):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution_list, quantizer_list, video_save_path, awstream_temporal_flag, awstream_spacial_flag, awstream_model_flag, target_f1=0.9):
         '''Load the configs'''
         self.target_f1 = target_f1
         self.temporal_sampling_list = temporal_sampling_list
         self.resolution_list = original_resolution
         self.quantizer_list = quantizer_list
-        self.profile_writer = csv.writer(open(profile_log, 'w', 1))
-        self.profile_writer.writerow(['video_name', 'resolution', 'frame_rate', 'f1', 'tp', 'fp', 'fn'])
         self.video_save_path = video_save_path
         # pruned flags
         self.awstream_temporal_flag = awstream_temporal_flag
@@ -67,7 +85,54 @@ class Awstream(Pipeline):
         # use these to get temporal_sampling_list, resolution
         self.awstream_temporal = Awstream_Temporal(temporal_sampling_list, awstream_temporal_flag)
         self.awstream_spacial = Awstream_Spacial(original_resolution, spacial_resolution_list, awstream_spacial_flag)
+        self.awstream_model = Awstream_Model(model_list)
 
+    def evaluate(self, Seg, Config, Result, Decision):
+        '''Evaluate the performance of best config.
+        :param Seg: frame range
+        :param Config: Configurations
+        :param Result: Some testing results
+        :param Decision: segments info
+        :return:
+        '''
+        clip = Config['clip']
+        video = Config['video']
+        original_video = Config['original_video']
+        best_frame_rate = Config['best_frame_rate']
+        best_spacial_choice = Config['best_spacial_choice']
+        resolution = Config['resolution']
+        model = Config['model']
+
+        video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
+        original_bw = original_video.encode_iframe_control(video_save_name, list(range(Seg[0], Seg[1]+1)), original_video.frame_rate)
+        sample_rate = original_video.frame_rate / best_frame_rate
+
+        Config['frame_range'] = Seg
+        Config['sample_rate'] = sample_rate
+        Seg_pruned = []
+        Decision_list = []
+        # awstream temporal pruning
+        Seg_pruned, Decision_list, results = self.awstream_temporal.run(Seg_pruned, Config, Decision_list, None)
+        # awstream spacial pruning
+        Seg_pruned, Decision_list, results = self.awstream_spacial.run(Seg_pruned, Config, Decision_list, None)
+        # awstream model pruning -- None, initial model decision info
+        Seg_pruned, Decision_list, results = self.awstream_model.run(Seg_pruned, Config, Decision_list, None)
+
+        video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
+        bandwidth = video.encode_iframe_control(video_save_name, Seg_pruned, best_frame_rate)
+        tp_total, fp_total, fn_total = eval_images(Seg, original_video, video, sample_rate)
+        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
+        gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
+
+        Results = {}
+        Results['f1_score'] = compute_f1(tp_total, fp_total, fn_total)
+        Results['relative_gpu_time'] = gpu_time / original_gpu_time
+        Results['relative_bandwith'] = bandwidth / original_bw
+
+        return Seg_pruned, Decision_list, Results
+
+
+    '''
     def Source(self, clip, video_dict, original_video, frame_range):
         """Profile the combinations of fps and resolution.
 
@@ -129,29 +194,7 @@ class Awstream(Pipeline):
 
         best_relative_bw = min_bw / original_bw
         return best_resol, best_fps, best_relative_bw
-
-    def evaluate(self, clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range):
-        """Evaluate the performance of best config."""
-        video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
-
-        original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
-        sample_rate = original_video.frame_rate / best_frame_rate
-        # temporal pruning
-        target_frame_indices = self.awstream_temporal.run(sample_rate, frame_range)
-
-        for img_index in range(frame_range[0], frame_range[1]+1):
-            # based on sample rate,decide whether this frame is sampled
-            if img_index not in target_frame_indices:
-                continue
-            target_frame_indices.append(img_index)
-        video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
-        bandwidth = video.encode_iframe_control(video_save_name, target_frame_indices, best_frame_rate)
-        tp_total, fp_total, fn_total = eval_images(frame_range, original_video, video, sample_rate)
-
-        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
-        gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
-        return compute_f1(tp_total, fp_total, fn_total),gpu_time / original_gpu_time , bandwidth / original_bw
-
+    '''
 
 def generate_pics(video_path, pic_save_path, video_name):
     ''' generate pics

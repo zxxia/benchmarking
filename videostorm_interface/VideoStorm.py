@@ -11,7 +11,7 @@ from utils.utils import interpolation
 from videos import get_dataset_class, get_seg_paths
 from evaluation.f1 import compute_f1, evaluate_frame
 
-from interface import Temporal, Spatial, Model
+from interface import Temporal, Spatial, Model, Decision
 from pipeline import Pipeline
 
 
@@ -30,12 +30,22 @@ class VideoStorm_Temporal(Temporal):
             # no sampling
             self.temporal_sampling_list = [sys.maxsize]
 
-    def run(self, sample_rate, frame_range):
-        triggered_frames = []
+    def run(self, segment, config, decision, results):
+        Seg = []
+        Decision_list = []
+        frame_range = config['frame_range']
+        sample_rate = config['sample_rate']
         for i in range(frame_range[0], frame_range[1] + 1):
             if i % sample_rate == 0:
-                triggered_frames.append(i)
-        return triggered_frames
+                Seg.append(i)
+
+        for i in range(frame_range[0], frame_range[1] + 1):
+            if i in Seg:
+                Decision_list.append(Decision(skip=True))
+            else:
+                Decision_list.append(Decision(skip=False))
+
+        return Seg, Decision_list, results
 
 
 class VideoStorm_Spacial(Spatial):
@@ -46,8 +56,10 @@ class VideoStorm_Spacial(Spatial):
         else:
             self.resolution = original_resolution
 
-    def run(self, segment, decision, results):
-        pass
+    def run(self, segment, config, decision, results):
+        for seg_info in decision:
+            seg_info.resolution = config['resolution']
+        return segment, decision, results
 
 
 class VideoStorm_Model(Model):
@@ -56,17 +68,17 @@ class VideoStorm_Model(Model):
         print(videostorm_spacial_flag)
         if videostorm_spacial_flag:
             self.model_list = model_list
-            # print("VideoStorm_Model SELECTED!!!!!!!!!!!!!!!!!!!!!!")
         else:
             self.model_list = ['faster_rcnn_resnet101', 'faster_rcnn_inception_v2', 'ssd_mobilenet_v2']
-            # print("VideoStorm_Model NOT SELECTED!!!!!!!!!!!!!!!!!!!!!!")
 
-    def run(self, segment, decision, results):
-        pass
+    def run(self, segment, config, decision, results):
+        for seg_info in decision:
+            seg_info.dnn = config['resolution']
+        return segment, decision, results
 
 
 class VideoStorm(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, quantizer_list, profile_log, video_save_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag, target_f1 = 0.9 ):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution, quantizer_list, video_save_path, videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag, target_f1 = 0.9 ):
         '''
         Load the configs and initialize VideoStorm_interface pipeline.
         :param temporal_sampling_list: a list of sample rates
@@ -80,10 +92,7 @@ class VideoStorm(Pipeline):
         self.target_f1 = target_f1
         self.temporal_sampling_list = temporal_sampling_list
         self.quantizer_list = quantizer_list
-        self.profile_writer = csv.writer(open(profile_log, 'w', 1))
         self.video_save_path = video_save_path
-        # Add header
-        self.profile_writer.writerow(['video_name', 'model', 'frame_rate', 'gpu time', 'f1'])
         # pruning flags
         self.videostorm_temporal_flag = videostorm_temporal_flag
         self.videostorm_spacial_flag = videostorm_spacial_flag
@@ -93,22 +102,89 @@ class VideoStorm(Pipeline):
         self.videostorm_spacial = VideoStorm_Spacial(original_resolution, spacial_resolution, videostorm_spacial_flag)
         self.videostorm_model = VideoStorm_Model(model_list, videostorm_model_flag)
 
-
-    def Source(self, clip, pruned_video_dict, original_video, frame_range):
+    def evaluate(self, Seg, Config, Result, Decision):
+        '''Evaluate the performance of best config.
+        :param Seg: frame range
+        :param Config: Configurations
+        :param Result: Some testing results
+        :param Decision: segments info
+        :return:
         '''
+        clip = Config['clip']
+        video = Config['video']
+        original_video = Config['original_video']
+        best_frame_rate = Config['best_frame_rate']
+        best_spacial_choice = Config['best_spacial_choice']
+        resolution = Config['resolution']
+        model = Config['model']
+
+        tpos = defaultdict(int)
+        fpos = defaultdict(int)
+        fneg = defaultdict(int)
+        save_dt = []
+        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
+        video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
+        original_bw = original_video.encode_iframe_control(video_save_name, list(range(Seg[0], Seg[1]+1)), original_video.frame_rate)
+        sample_rate = original_video.frame_rate / best_frame_rate
+
+        Config['frame_range'] = Seg
+        Config['sample_rate'] = sample_rate
+        Seg_pruned = []
+        Decision_list = []
+        # temporal pruning
+        Seg_pruned, Decision_list, results = self.videostorm_temporal.run(Seg_pruned, Config, Decision_list, None)
+        # videostorm spacial pruning
+        Seg_pruned, Decision_list, results = self.videostorm_spacial.run(Seg_pruned, Config, Decision_list, None)
+        # videostorm model pruning
+        Seg_pruned, Decision_list, results = self.videostorm_model.run(Seg_pruned, Config, Decision_list, None)
+
+        for img_index in range(Seg[0], Seg[1] + 1):
+            dt_box_final = []
+            current_full_model_dt = video.get_frame_detection(img_index)
+            current_gt = original_video.get_frame_detection(img_index)
+            # based on sample rate, decide whether this frame is sampled
+            if img_index not in Seg_pruned:
+                # this frame is not sampled, so reuse the last saved detection result
+                dt_box_final = copy.deepcopy(save_dt)
+            else:
+                # this frame is sampled, so use the full model result
+                dt_box_final = copy.deepcopy(current_full_model_dt)
+                save_dt = copy.deepcopy(dt_box_final)
+                # triggered_frames.append(img_index)
+            # each frame has different types to calculate
+            tpos[img_index], fpos[img_index], fneg[img_index] = evaluate_frame(current_gt, dt_box_final)
+        tp_total = sum(tpos.values())
+        fp_total = sum(fpos.values())
+        fn_total = sum(fneg.values())
+        f1_score = compute_f1(tp_total, fp_total, fn_total)
+        gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
+        video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
+        bandwidth = video.encode_iframe_control(video_save_name, Seg_pruned, best_frame_rate)
+
+        Results = {}
+        Results['f1_score'] = f1_score
+        Results['relative_gpu_time'] = gpu_time / original_gpu_time
+        Results['relative_bandwith'] = bandwidth / original_bw
+
+        return Seg_pruned, Decision_list, Results
+
+
+    '''
+        def Source(self, clip, pruned_video_dict, original_video, frame_range):
+        
         :param clip: video_frame
         :param pruned_video_dict: videos after pruned
         :param original_video: groundtruth
         :param frame_range: start_frame, end_frame
         :return: profiled best_frame_rate, best_model
-        '''
+        
         self.Server(clip, pruned_video_dict, original_video, frame_range)
 
 
     def Server(self, clip, pruned_video_dict, original_video, frame_range):
-        '''
+        
         :param the same as Source params
-        '''
+        
         original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
         min_gpu_time = original_gpu_time
         best_frame_rate = original_video.frame_rate
@@ -127,13 +203,13 @@ class VideoStorm(Pipeline):
             if f1_list[-1] < self.target_f1:
                 target_frame_rate = None
             else:
-                '''
+                
                 try:
                     print(f1_list)
                     index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
                 except:
                     index = 0
-                '''
+                
                 index = next(x[0] for x in enumerate(f1_list) if x[1] > self.target_f1)
 
                 if index == 0:
@@ -151,49 +227,7 @@ class VideoStorm(Pipeline):
                     best_model = video.model
 
         return best_frame_rate, best_model
-
-    def evaluate(self, clip, video, original_video, best_frame_rate, best_spacial_choice, frame_range):
-        '''evaluation'''
-        triggered_frames = []
-        tpos = defaultdict(int)
-        fpos = defaultdict(int)
-        fneg = defaultdict(int)
-        save_dt = []
-
-        original_gpu_time = MODEL_COST[original_video.model] * original_video.frame_rate
-        video_save_name = os.path.join(self.video_save_path, clip+'_original_eval'+'.mp4')
-        original_bw = original_video.encode_iframe_control(video_save_name, list(range(frame_range[0], frame_range[1]+1)), original_video.frame_rate)
-        sample_rate = original_video.frame_rate / best_frame_rate
-
-        # temporal pruning
-        triggered_frames = self.videostorm_temporal.run(sample_rate, frame_range)
-        print('triggered_frames: ', )
-        for img_index in range(frame_range[0], frame_range[1] + 1):
-            dt_box_final = []
-            current_full_model_dt = video.get_frame_detection(img_index)
-            current_gt = original_video.get_frame_detection(img_index)
-            # based on sample rate, decide whether this frame is sampled
-            if img_index not in triggered_frames:
-                # this frame is not sampled, so reuse the last saved detection result
-                dt_box_final = copy.deepcopy(save_dt)
-            else:
-                # this frame is sampled, so use the full model result
-                dt_box_final = copy.deepcopy(current_full_model_dt)
-                save_dt = copy.deepcopy(dt_box_final)
-                # triggered_frames.append(img_index)
-            # each frame has different types to calculate
-            tpos[img_index], fpos[img_index], fneg[img_index] = evaluate_frame(current_gt, dt_box_final)
-
-        tp_total = sum(tpos.values())
-        fp_total = sum(fpos.values())
-        fn_total = sum(fneg.values())
-
-        f1_score = compute_f1(tp_total, fp_total, fn_total)
-        gpu_time = MODEL_COST[video.model] * video.frame_rate / sample_rate
-
-        video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
-        bandwidth = video.encode_iframe_control(video_save_name, triggered_frames, best_frame_rate)
-        return f1_score, gpu_time / original_gpu_time, bandwidth / original_bw
+    '''
 
 def generate_pics(video_path, pic_save_path, video_name):
     ''' generate pics

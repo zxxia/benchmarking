@@ -39,16 +39,10 @@ youtube
 --profile_length
 30
 --overfitting
---sample_step_list
-5
 --original_resolution
 720p
 --spacial_resolution
 720p
---model_list
-faster_rcnn_resnet101
-faster_rcnn_inception_v2
-ssd_mobilenet_v2
 --classes_interested
 person
 --coco_label_file

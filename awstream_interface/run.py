@@ -81,9 +81,13 @@ def run(args):
                     test_start = profile_end + 1
                     test_end = end_frame
                 print('Evaluate {} start={} end={}'.format(clip, test_start, test_end))
-                f1_score, relative_gpu_time, relative_bw = pipeline.evaluate(clip, original_video, videos[str(best_resol[1])+'p'], best_fps, str(best_resol[1])+'p', [test_start, test_end])
-                print('{} best fps={}, best resolution={} ==> tested f1={}'.format(clip, best_fps / original_video.frame_rate, best_resol, f1_score))
-                writer.writerow([clip, str(best_resol[1]) + 'p', f1_score, best_fps / original_video.frame_rate, relative_bw])
+                Seg_pruned, Decision, Result = pipeline.evaluate(clip, original_video, videos[str(best_resol[1])+'p'], best_fps, str(best_resol[1])+'p', [test_start, test_end])
+                print('{} best fps={}, best resolution={} ==> tested f1={}'.format(clip, Result['relative_gpu_time'], Result['relative_bandwith'], Result['f1_score']))
+                print('-------------------------------------------------------------')
+                for i in Decision:
+                    print(i)
+                print('-------------------------------------------------------------')
+                writer.writerow([clip, str(best_resol[1]) + 'p', Result['f1_score'], Result['relative_gpu_time'], Result['relative_bandwith']])
 
 
 
