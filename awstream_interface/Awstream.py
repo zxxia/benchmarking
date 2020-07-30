@@ -49,11 +49,11 @@ class Awstream_Temporal(Temporal):
 
 
 
-class Awstream_Spacial(Spatial):
+class Awstream_Spatial(Spatial):
     '''get certain resolution video'''
-    def __init__(self, original_resolution, spacial_resolution, awstream_spacial_flag):
-        if awstream_spacial_flag:
-            self.resolution = spacial_resolution
+    def __init__(self, original_resolution, spatial_resolution, awstream_spatial_flag):
+        if awstream_spatial_flag:
+            self.resolution = spatial_resolution
         else:
             self.resolution = original_resolution
 
@@ -72,7 +72,7 @@ class Awstream_Model(Model):
 
 
 class Awstream(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spacial_resolution_list, quantizer_list, video_save_path, awstream_temporal_flag, awstream_spacial_flag, awstream_model_flag, target_f1=0.9):
+    def __init__(self, temporal_sampling_list, model_list, original_resolution, spatial_resolution, quantizer_list, video_save_path, awstream_temporal_flag, awstream_spatial_flag, awstream_model_flag, target_f1=0.9):
         '''Load the configs'''
         self.target_f1 = target_f1
         self.temporal_sampling_list = temporal_sampling_list
@@ -81,10 +81,10 @@ class Awstream(Pipeline):
         self.video_save_path = video_save_path
         # pruned flags
         self.awstream_temporal_flag = awstream_temporal_flag
-        self.awstream_spacial_flag = awstream_spacial_flag
+        self.awstream_spatial_flag = awstream_spatial_flag
         # use these to get temporal_sampling_list, resolution
         self.awstream_temporal = Awstream_Temporal(temporal_sampling_list, awstream_temporal_flag)
-        self.awstream_spacial = Awstream_Spacial(original_resolution, spacial_resolution_list, awstream_spacial_flag)
+        self.awstream_spatial = Awstream_Spatial(original_resolution, spatial_resolution, awstream_spatial_flag)
         self.awstream_model = Awstream_Model(model_list)
 
     def evaluate(self, Seg, Config, Result, Decision):
@@ -99,7 +99,7 @@ class Awstream(Pipeline):
         video = Config['video']
         original_video = Config['original_video']
         best_frame_rate = Config['best_frame_rate']
-        best_spacial_choice = Config['best_spacial_choice']
+        best_spatial_choice = Config['best_spatial_choice']
         resolution = Config['resolution']
         model = Config['model']
 
@@ -113,8 +113,8 @@ class Awstream(Pipeline):
         Decision_list = []
         # awstream temporal pruning
         Seg_pruned, Decision_list, results = self.awstream_temporal.run(Seg_pruned, Config, Decision_list, None)
-        # awstream spacial pruning
-        Seg_pruned, Decision_list, results = self.awstream_spacial.run(Seg_pruned, Config, Decision_list, None)
+        # awstream spatial pruning
+        Seg_pruned, Decision_list, results = self.awstream_spatial.run(Seg_pruned, Config, Decision_list, None)
         # awstream model pruning -- None, initial model decision info
         Seg_pruned, Decision_list, results = self.awstream_model.run(Seg_pruned, Config, Decision_list, None)
 
@@ -152,7 +152,7 @@ class Awstream(Pipeline):
         best_resol = original_video.resolution
         best_fps = original_video.frame_rate
         min_bw = original_bw
-        for resolution in self.awstream_spacial.resolution:
+        for resolution in self.awstream_spatial.resolution:
             # choose resolution
             f1_list = []
             if resolution not in video_dict:

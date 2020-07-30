@@ -36,8 +36,8 @@ def parse_args():
     parser.add_argument("--original_resolution", type=str,
                         default='720p', help="The resolution used to "
                         "generate groundtruth.")
-    # spacial resolution
-    parser.add_argument("--spacial_resolution", type=str,
+    # spatial resolution
+    parser.add_argument("--spatial_resolution", type=str,
                         default='720p', help="The resolution used to "
                                              "generate testing.")
     parser.add_argument("--model_list", nargs="*", type=str,
@@ -66,11 +66,11 @@ def parse_args():
                         help="Video save path where encoded videos will "
                              "be saved to.")
 
-    # pruned flags: Temporal, Spacial, Model
+    # pruned flags: Temporal, spatial, Model
     parser.add_argument("--videostorm_temporal_flag", type=int, required=True,
                         help="whether to use videostorm_temporal pruning")
-    parser.add_argument("--videostorm_spacial_flag", type=int, required=True,
-                        help="whether to use videostorm_spacial pruning")
+    parser.add_argument("--videostorm_spatial_flag", type=int, required=True,
+                        help="whether to use videostorm_spatial pruning")
     parser.add_argument("--videostorm_model_flag", type=int, required=True,
                         help="whether to use videostorm_model pruning")
 

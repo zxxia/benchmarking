@@ -59,11 +59,11 @@ def parse_args():
                         default='mscoco_label_map.pbtxt', help="Path to a coco"
                         "label map file.")
 
-    # pruned flags: Temporal, Spacial, Model
+    # pruned flags: Temporal, spatial, Model
     parser.add_argument("--awstream_temporal_flag", type=int, required=True,
                         help="whether to use awstream_temporal pruning")
-    parser.add_argument("--awstream_spacial_flag", type=int, required=True,
-                        help="whether to use awstream_spacial pruning")
+    parser.add_argument("--awstream_spatial_flag", type=int, required=True,
+                        help="whether to use awstream_spatial pruning")
 
     # IO realted
     parser.add_argument("--profile_filename", type=str, required=True,

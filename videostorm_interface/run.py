@@ -3,7 +3,7 @@ import os
 
 from utils.utils import load_COCOlabelmap
 from videos import get_dataset_class, get_seg_paths
-from videostorm_interface.VideoStorm import VideoStorm, VideoStorm_Temporal, VideoStorm_Spacial, VideoStorm_Model
+from videostorm_interface.VideoStorm import VideoStorm, VideoStorm_Temporal, VideoStorm_spatial, VideoStorm_Model
 
 def run(args):
     """Run VideoStorm simulation."""
@@ -22,9 +22,9 @@ def run(args):
     output_filename = args.output_filename
 
     videostorm_temporal_flag = args.videostorm_temporal_flag
-    videostorm_spacial_flag = args.videostorm_spacial_flag
+    videostorm_spatial_flag = args.videostorm_spatial_flag
     videostorm_model_flag = args.videostorm_model_flag
-    spacial_resolution = args.spacial_resolution
+    spatial_resolution = args.spatial_resolution
 
     coco_id2name, coco_name2id = load_COCOlabelmap(args.coco_label_file)
     classes_interested = {coco_name2id[class_type] for class_type in args.classes_interested}
@@ -34,10 +34,10 @@ def run(args):
         assert short_video_length >= profile_length, "short_video_length should no less than profile_length."
 
     # videostorm_temporal = VideoStorm_Temporal(sample_step_list, )
-    # videostorm_spacial = VideoStorm_Spacial(original_resolution, dataset_class)
+    # videostorm_spatial = VideoStorm_spatial(original_resolution, dataset_class)
     # videostorm_model = VideoStorm_Model(model_list)
     # print("INPUT MODEL_LIST!!!!!!!!!!!!!!!!!!:", model_list)
-    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spacial_resolution, qp_list, profile_filename, '/Users/apple/Desktop/video/benchmarking/cbn/tv_show/720p', videostorm_temporal_flag, videostorm_spacial_flag, videostorm_model_flag)
+    pipeline = VideoStorm(sample_step_list, model_list, original_resolution, spatial_resolution, qp_list, profile_filename, '/Users/apple/Desktop/video/benchmarking/cbn/tv_show/720p', videostorm_temporal_flag, videostorm_spatial_flag, videostorm_model_flag)
 
     with open(output_filename, 'w', 1) as f_out:
         writer = csv.writer(f_out)
@@ -49,8 +49,8 @@ def run(args):
             print("")
             #print("MODEL_LIST!!!!!!!!!!!!!!!!!!!!!:", pipeline.videostorm_model.model_list)
             for model in pipeline.videostorm_model.model_list:
-                print(pipeline.videostorm_spacial.resolution, original_resolution)
-                video = dataset_class(seg_path, seg_name, pipeline.videostorm_spacial.resolution, model, filter_flag=True, classes_interested=classes_interested)
+                print(pipeline.videostorm_spatial.resolution, original_resolution)
+                video = dataset_class(seg_path, seg_name, pipeline.videostorm_spatial.resolution, model, filter_flag=True, classes_interested=classes_interested)
                 videos[model] = video
 
             if original_video.duration > short_video_length:
