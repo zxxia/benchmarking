@@ -41,9 +41,9 @@ class Awstream_Temporal(Temporal):
 
         for i in range(frame_range[0], frame_range[1] + 1):
             if i in Seg:
-                Decision_list.append(Decision(skip=True))
+                Decision['Frame_Decision'][i] = Decision(skip=True)
             else:
-                Decision_list.append(Decision(skip=False))
+                Decision['Frame_Decision'][i] = Decision(skip=False)
 
         return Seg, Decision_list, results
 
@@ -58,16 +58,16 @@ class Awstream_Spatial(Spatial):
             self.resolution = original_resolution
 
     def run(self, segment, config, decision, results):
-        for seg_info in decision:
-            seg_info.resolution = config['resolution']
+        for i in range(decision['Frame_Decision']):
+            decision['Frame_Decision'][i]['resolution'] = config['resolution']
         return segment, decision, results
 
 class Awstream_Model(Model):
     def __init__(self, model):
         self.model = model
     def run(self, segment, config, decision, results):
-        for seg_info in decision:
-            seg_info.dnn = config['model']
+        for i in range(decision['Frame_Decision']):
+            decision['Frame_Decision'][i]['model'] = config['model']
         return segment, decision, results
 
 
@@ -87,7 +87,7 @@ class Awstream(Pipeline):
         self.awstream_spatial = Awstream_Spatial(original_resolution, spatial_resolution, awstream_spatial_flag)
         self.awstream_model = Awstream_Model(model_list)
 
-    def evaluate(self, Seg, Config, Result, Decision):
+    def run(self, Seg, Config, Result, Decision):
         '''Evaluate the performance of best config.
         :param Seg: frame range
         :param Config: Configurations
@@ -110,13 +110,18 @@ class Awstream(Pipeline):
         Config['frame_range'] = Seg
         Config['sample_rate'] = sample_rate
         Seg_pruned = []
-        Decision_list = []
+        Decision_list = {'Client_ready': True, 'Server_ready': True, 'Frame_Decision': {}}
+        detection_results = []
         # awstream temporal pruning
         Seg_pruned, Decision_list, results = self.awstream_temporal.run(Seg_pruned, Config, Decision_list, None)
         # awstream spatial pruning
         Seg_pruned, Decision_list, results = self.awstream_spatial.run(Seg_pruned, Config, Decision_list, None)
         # awstream model pruning -- None, initial model decision info
         Seg_pruned, Decision_list, results = self.awstream_model.run(Seg_pruned, Config, Decision_list, None)
+
+        for img_index in range(Seg[0], Seg[1] + 1):
+            bounding_box = video.get_frame_detection(img_index)
+            detection_results.append(bounding_box)
 
         video_save_name = os.path.join(self.video_save_path, clip+'_eval'+'.mp4')
         bandwidth = video.encode_iframe_control(video_save_name, Seg_pruned, best_frame_rate)
@@ -129,7 +134,7 @@ class Awstream(Pipeline):
         Results['relative_gpu_time'] = gpu_time / original_gpu_time
         Results['relative_bandwith'] = bandwidth / original_bw
 
-        return Seg_pruned, Decision_list, Results
+        return Seg_pruned, Decision_list, detection_results
 
 
     '''

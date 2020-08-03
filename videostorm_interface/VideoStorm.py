@@ -18,11 +18,14 @@ from pipeline import Pipeline
 
 class VideoStorm_Temporal(Temporal):
     '''use sample rate'''
-    def __init__(self, temporal_sampling_list, videostorm_temporal_flag):
+    def __init__(self, config):
         '''
         :param temporal_sampling_list: flag == 1 -> sampling_list regard as sample rate; else: sample_rate = 0
         :param videostorm_temporal_flag: flag whether use videostorm_tempora pruning
         '''
+        videostorm_temporal_flag = config['videostorm_temporal_flag']
+        temporal_sampling_list = config['temporal_sampling_list']
+
         if videostorm_temporal_flag:
             # use input sample
             self.temporal_sampling_list = temporal_sampling_list
@@ -30,9 +33,8 @@ class VideoStorm_Temporal(Temporal):
             # no sampling
             self.temporal_sampling_list = [sys.maxsize]
 
-    def run(self, segment, config, decision, results):
+    def run(self, segment, config, Decision, results):
         Seg = []
-        Decision_list = []
         frame_range = config['frame_range']
         sample_rate = config['sample_rate']
         for i in range(frame_range[0], frame_range[1] + 1):
@@ -41,44 +43,48 @@ class VideoStorm_Temporal(Temporal):
 
         for i in range(frame_range[0], frame_range[1] + 1):
             if i in Seg:
-                Decision_list.append(Decision(skip=True))
+                Decision['Frame_Decision'][i] = Decision(skip=True)
             else:
-                Decision_list.append(Decision(skip=False))
-
-        return Seg, Decision_list, results
+                Decision['Frame_Decision'][i] = Decision(skip=False)
+        return Seg, Decision, results
 
 
 class VideoStorm_Spatial(Spatial):
     '''get certain resolution video'''
-    def __init__(self, original_resolution, spatial_resolution, videostorm_spatial_flag):
+    def __init__(self, config):
+        original_resolution = config['original_resolution']
+        spatial_resolution = config['spatial_resolution']
+        videostorm_spatial_flag = config['videostorm_spatial_flag']
         if videostorm_spatial_flag:
             self.resolution = spatial_resolution
         else:
             self.resolution = original_resolution
 
     def run(self, segment, config, decision, results):
-        for seg_info in decision:
-            seg_info.resolution = config['resolution']
+        for i in range(decision['Frame_Decision']):
+            decision['Frame_Decision'][i]['resolution'] = config['resolution']
         return segment, decision, results
 
 
 class VideoStorm_Model(Model):
     '''use different model'''
-    def __init__(self, model_list, videostorm_model_flag):
-        print(videostorm_model_flag)
+    def __init__(self, config):
+        model_list = config['model_list']
+        videostorm_model_flag = config['videostorm_model_flag']
         if videostorm_model_flag:
             self.model_list = model_list
         else:
             self.model_list = ['faster_rcnn_resnet101', 'faster_rcnn_inception_v2', 'ssd_mobilenet_v2']
 
     def run(self, segment, config, decision, results):
-        for seg_info in decision:
-            seg_info.dnn = config['model']
+        for i in range(decision['Frame_Decision']):
+            decision['Frame_Decision'][i]['model'] = config['model']
         return segment, decision, results
 
 
 class VideoStorm(Pipeline):
-    def __init__(self, temporal_sampling_list, model_list, original_resolution, spatial_resolution, quantizer_list, video_save_path, videostorm_temporal_flag, videostorm_spatial_flag, videostorm_model_flag, target_f1 = 0.9 ):
+    def __init__(self, temporal_prune: Temporal, spatial_prune: Spatial,
+                 model_prune: Model, configurations, target_f1 = 0.9 ):
         '''
         Load the configs and initialize VideoStorm_interface pipeline.
         :param temporal_sampling_list: a list of sample rates
@@ -89,20 +95,22 @@ class VideoStorm(Pipeline):
         :param spatial_prune: spatial prune instance for Videostorm
         :param model_prune: Model prune instance for Videostorm
         '''
-        self.target_f1 = target_f1
-        self.temporal_sampling_list = temporal_sampling_list
-        self.quantizer_list = quantizer_list
-        self.video_save_path = video_save_path
-        # pruning flags
-        self.videostorm_temporal_flag = videostorm_temporal_flag
-        self.videostorm_spatial_flag = videostorm_spatial_flag
-        self.videostorm_model_flag = videostorm_model_flag
-        # use these to get temporal_sampling_list, model_list, resolution
-        self.videostorm_temporal = VideoStorm_Temporal(temporal_sampling_list, videostorm_temporal_flag)
-        self.videostorm_spatial = VideoStorm_Spatial(original_resolution, spatial_resolution, videostorm_spatial_flag)
-        self.videostorm_model = VideoStorm_Model(model_list, videostorm_model_flag)
+        self.target_f1 = configurations['target_f1']
+        self.temporal_sampling_list = configurations['temporal_sampling_list']
+        self.model_list = configurations['model_list']
+        self.original_resolution = configurations['original_resolution']
+        self.spatial_resolution = configurations['spatial_resolution']
+        self.quantizer_list = configurations['quantizer_list']
+        self.video_save_path = configurations['video_save_path']
+        self.quantizer_list = configurations['quantizer_list']
+        self.video_save_path = configurations['video_save_path']
 
-    def evaluate(self, Seg, Config, Result, Decision):
+        # use these to get temporal_sampling_list, model_list, resolution
+        self.temporal_prune = temporal_prune
+        self.spatial_prune = spatial_prune
+        self.model_prune_tracking = model_prune
+
+    def run(self, Seg, Config, Result, Decision):
         '''Evaluate the performance of best config.
         :param Seg: frame range
         :param Config: Configurations
@@ -130,13 +138,15 @@ class VideoStorm(Pipeline):
         Config['frame_range'] = Seg
         Config['sample_rate'] = sample_rate
         Seg_pruned = []
-        Decision_list = []
+        Decision_list = {'Client_ready': True, 'Server_ready': True, 'Frame_Decision': {}}
         # temporal pruning
         Seg_pruned, Decision_list, results = self.videostorm_temporal.run(Seg_pruned, Config, Decision_list, None)
         # videostorm spatial pruning
         Seg_pruned, Decision_list, results = self.videostorm_spatial.run(Seg_pruned, Config, Decision_list, None)
         # videostorm model pruning
         Seg_pruned, Decision_list, results = self.videostorm_model.run(Seg_pruned, Config, Decision_list, None)
+
+        detection_results = []
 
         for img_index in range(Seg[0], Seg[1] + 1):
             dt_box_final = []
@@ -152,6 +162,8 @@ class VideoStorm(Pipeline):
                 save_dt = copy.deepcopy(dt_box_final)
                 # triggered_frames.append(img_index)
             # each frame has different types to calculate
+            bounding_boxes = video.get_frame_detection(img_index)
+            detection_results.append(bounding_boxes)
             tpos[img_index], fpos[img_index], fneg[img_index] = evaluate_frame(current_gt, dt_box_final)
         tp_total = sum(tpos.values())
         fp_total = sum(fpos.values())
@@ -166,7 +178,7 @@ class VideoStorm(Pipeline):
         Results['relative_gpu_time'] = gpu_time / original_gpu_time
         Results['relative_bandwith'] = bandwidth / original_bw
 
-        return Seg_pruned, Decision_list, Results
+        return Seg_pruned, Decision_list, detection_results
 
 
     '''
