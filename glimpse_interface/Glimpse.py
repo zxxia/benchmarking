@@ -124,9 +124,14 @@ class Glimpse_Model(interface.Model):
         start_t = time.time()
         boxes = []
         to_delete = []
+        status = True
         for obj, tracker in self.trackers_dict.items():
             _, obj_id, t = obj.split('_')
-            ok, bbox = tracker.update(frame_copy)
+            #ok, bbox = tracker.update(frame_copy)
+            try:
+                ok, bbox = tracker.update(frame_copy)
+            except:
+                status = False
             if ok:
                 # tracking succeded
                 x, y, w, h = bbox
@@ -138,12 +143,13 @@ class Glimpse_Model(interface.Model):
             else:
                 # tracking failed
                 # record the trackers that need to be deleted
+                status = False
                 to_delete.append(obj)
         for obj in to_delete:
             self.trackers_dict.pop(obj)
         #debug_print("tracking used: {}s".format(time.time()-start_t))
 
-        return boxes
+        return status,boxes,0
 
     def run(self, Seg, Config, Decision, Results = None):
         video, start_frame, end_frame = Seg["video"], Seg["start_frame"], Seg["end_frame"]
@@ -158,21 +164,26 @@ class Glimpse_Model(interface.Model):
         assert len(target_frames) >= 2, 'frames to detect must more than 2'
         prev_frame_gray = get_video_frame_gray(video, start_frame)
         prev_boxes = video.get_frame_detection(start_frame)
+        if tracking_method == "KCF":
+            self.init_trackers(start_frame, video.get_frame_image(start_frame),
+                            prev_boxes)
         print(len(target_frames), end_frame - start_frame + 1)
         last_tracking_frame = copy.deepcopy(prev_frame_gray)
+        last_triggered_frame = copy.deepcopy(prev_frame_gray)
         detection_results = [prev_boxes]
         trggered_frame = 0
         tracked_frame = len(target_frames)
         for i in tqdm(range(start_frame + 1, end_frame + 1)):
             frame_gray = get_video_frame_gray(video, i)
             frame_bgr = video.get_frame_image(i)
-            frame_diff, _, _, _ = frame_difference(prev_frame_gray, frame_gray)
+            frame_diff, _, _, _ = frame_difference(last_triggered_frame, frame_gray)
             if i not in Decision["Frame_Decision"]:
                 Decision["Frame_Decision"][i] = {"skip":True}
             Decision["Frame_Decision"][i]["skip"] = True
             if frame_diff > self.frame_diff_thres:
                 prev_boxes = video.get_frame_detection(i)
                 last_tracking_frame = copy.deepcopy(frame_gray)
+                last_triggered_frame = copy.deepcopy(frame_gray)
                 Decision["Frame_Decision"][i]["skip"] = False
                 trggered_frame += 1
                 if tracking_method == "KCF":
@@ -180,16 +191,21 @@ class Glimpse_Model(interface.Model):
                                     prev_boxes)
             elif i in target_frames:
                 tracking_status = True
-                
+
                 if tracking_method == "KCF":
-                    prev_boxes = self.update_trackers(frame_bgr)
+                    tracking_status,prev_boxes,err = self.update_trackers(frame_bgr)
                 else:
                     tracking_status, prev_boxes, err = tracking_boxes(frame_bgr, last_tracking_frame,                                           frame_gray, i, detection_results[-1],self.tracking_err_thres, tracking_method)
                 
                 if not tracking_status:
                     prev_boxes = video.get_frame_detection(i)
+                    if tracking_method == "KCF":
+                        self.init_trackers(i, video.get_frame_image(i),
+                                    prev_boxes)
                     trggered_frame += 1
+                    last_triggered_frame = copy.deepcopy(frame_gray)
                     Decision["Frame_Decision"][i]["skip"] = False
+
                 last_tracking_frame = copy.deepcopy(frame_gray)
             prev_frame_gray = copy.deepcopy(frame_gray)
             detection_results.append(prev_boxes)
@@ -208,6 +224,31 @@ class Glimpse(Pipeline):
         #target_frames = [3,4]
         print("Detecting frames")
         return self.model_prune.run(Seg, Config, Decision)
+    
+    def evaluate(self, Seg, Config, Decision = None, Results = None):
+        total_tp, total_fp, total_fn = 0,0,0
+        _, decision_results, detection_results = self.run(Seg, Config)
+        video, start_frame, end_frame = Seg["video"], Seg["start_frame"], Seg["end_frame"]
+        for i, result in enumerate(detection_results):
+            tp, fp, fn = evaluate_frame(video.get_frame_detection(start_frame + i), result)
+            total_tp += tp
+            total_fp += fp
+            total_fn += fn
+        f1_score = compute_f1(total_tp, total_fp, total_fn)
+        origin_filesize = 0
+        filesize = 0
+        frame_num = 0
+        original_frame_num = 0
+        for i in range(start_frame, end_frame + 1):
+            origin_filesize += video.get_frame_filesize(i)
+            original_frame_num += 1
+            if i in decision_results["Frame_Decision"]:
+                if not decision_results["Frame_Decision"][i]["skip"]:
+                    filesize += video.get_frame_filesize(i)
+                    frame_num += 1
+        bw = 1.0*filesize/origin_filesize
+        gpu = 1.0*frame_num/original_frame_num
+        return f1_score, bw, gpu
 
 def frame_difference(old_frame, new_frame, bboxes_last_triggered = None, bboxes = None,
                      thresh=35):

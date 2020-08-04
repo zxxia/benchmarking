@@ -5,12 +5,10 @@ import os
 import pdb
 import time
 from collections import Counter, defaultdict
-import math
-import tqdm
+
 import numpy as np
 import pandas as pd
 from PIL import Image
-from evaluation.f1 import IoU
 
 
 def write_to_file(csvwriter, img_path, detections, profile_writer, t_used):
@@ -336,93 +334,3 @@ def nms(dets, thresh):
         order = order[inds + 1]
 
     return keep
-
-def is_in_detection_results(box_t, boxes, IoU_thres=0.45):
-    for box in boxes:
-        if IoU(box, box_t) > IoU_thres:
-            return True
-    return False
-
-def compute_distance(box_t, boxes):
-    """To compute the minimum distance between a box and a set of other boxes"""
-    center_x, center_y = (box_t[0] + box_t[2])/2, (box_t[1] + box_t[3])/2
-    min_dist = 100000
-    for box in boxes:
-        center_x1, center_y1 = (box[0] + box[2])/2, (box[1] + box[3])/2
-        dist = math.sqrt((center_x - center_x1)**2 + (center_y - center_y1)**2)
-        if dist < min_dist:
-            min_dist = dist
-            
-    return min_dist
-    
-def tracking_based_smoothing(dets, video, frame_window=2):
-    smoothed_dets = {}
-    smoothed_frame_ids = []
-    resolution = None
-    Torlerate = 0
-    
-    for batch in range(video.start_frame_index, video.end_frame_index, 500):
-        video_frames = {}
-        
-        print("loading frames...")
-        for frame_id in tqdm(range(batch, min(batch+500, video.end_frame_index+1))):
-            try:
-                frame_image = video.get_frame_image(frame_id)
-                frame_copy = cv2.resize(frame_image, (640, 480))
-                resolution = (frame_image.shape[0], frame_image.shape[1])
-                video_frames[frame_id] = frame_copy
-            except:
-                print("frame id: {} not found".format(frame_id))
-                video_frames[frame_id] = None
-                
-        print("tracking frames")
-        for frame_id in tqdm(range(batch,min(batch+499, video.end_frame_index))):
-            if frame_id not in dets:
-                continue
-            if frame_id not in smoothed_dets:
-                smoothed_dets[frame_id] = copy.deepcopy(dets[frame_id])
-            boxes = dets[frame_id]    
-            frame_copy = video_frames[frame_id]
-            for nxt in range(1, frame_window):
-                if nxt + frame_id > video.end_frame_index:
-                    continue
-                next_boxes = copy.deepcopy(dets[frame_id + nxt])
-
-                """If some detected object suddently disappeared"""
-                if len(boxes) > len(next_boxes):
-                    next_frame_copy = video_frames[frame_id + 1]
-                    for box in boxes:
-                        if len(box) == 7:
-                            xmin, ymin, xmax, ymax, t, score, obj_id = box
-                        elif len(box) == 6:
-                            xmin, ymin, xmax, ymax, t, score = box
-                        tracker = cv2.TrackerKCF_create()
-                        tracker.init(frame_copy, (xmin * 640 / resolution[0],
-                                              ymin * 480 / resolution[1],
-                                              (xmax - xmin) * 640 / resolution[0],
-                                              (ymax - ymin) * 480 / resolution[1]))
-                        
-                        """Try to find out which box disappeared"""
-                        if not is_in_detection_results(box, next_boxes):
-                            ok, bbox = tracker.update(next_frame_copy)
-                            if ok:
-                                x, y, w, h = bbox
-                                new_box = None
-                                if len(box) == 6:
-                                    new_box = [x*resolution[0]/640,
-                                            y*resolution[1]/480,
-                                            (x+w)*resolution[0]/640,
-                                            (y+h)*resolution[1]/480, t,
-                                            score]
-                                elif len(box) == 7:
-                                    new_box = [x*resolution[0]/640,
-                                            y*resolution[1]/480,
-                                            (x+w)*resolution[0]/640,
-                                            (y+h)*resolution[1]/480, t,
-                                            score]
-                                if not is_in_detection_results(new_box, next_boxes, 0.1):
-                                    next_boxes.append(new_box)
-                                    smoothed_dets[frame_id + 1] = next_boxes
-                                    smoothed_frame_ids.append(frame_id + 1)
-                                    
-    return smoothed_dets, smoothed_frame_ids

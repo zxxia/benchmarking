@@ -1,6 +1,7 @@
 """Glimpse offline simulation driver."""
 import csv
 import os
+import cv2
 
 from glimpse_interface.Glimpse import Glimpse, Glimpse_Temporal, Glimpse_Model
 from videos import get_dataset_class, get_seg_paths
@@ -96,7 +97,7 @@ def run(args):
                         fps = 30
                         size = (video.resolution[0],video.resolution[1])
                         fourcc = cv2.VideoWriter_fourcc('X','V','I','D')
-                        videoWriter = cv2.VideoWriter(output_video, fourcc, fps, size) 
+                        videoWriter = cv2.VideoWriter(output_video+"_"+clip + ".avi", fourcc, fps, size) 
                     print("saving results ...") 
                     total_tp, total_fp, total_fn = 0,0,0
                     for i, result in enumerate(detection_results):
