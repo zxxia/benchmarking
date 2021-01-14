@@ -76,7 +76,7 @@ def feature_gen(data):
 
 def compute_features(args):
     roots = args.root
-    dataset_names = len(VIDEOS) * ['youtube'] + ['mot16']
+    dataset_name = len(VIDEOS) * ['youtube'] + ['mot16']
     video_names = VIDEOS + [None]
 
     with open(OUTPUT_FILE, 'w', 1) as f:

@@ -1,8 +1,10 @@
 import glob
 import os
+
 from videos.kitti import KittiVideo
 from videos.mot15 import MOT15Video
 from videos.mot16 import MOT16Video
+from videos.video import Video
 from videos.waymo import WaymoVideo
 from videos.youtube import YoutubeVideo
 
