@@ -59,7 +59,7 @@ pycodestyle==2.5.0
 pycryptodome==3.9.7
 pydocstyle==5.0.2
 pyflakes==2.1.1
-Pygments==2.6.1
+Pygments==2.7.4
 pylint==2.5.0
 pyparsing==2.4.7
 PySocks==1.7.1
