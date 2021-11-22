@@ -298,12 +298,12 @@ class Glimpse():
                 for box in video.get_dropped_frame_detection(
                         last_triggered_frame_idx):
                     xmin, ymin, xmax, ymax, t = box[:5]
-                    mask[ymin:ymax, xmin:xmax] = 0
+                    mask[int(ymin):int(ymax), int(xmin):int(xmax)] = 0
 
                 # mask off the non-viechle objects in current frame
                 for box in video.get_dropped_frame_detection(i):
                     xmin, ymin, xmax, ymax, t = box[:5]
-                    mask[ymin:ymax, xmin:xmax] = 0
+                    mask[int(ymin):int(ymax), int(xmin):int(xmax)] = 0
                 lastTriggeredFrameGray_masked = \
                     lastTriggeredFrameGray.copy() * mask
                 frame_gray_masked = frame_gray.copy() * mask
