@@ -47,8 +47,9 @@ class Glimpse():
         self.target_f1 = target_f1
         self.writer = csv.writer(open(profile_log, 'w', 1))
         self.writer.writerow(['video chunk', 'para1', 'para2', 'f1',
-                              'frame rate', 'ideal frame rate', 'trigger f1',
-                              'pixel change on object',
+                              'frame rate', 'frame diff frame rate',
+                              'tracking frame rate', 'ideal frame rate',
+                              'trigger f1', 'pixel change on object',
                               'pixel change on background',
                               'average frame difference time used',
                               'average tracking time used'])
