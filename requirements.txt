@@ -6,7 +6,7 @@ autopep8==1.5.2
 backcall==0.1.0
 blessings==1.7
 cachetools==4.1.0
-certifi==2020.4.5.1
+certifi==2022.12.7
 chardet==3.0.4
 cycler==0.10.0
 Cython==0.29.20
